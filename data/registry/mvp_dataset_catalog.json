@@ -1,0 +1,1438 @@
+{
+  "schema_version": "1.1.0",
+  "snapshot_date": "2026-11-08",
+  "source": {
+    "registry": "data/registry/psi_combustion_investigations.json",
+    "annotations": "data/registry/annotations.json",
+    "nasa_psi": "https://psi.nasa.gov/physci/repo",
+    "selection_decision": "docs/decisions/0001-mvp-dataset-selection.md"
+  },
+  "roles": {
+    "primary": "Directly supports the MVP analysis and interface. Parsed first.",
+    "supporting": "Provides material, flow, mission, droplet, or comparison context. Parsed after the primary datasets.",
+    "future": "Scientifically relevant but requires a separate format or access audit before use.",
+    "context": "Publications, modeling studies, indexes, or small campaign summaries. Not a per-test measurement table."
+  },
+  "archive_status": {
+    "available": "The PSI detail endpoint exposes one or more `added` archive files.",
+    "experimental_table_only": "No `added` archive files are exposed, but a public experimental summary table is available.",
+    "no_public_files": "Neither an `added` archive file nor an experimental summary table is exposed."
+  },
+  "selection_rules": [
+    "The record must be a NASA PSI Combustion Science investigation with a public detail endpoint.",
+    "The record must expose at least one public artifact, either an `added` file or an `experimentalTable` entry.",
+    "A primary dataset must contain a public tabular artifact that supports test-level or time-series analysis.",
+    "A dataset is not promoted to primary if its public files are only video, images, documents, metadata, or a small campaign summary.",
+    "Cross-dataset comparison is allowed only for semantically equivalent fields in the comparability matrix.",
+    "No record is selected to fill a narrative gap; records with only a summary table are reported as `experimental_table_only`."
+  ],
+  "totals": {
+    "records": 24,
+    "role_counts": {
+      "primary": 4,
+      "supporting": 7,
+      "context": 9,
+      "future": 4
+    },
+    "archive_status_counts": {
+      "available": 20,
+      "experimental_table_only": 4
+    },
+    "current_files": 16354,
+    "experimental_table_count": 22,
+    "experimental_table_bytes": 211116,
+    "experimental_table_only_count": 14,
+    "distinct_public_artifacts": 16368,
+    "registered_total_bytes": 13496771103733.0,
+    "registered_total_gb_decimal": 13496.77
+  },
+  "datasets": [
+    {
+      "accession": "PSI-10",
+      "acronym": "ACME/Flame Design",
+      "title": "Advanced Combustion via Microgravity Experiments / Flame Design",
+      "doi": "10.60555/w4zy-bt45",
+      "role": "primary",
+      "archive_status": "available",
+      "file_count": 3807,
+      "removed_file_count": 0,
+      "experimental_table_count": 2,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 2180435304347,
+      "registered_total_gb_decimal": 2180.44,
+      "mvp_use": "Primary gas-flame test table for comparing normal and inverse flames across fuel, oxidizer, pressure, stoichiometric mixture fraction, and computed adiabatic flame temperature.",
+      "supports": [
+        "Normal and inverse flame configurations",
+        "C2H4 and C3H8 fuels",
+        "Initial and final oxygen mole fraction",
+        "Initial, final, and mean pressure in atm",
+        "Computed mean stoichiometric mixture fraction and adiabatic flame temperature",
+        "Flagged RAMP/RAMPED and LOW O2 qualifier rows"
+      ],
+      "does_not_support": [
+        "Measured flame temperature (Tad is computed)",
+        "Time-series telemetry",
+        "Flame-spread rate",
+        "Raw image or video analysis"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+          "bytes": 26933,
+          "in_added": true,
+          "data_rows": 207,
+          "columns": 15,
+          "sha256": "4a663292bd3f65201943cc71bd661a70383639276a9176f64105b285bf0b6deb",
+          "physical_rows": 207
+        },
+        {
+          "file_name": "PSI-10_Experimental table_Flame Design_Inverse Flame.csv",
+          "bytes": 17314,
+          "in_added": true,
+          "data_rows": 120,
+          "columns": 14,
+          "sha256": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+          "physical_rows": 120
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+          "bytes": 26933,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 207,
+          "columns": 15,
+          "sha256": "4a663292bd3f65201943cc71bd661a70383639276a9176f64105b285bf0b6deb",
+          "physical_rows": 207
+        },
+        {
+          "file_name": "PSI-10_Experimental table_Flame Design_Inverse Flame.csv",
+          "bytes": 17314,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 120,
+          "columns": 14,
+          "sha256": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+          "physical_rows": 120
+        }
+      ],
+      "limitations": [
+        "Only the summary tables are small enough for the MVP; the 2.18 TB raw archive is not ingested.",
+        "Tad (K) is a computed adiabatic flame temperature, not a measured temperature.",
+        "XO2 (init) and XO2 (final) are mole fractions, not percentages by volume.",
+        "20 of 207 normal-flame rows have no final XO2, pfinal, or pmean value; these are missing measurements, not zeros.",
+        "60 of 207 normal-flame rows contain RAMP or RAMPED qualifiers in six numeric columns; 11 of 120 inverse-flame rows contain RAMP or LOW O2 qualifiers. These are experiment qualifiers, not blanks and not zeros; preserve them as text and exclude them from numeric aggregation unless a documented rule exists.",
+        "Column labels contain inconsistent spacing and unit notation; preserve the raw header alongside the canonical field."
+      ],
+      "access_notes": "Detail endpoint and both experimental-table downloads verified on 2026-11-08."
+    },
+    {
+      "accession": "PSI-20",
+      "acronym": "ACME BRE",
+      "title": "Advanced Combustion via Microgravity Experiments - Burning Rate Emulator",
+      "doi": "10.60555/vb93-3y72",
+      "role": "supporting",
+      "archive_status": "available",
+      "file_count": 1,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 2035568427496.0,
+      "registered_total_gb_decimal": 2035.57,
+      "mvp_use": "Supporting ACME BRE test-day summary for burner size, fuel bottle, oxygen concentration text, and number of flames ignited.",
+      "supports": [
+        "Burner size context (25 or 50 mm)",
+        "Oxygen concentration ranges as published",
+        "Flames ignited per test day"
+      ],
+      "does_not_support": [
+        "Per-test flame measurements",
+        "Chamber pressure (the notes state it varied but is not identified)",
+        "Flame-spread rate"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-20_Experimental table_ACME BRE.csv",
+          "bytes": 1113,
+          "in_added": true,
+          "data_rows": 18,
+          "columns": 8,
+          "sha256": "4aa5d3f98708ceacced5c620d46858b9965f8d4d941b203229f46467d53e5ab7",
+          "physical_rows": 18
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-20_Experimental table_ACME BRE.csv",
+          "bytes": 1113,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 18,
+          "columns": 8,
+          "sha256": "4aa5d3f98708ceacced5c620d46858b9965f8d4d941b203229f46467d53e5ab7",
+          "physical_rows": 18
+        }
+      ],
+      "limitations": [
+        "Only 18 data rows; it is a test-day summary, not a per-test measurement table.",
+        "Chamber pressures varied but are explicitly not identified in the summary table.",
+        "2.04 TB is registered for the investigation, but no raw data files are exposed through the public file list.",
+        "Do not use this table for quantitative flame comparison."
+      ],
+      "access_notes": "One CSV exposed; download verified on 2026-11-08."
+    },
+    {
+      "accession": "PSI-21",
+      "acronym": "ACME CLD Flame",
+      "title": "Advanced Combustion via Microgravity Experiments / Coflow Laminar Diffusion Flame",
+      "doi": "10.60555/23e1-9950",
+      "role": "supporting",
+      "archive_status": "available",
+      "file_count": 1,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 2005536295241.0,
+      "registered_total_gb_decimal": 2005.54,
+      "mvp_use": "Supporting ACME CLD test-day summary for test type, mass-flow-controller settings, fuel concentration range, and flames ignited.",
+      "supports": [
+        "Test-day context for methane and ethylene coflow tests",
+        "Fuel concentration ranges as published",
+        "Flames ignited per test day"
+      ],
+      "does_not_support": [
+        "Per-test flame measurements",
+        "Fuel MFC and N2 MFC units (not stated in the header)",
+        "Flame-spread rate"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-21_Experimental table_CLD Flame.csv",
+          "bytes": 2454,
+          "in_added": true,
+          "data_rows": 32,
+          "columns": 8,
+          "sha256": "9fafbc5b3dddaf715ce8025ed9154ce297803f7b69a935f077ec26c8249e44c0",
+          "physical_rows": 32
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-21_Experimental table_CLD Flame.csv",
+          "bytes": 2454,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 32,
+          "columns": 8,
+          "sha256": "9fafbc5b3dddaf715ce8025ed9154ce297803f7b69a935f077ec26c8249e44c0",
+          "physical_rows": 32
+        }
+      ],
+      "limitations": [
+        "Only 32 data rows; it records counts and ranges, not per-test flame measurements.",
+        "2.01 TB is registered, but only one CSV is exposed through the public file list.",
+        "The notes column is essential to interpret the table and must be preserved."
+      ],
+      "access_notes": "One CSV exposed; download verified on 2026-11-08."
+    },
+    {
+      "accession": "PSI-22",
+      "acronym": "ACME E-FIELD Flames",
+      "title": "Advanced Combustion via Microgravity Experiments Electric-Field Effects on Laminar Diffusion Flames",
+      "doi": "10.60555/se5a-8c73",
+      "role": "context",
+      "archive_status": "experimental_table_only",
+      "file_count": 0,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 950212491107.0,
+      "registered_total_gb_decimal": 950.21,
+      "mvp_use": "Context only. The `added` archive is empty, but PSI publishes a 32-row test-day summary table with test type, mesh polarity, fuel bottle, fuel concentration, flames ignited, and notes. Use it for electric-field test context; it contains no per-test flame measurements.",
+      "supports": [
+        "Test-day context for the ACME E-FIELD campaign",
+        "Mesh polarity and fuel-bottle labels as published",
+        "Flame counts per test day",
+        "Notes field for anomalies"
+      ],
+      "does_not_support": [
+        "Per-test flame measurements",
+        "Time-series telemetry",
+        "Flame-spread rate",
+        "Any archive file not exposed by PSI"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-22_Experimental table_ACME E-FIELD Flames.csv",
+          "bytes": 2475,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 32,
+          "physical_rows": 32,
+          "columns": 10,
+          "sha256": "69090c357b83ae38d161d29001d1d32b40fd77b13324ca6585ee990cdceef524"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-22_Experimental table_ACME E-FIELD Flames.csv",
+          "bytes": 2475,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 32,
+          "physical_rows": 32,
+          "columns": 10,
+          "sha256": "69090c357b83ae38d161d29001d1d32b40fd77b13324ca6585ee990cdceef524"
+        }
+      ],
+      "limitations": [
+        "Zero files in the `added` inventory; 950.21 GB is registered but not exposed as an archive.",
+        "The only public tabular artifact is a 32-row test-day summary, not a per-test measurement table.",
+        "Several rows have blank test-type, test-day, date, polarity, or fuel fields; parse per column and preserve blanks.",
+        "The fuel-concentration column mixes numeric percentages with explanatory notes; do not coerce it to a single numeric column without a documented rule.",
+        "25 publications are attached for context; do not infer measurements from them.",
+        "Never synthesize replacement data for the missing archive."
+      ],
+      "access_notes": "`added` list is empty; experimental table downloaded and inspected on 2026-11-08 (HTTP 200, 2,475 bytes)."
+    },
+    {
+      "accession": "PSI-23",
+      "acronym": "ACME s-Flame",
+      "title": "Advanced Combustion via Microgravity Experiments-Structure and Response of Spherical Diffusion Flames",
+      "doi": "10.60555/k57n-p030",
+      "role": "future",
+      "archive_status": "available",
+      "file_count": 4163,
+      "removed_file_count": 6814,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 782172126062.0,
+      "registered_total_gb_decimal": 782.17,
+      "mvp_use": "Future. Large ACME s-Flame archive plus an 18-row test-day summary table. The summary supports campaign context; the archive needs a format audit before ingestion.",
+      "supports": [
+        "Test-day context from the 18-row summary",
+        "Archive inventory for future soot and flame-structure work"
+      ],
+      "does_not_support": [
+        "MVP analysis until the archive format is audited",
+        "Processed flame-spread or soot measurements from the summary alone"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-23_Experimental table_ACME s-Flame.csv",
+          "bytes": 2456,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 18,
+          "physical_rows": 18,
+          "columns": 9,
+          "sha256": "16cd10f50bd2e962887c8eb4077e5a9b3e790c78de8e0361c0b77e19300be7cf"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-23_Experimental table_ACME s-Flame.csv",
+          "bytes": 2456,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 18,
+          "physical_rows": 18,
+          "columns": 9,
+          "sha256": "16cd10f50bd2e962887c8eb4077e5a9b3e790c78de8e0361c0b77e19300be7cf"
+        }
+      ],
+      "limitations": [
+        "4,163 current files and 6,814 removed files; 782.17 GB.",
+        "The public experimental table is an 18-row test-day summary, not a per-test measurement table.",
+        "File formats are dominated by ZIP, TXT, CSV, MDIPSUG, TS, and PDF; a parser and manifest audit are required before archive inclusion.",
+        "Not part of the MVP archive; do not assume the CSV files are analysis-ready."
+      ],
+      "access_notes": "Inventory verified and experimental table downloaded/inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-25",
+      "acronym": "BASS-II",
+      "title": "Burning and Suppression of Solids - II",
+      "doi": "10.60555/4qc4-de67",
+      "role": "supporting",
+      "archive_status": "available",
+      "file_count": 694,
+      "removed_file_count": 131,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 274631106141.0,
+      "registered_total_gb_decimal": 274.63,
+      "mvp_use": "Supporting BASS-II test matrices for material, flow-restrictor, fan/air display, calibrated O2/CO2/CO, radiometer gain, and frame counts. The combined experimental table has 129 rows and 17 columns; the six-sheet workbook has 129 rows and 16 columns. Choose one as canonical, not both.",
+      "supports": [
+        "Material and sample context",
+        "Flow-restrictor and display settings",
+        "Calibrated initial and final O2 and CO2",
+        "CO with OR over-range and -1 sentinel flags",
+        "Video frame counts for archive indexing",
+        "Combined 17-column experimental table"
+      ],
+      "does_not_support": [
+        "Processed flame-spread rate",
+        "Instantaneous air velocity (Air display is a slow-response display reading)",
+        "Calibrated radiometer intensity (gain is uncalibrated)",
+        "Treating the combined CSV and the workbook as independent samples",
+        "Time-series analysis without the video archive"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-25_Science Documents_BASS-II_Test.Matrices.xlsx",
+          "bytes": 28956.0,
+          "in_added": true,
+          "sheets": 6,
+          "data_rows": 129,
+          "columns": 16,
+          "sha256": "1a3b283dd0adec861793bbc4a454aab64d398cd32d6f37d7a1ad0f642879e686"
+        },
+        {
+          "file_name": "PSI-25_Experimental table_BASS-II.csv",
+          "bytes": 16590,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 129,
+          "physical_rows": 129,
+          "columns": 17,
+          "sha256": "71e792bf6b5fb5ea620c5dd70fbbac05515992e12aefcf5dff47312caa48c042"
+        },
+        {
+          "file_name": "PSI-25_Science Documents_BASS-II_ReadMe.docx",
+          "role": "readme",
+          "notes": "Defines flow-restrictor codes, fan display scale, air display units, radiometer gain, and calibrated O2/CO2/CO conventions."
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-25_Experimental table_BASS-II.csv",
+          "bytes": 16590,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 129,
+          "physical_rows": 129,
+          "columns": 17,
+          "sha256": "71e792bf6b5fb5ea620c5dd70fbbac05515992e12aefcf5dff47312caa48c042"
+        }
+      ],
+      "limitations": [
+        "There is no processed flame-spread table. Spread rates would require computer-vision analysis of the MP4/ZIP archive, which is out of MVP scope.",
+        "The test matrix is an XLSX workbook with six PI-specific sheets and inconsistent free-text notes.",
+        "274.63 GB, mostly MP4 and ZIP; the repository must not clone the raw archive.",
+        "Air display is a slow-response duct reading, not an instantaneous velocity measurement.",
+        "Radiometer gain is uncalibrated and useful only for relative intensity.",
+        "The combined experimental table has 17 columns and 129 rows; the six-sheet workbook has 16 columns and inconsistent free-text notes. Choose one as canonical, not both."
+      ],
+      "access_notes": "Test matrices and readme downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-26",
+      "acronym": "BASS",
+      "title": "Burning and Suppression of Solids",
+      "doi": "10.60555/58h4-dy80",
+      "role": "supporting",
+      "archive_status": "available",
+      "file_count": 211,
+      "removed_file_count": 24,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 163551372412.0,
+      "registered_total_gb_decimal": 163.55,
+      "mvp_use": "Supporting BASS test log and as-run matrix for material, flow, oxygen, pressure, CO2, and operator observations. The experimental table is a 122-row, 6-column test log; the as-run matrix is a 130-row, 30-column workbook.",
+      "supports": [
+        "Material and sample context",
+        "As-run O2 percent by volume, pressure in atm, and CO2 in mm Hg",
+        "Flow-restrictor and display settings",
+        "Operator observations and anomalies"
+      ],
+      "does_not_support": [
+        "Processed flame-spread rate",
+        "A clean numeric table without per-column parsing (free text and n/a appear in numeric-looking columns)",
+        "Time-series analysis without the video archive"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-26_Science Documents_As Run_Test Matrix.xlsx",
+          "bytes": 111886.0,
+          "in_added": true,
+          "sheets": 5,
+          "data_rows": 130,
+          "columns": 30,
+          "sha256": "850910541fc9c802d00aa9de14758205103642184249b419c09868df2fbea6e8",
+          "notes": "130 non-empty data rows in the 'as run matrix' sheet; the '2012' and '2013' sheets contain 82 and 48 non-empty rows and must not be added without deduplication."
+        },
+        {
+          "file_name": "PSI-26_Experimental table_BASS.csv",
+          "bytes": 4726,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 122,
+          "columns": 6,
+          "sha256": "ccfc3c54d948b64a1c5d2596a63c7c8019e51df0c91a1d62f039f48fa28c300f",
+          "physical_rows": 122
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-26_Experimental table_BASS.csv",
+          "bytes": 4726,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 122,
+          "columns": 6,
+          "sha256": "ccfc3c54d948b64a1c5d2596a63c7c8019e51df0c91a1d62f039f48fa28c300f",
+          "physical_rows": 122
+        }
+      ],
+      "limitations": [
+        "The experimental table has only six columns: Date, GMT, As Run Test #, Test #, Sample #, and Fuel Sample Material.",
+        "It contains no measured flame behavior, oxygen concentration, pressure, or spread rate.",
+        "163.55 GB, mostly MP4 and ZIP video archives.",
+        "Must not be presented as a quantitative flammability dataset.",
+        "The experimental table has six columns and is a test log, not a measurement table."
+      ],
+      "access_notes": "Experimental table downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-39",
+      "acronym": "CFI",
+      "title": "Cool Flames Investigation",
+      "doi": "10.60555/m6pj-a914",
+      "role": "future",
+      "archive_status": "available",
+      "file_count": 2831,
+      "removed_file_count": 2698,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 718889568684.0,
+      "registered_total_gb_decimal": 718.89,
+      "mvp_use": "Future. CFI droplet archive plus an 87-row test-condition table with flex number, date, pressure, oxygen, nitrogen, helium, fiber, and fuel. The table supports test-condition context; the raw archive still needs a parser and access audit.",
+      "supports": [
+        "Test-condition context from the 87-row table",
+        "Archive inventory for future droplet analysis"
+      ],
+      "does_not_support": [
+        "Processed droplet-combustion results from the summary alone",
+        "MVP analysis until access and format are audited"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-39_Experimental table_CFI.csv",
+          "bytes": 7792,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 87,
+          "physical_rows": 87,
+          "columns": 10,
+          "sha256": "fb898e28762353aa132c16b886dbd207a024b1dd3c9bed5928d70d8036d2ec7e"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-39_Experimental table_CFI.csv",
+          "bytes": 7792,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 87,
+          "physical_rows": 87,
+          "columns": 10,
+          "sha256": "fb898e28762353aa132c16b886dbd207a024b1dd3c9bed5928d70d8036d2ec7e"
+        }
+      ],
+      "limitations": [
+        "The public experimental table is an 87-row test-condition log, not a processed result table.",
+        "2,831 current files and 2,698 removed files; 718.89 GB.",
+        "Some listed raw files return HTTP 404 from the download endpoint (for example, a sampled .metadata file on 2026-11-08).",
+        "Requires a dedicated parser and access audit before archive inclusion."
+      ],
+      "access_notes": "Inventory verified; experimental table downloaded/inspected on 2026-11-08; sample raw download tested."
+    },
+    {
+      "accession": "PSI-47",
+      "acronym": "DAFT / DAFT-2",
+      "title": "Dust and Aerosol Measurement Feasibility Test / Dust and Aerosol Measurement Feasibility Test-2",
+      "doi": "10.60555/ztgj-d202",
+      "role": "context",
+      "archive_status": "available",
+      "file_count": 32,
+      "removed_file_count": 185,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 41765333.0,
+      "registered_total_gb_decimal": 0.04,
+      "mvp_use": "Context only. DAFT/DAFT-2 documents and a 2-row session table; not a flame-spread dataset.",
+      "supports": [
+        "Background on dust and aerosol measurement feasibility",
+        "P-Trak instrument context for SAME/SAME-R"
+      ],
+      "does_not_support": [
+        "Combustion flame-spread analysis",
+        "Quantitative comparison with flame data"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-47_Experimental table_DAFT.csv",
+          "bytes": 518,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 2,
+          "physical_rows": 2,
+          "columns": 5,
+          "sha256": "d9d1a436c6e7bbc410b433e04575fe7dedaff763b5237d688089929b7393b5c0"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-47_Experimental table_DAFT.csv",
+          "bytes": 518,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 2,
+          "physical_rows": 2,
+          "columns": 5,
+          "sha256": "d9d1a436c6e7bbc410b433e04575fe7dedaff763b5237d688089929b7393b5c0"
+        }
+      ],
+      "limitations": [
+        "32 files, 0.04 GB; mostly documents and presentations.",
+        "The experimental table has only 2 session rows and no combustion measurements.",
+        "It is not a combustion-measurement dataset and should not be merged with flame data.",
+        "Use only as methodological context for smoke instrumentation."
+      ],
+      "access_notes": "Inventory and experimental table verified on 2026-11-08."
+    },
+    {
+      "accession": "PSI-60",
+      "acronym": "",
+      "title": "Computational and Experimental Analysis of SPICE Data Sets",
+      "doi": "10.60555/mzjm-yv57",
+      "role": "context",
+      "archive_status": "available",
+      "file_count": 1,
+      "removed_file_count": 0,
+      "experimental_table_count": 0,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 7743,
+      "registered_total_gb_decimal": 0.0,
+      "mvp_use": "Context only. Ground-based computational and experimental analysis of SPICE data sets; one metadata ZIP.",
+      "supports": [
+        "Background on SPICE modeling"
+      ],
+      "does_not_support": [
+        "Direct measurement analysis"
+      ],
+      "documented_artifacts": [],
+      "experimental_tables": [],
+      "limitations": [
+        "One file, approximately 7.7 KB; ground investigation.",
+        "Not a microgravity measurement and must not be labeled as ISS data.",
+        "Use only as secondary interpretation context."
+      ],
+      "access_notes": "Metadata package downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-62",
+      "acronym": "",
+      "title": "Concurrent Flame Spread Modeling using Flamelet Generated Manifolds in Microgravity with Comparison to BASS Experiments using Two-Color Tomography",
+      "doi": "10.60555/e9xp-ex83",
+      "role": "context",
+      "archive_status": "available",
+      "file_count": 1,
+      "removed_file_count": 0,
+      "experimental_table_count": 0,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 9694,
+      "registered_total_gb_decimal": 0.0,
+      "mvp_use": "Context only. Ground-based flame-spread modeling with flamelet generated manifolds and BASS comparison; one metadata ZIP.",
+      "supports": [
+        "Modeling context for BASS flame spread"
+      ],
+      "does_not_support": [
+        "A processed measurement table"
+      ],
+      "documented_artifacts": [],
+      "experimental_tables": [],
+      "limitations": [
+        "One file, approximately 9.7 KB; ground investigation.",
+        "Contains no new experimental measurements.",
+        "Use only as modeling context."
+      ],
+      "access_notes": "Metadata package downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-68",
+      "acronym": "FLEX-2",
+      "title": "Flame Extinguishment Experiment - 2",
+      "doi": "10.60555/byp8-h018",
+      "role": "context",
+      "archive_status": "experimental_table_only",
+      "file_count": 0,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 1224752113090.0,
+      "registered_total_gb_decimal": 1224.75,
+      "mvp_use": "Context only. The `added` archive is empty, but PSI publishes an 8-row test-condition range table listing fuel types, droplet diameters, ambient gas mixtures, oxygen mole fractions, pressures, temperatures, and flow velocities. Ranges are not measurements.",
+      "supports": [
+        "Experiment condition ranges as published",
+        "Fuel and ambient-gas context for FLEX-2"
+      ],
+      "does_not_support": [
+        "Per-test measurements",
+        "Means or distributions computed from ranges",
+        "Flame-spread rate"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-68_Experimental table_Flex2.csv",
+          "bytes": 1029,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 8,
+          "physical_rows": 8,
+          "columns": 7,
+          "sha256": "cc57ad1bd9977aa13e7ac6c3aa618303012686e232b36c052c6a9f1a74e5f528"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-68_Experimental table_Flex2.csv",
+          "bytes": 1029,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 8,
+          "physical_rows": 8,
+          "columns": 7,
+          "sha256": "cc57ad1bd9977aa13e7ac6c3aa618303012686e232b36c052c6a9f1a74e5f528"
+        }
+      ],
+      "limitations": [
+        "Zero files in the `added` inventory; 1,224.75 GB is registered but not exposed as an archive.",
+        "The only public tabular artifact is an 8-row condition-range table with semicolon-separated ranges, not per-test measurements.",
+        "Ranges are not measurements; do not compute means or compare them as data points.",
+        "The oxygen and pressure fields contain multiple semicolon-separated values; preserve them as text unless a documented expansion rule exists.",
+        "48 publications are attached for context; do not infer measurements from them.",
+        "Never synthesize replacement data for the missing archive."
+      ],
+      "access_notes": "`added` list is empty; experimental table downloaded and inspected on 2026-11-08 (HTTP 200, 1,029 bytes)."
+    },
+    {
+      "accession": "PSI-69",
+      "acronym": "FLEX",
+      "title": "Flame Extinguishment Experiment",
+      "doi": "10.60555/mbq8-0451",
+      "role": "supporting",
+      "archive_status": "experimental_table_only",
+      "file_count": 0,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 923832535657.0,
+      "registered_total_gb_decimal": 923.83,
+      "mvp_use": "Supporting. The `added` archive is empty, but PSI publishes a 274-row droplet-combustion summary table with fuel, ambient pressure and composition, initial droplet diameter, visible flame extinction diameter, burning rate, burn time, and test end. Supports droplet-combustion context; it is not a flame-spread dataset.",
+      "supports": [
+        "274-row droplet-combustion summary",
+        "Fuel and ambient-condition context",
+        "Burning rate, burn time, and extinction diameter as published",
+        "Comparison context for droplet and gas-flame behavior"
+      ],
+      "does_not_support": [
+        "Flame-spread rate",
+        "Raw time series or video",
+        "Relabeling `Burning rate; mm` as mm/s without source confirmation",
+        "Merging mmHg pressure with atm pressure without conversion"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-69_Experimental table_FLEX.csv",
+          "bytes": 24776,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 274,
+          "physical_rows": 274,
+          "columns": 15,
+          "sha256": "37c88ce8ae9391b7544ff630a45ce87543d04d317cdbfbed104fe7d5c27e1b96"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-69_Experimental table_FLEX.csv",
+          "bytes": 24776,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 274,
+          "physical_rows": 274,
+          "columns": 15,
+          "sha256": "37c88ce8ae9391b7544ff630a45ce87543d04d317cdbfbed104fe7d5c27e1b96"
+        }
+      ],
+      "limitations": [
+        "Zero files in the `added` inventory; 923.83 GB is registered but not exposed as an archive.",
+        "The public table is a 274-row summary, not raw time series or video.",
+        "The `Burning rate; mm` header states mm, not mm/s; do not relabel it as a rate unit without source confirmation.",
+        "The table is droplet combustion, not flame spread; do not use it as a spread-rate dataset.",
+        "Ambient pressure is in mmHg and ambient composition is in mole fraction; do not merge these with atm or percent fields from other datasets.",
+        "51 publications are attached for context; do not infer measurements from them.",
+        "Never synthesize replacement data for the missing archive."
+      ],
+      "access_notes": "`added` list is empty; experimental table downloaded and inspected on 2026-11-08 (HTTP 200, 24,776 bytes)."
+    },
+    {
+      "accession": "PSI-98",
+      "acronym": "SAFFIRE-I",
+      "title": "Spacecraft Fire Safety Experiment-I",
+      "doi": "10.60555/0t15-1z43",
+      "role": "supporting",
+      "archive_status": "available",
+      "file_count": 74,
+      "removed_file_count": 85,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 12250600201.0,
+      "registered_total_gb_decimal": 12.25,
+      "mvp_use": "Supporting SAFFIRE-I record for spacecraft fire-safety context, a 4-row sample summary, and image-set documentation. The two telemetry XLSX files listed in the public inventory return HTTP 404.",
+      "supports": [
+        "Mission and experiment context",
+        "4-row sample summary (S1, S2, F1, F2)",
+        "Image sets for SAFFIRE-I, subject to archive access",
+        "Readme and publications"
+      ],
+      "does_not_support": [
+        "Telemetry analysis from the listed XLSX files (HTTP 404)",
+        "Flame-spread rate without image processing"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-98_Experimental table_SAFFIRE-1.csv",
+          "bytes": 469,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 4,
+          "physical_rows": 4,
+          "columns": 13,
+          "sha256": "c01f29c62455f0a3b512290ab85e5687ecded326733189f002f580368402308d"
+        },
+        {
+          "file_name": "PSI-98_Science Documents_SAFFIRE-I and SAFFIRE-III Readme.docx",
+          "role": "readme",
+          "notes": "Describes SAFFIRE-I and SAFFIRE-III objectives, SIBAL cloth, flow velocity, and image-set organization."
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-98_Experimental table_SAFFIRE-1.csv",
+          "bytes": 469,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 4,
+          "physical_rows": 4,
+          "columns": 13,
+          "sha256": "c01f29c62455f0a3b512290ab85e5687ecded326733189f002f580368402308d"
+        }
+      ],
+      "limitations": [
+        "The two telemetry XLSX files listed in the public inventory return HTTP 404 from the PSI download endpoint as of 2026-11-08.",
+        "The sensor-data XLSX files are also 404, so SAFFIRE-I telemetry cannot be treated as ingested.",
+        "The public experimental table is a 4-row sample summary (S1, S2, F1, F2), not telemetry.",
+        "Image ZIPs and documents are available, but image-derived spread rates are not in the MVP.",
+        "12.25 GB; 74 current files and 85 removed files."
+      ],
+      "access_notes": "Telemetry and sensor XLSX downloads tested and returned HTTP 404 on 2026-11-08; experimental table downloaded/inspected (HTTP 200, 469 bytes)."
+    },
+    {
+      "accession": "PSI-99",
+      "acronym": "SAFFIRE-II",
+      "title": "Spacecraft Fire Experiment-II",
+      "doi": "10.60555/2chp-m469",
+      "role": "context",
+      "archive_status": "experimental_table_only",
+      "file_count": 0,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 16931016137.0,
+      "registered_total_gb_decimal": 16.93,
+      "mvp_use": "Context only. The `added` archive is empty, but PSI publishes a 15-row sample summary table with material, thickness, flow, oxygen, ignition, burn time, flow direction, 1-g burn length, 1-g spread rate, and camera identifiers. The 1-g spread rate is normal gravity; microgravity columns are incomplete.",
+      "supports": [
+        "Sample and material context for SAFFIRE-II",
+        "1-g comparison values as published",
+        "Camera identifiers"
+      ],
+      "does_not_support": [
+        "Microgravity spread rate from the incomplete columns",
+        "Treating `1-g Spread Rate` as microgravity data",
+        "Raw telemetry or video"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-99_Experimental table_SAFFIRE-2.csv",
+          "bytes": 1973,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 15,
+          "physical_rows": 15,
+          "columns": 17,
+          "sha256": "3c24390b9ef86f3d1ebaab911a1a3cc95a8759aebf42062371370e6d4b31b8ac"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-99_Experimental table_SAFFIRE-2.csv",
+          "bytes": 1973,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 15,
+          "physical_rows": 15,
+          "columns": 17,
+          "sha256": "3c24390b9ef86f3d1ebaab911a1a3cc95a8759aebf42062371370e6d4b31b8ac"
+        }
+      ],
+      "limitations": [
+        "Zero files in the `added` inventory; 16.93 GB is registered but not exposed as an archive.",
+        "The public table is a 15-row sample summary, not raw telemetry or video.",
+        "The `1-g Spread Rate` column is normal-gravity data, not microgravity spread.",
+        "The `?-g Burn Length` and `?-g Spread Length` headers contain a literal question mark in the source (0x3f), likely a lost micro sign; preserve the raw header and do not invent a replacement label.",
+        "Several rows use `n/a`, `~ 0`, and free text in numeric-looking columns.",
+        "7 publications are attached for context; do not infer measurements from them.",
+        "Never synthesize replacement data for the missing archive."
+      ],
+      "access_notes": "`added` list is empty; experimental table downloaded and inspected on 2026-11-08 (HTTP 200, 1,973 bytes)."
+    },
+    {
+      "accession": "PSI-100",
+      "acronym": "SAFFIRE-III",
+      "title": "Spacecraft Fire Experiment-III",
+      "doi": "10.60555/040q-4h36",
+      "role": "primary",
+      "archive_status": "available",
+      "file_count": 85,
+      "removed_file_count": 97,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 35210765052.0,
+      "registered_total_gb_decimal": 35.21,
+      "mvp_use": "Primary SAFFIRE-III telemetry for time-series analysis of the spacecraft fire environment: radiometers, anemometers, igniters, air temperature, pressures, smoke detectors, fan differential pressure, body rates, and accelerations. A 2-row sample summary records the SIBAL fabric samples and camera identifiers.",
+      "supports": [
+        "1 Hz telemetry channels",
+        "Smoke-detector obscuration and scatter voltages",
+        "PCM pressure and temperature",
+        "Igniter voltage and current",
+        "Attitude and acceleration context",
+        "Separate raw, cleaned, and XLSX exports",
+        "2-row sample summary with SIBAL fabric and camera identifiers"
+      ],
+      "does_not_support": [
+        "Processed flame-spread rate",
+        "Calibrated physical concentrations from raw voltages without calibration documentation",
+        "Concatenation of the three exports without timestamp reconciliation",
+        "Causal claims about material flammability"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-100_Raw Data_Saffire_Data_Table2017.161.00.42.03-EU.csv",
+          "bytes": 5230949.0,
+          "in_added": true,
+          "data_rows": 11450,
+          "valid_rows": 11449,
+          "sentinel_rows": 1,
+          "columns": 47,
+          "sha256": "71f8d11a2e040c22924b1c6320384cdcf58e945fe66c993876c44158bf6f57c5",
+          "notes": "The single sentinel row has RelativeSeconds = -63632288338155."
+        },
+        {
+          "file_name": "PSI-100_Raw Data_Raw telemetry file.csv",
+          "bytes": 1656916.0,
+          "in_added": true,
+          "data_rows": 3972,
+          "valid_rows": 3966,
+          "sentinel_rows": 6,
+          "columns": 47,
+          "sha256": "dfb204ce3bdf8b1749652549afcbad31d180902bc268dfbe782c70fa38d170a2",
+          "notes": "Six rows have negative RelativeSeconds values; one is a large sentinel footer (-63632300000000). Preserve and flag, do not silently coerce."
+        },
+        {
+          "file_name": "PSI-100_Experimental table_SAFFIRE-3.csv",
+          "bytes": 239,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 2,
+          "physical_rows": 2,
+          "columns": 9,
+          "sha256": "4d3c717ec20dd0247db670b2784a9fd7d746788bc54a936f80693e48eb8cd117"
+        },
+        {
+          "file_name": "PSI-100_Science Documents_SAFFIRE-I and SAFFIRE-III Readme.docx",
+          "role": "readme",
+          "notes": "Describes SAFFIRE-I and SAFFIRE-III objectives, SIBAL cloth, flow velocity, and image-set organization."
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-100_Experimental table_SAFFIRE-3.csv",
+          "bytes": 239,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 2,
+          "physical_rows": 2,
+          "columns": 9,
+          "sha256": "4d3c717ec20dd0247db670b2784a9fd7d746788bc54a936f80693e48eb8cd117"
+        }
+      ],
+      "limitations": [
+        "Telemetry is engineering sensor data, not a processed flame-spread rate. Image-derived spread rates require separate processing.",
+        "The raw telemetry CSV has 3,972 physical rows, of which 3,966 have a non-negative RelativeSeconds value; the remaining rows are sentinel or pre-trigger values. The 1 Hz XLSX RawData sheet has 73,462 physical rows but only 11,449 contain data; the rest are empty formatting rows. The cleaned Saffire_Data_Table CSV has 11,450 physical rows and 11,449 valid rows. These are different exports and must not be concatenated without timestamp reconciliation.",
+        "Units are embedded in headers and are inconsistent: pressure channels include psi and psi/K, temperatures include degC, and body rates/accelerations use rad/s and m/s^2.",
+        "Some sensor channels are raw voltages or uncalibrated values; do not present them as physical concentrations without calibration documentation.",
+        "85 current files and 97 removed files; 35.21 GB. Sample images are delivered as ZIP archives.",
+        "The experimental table is a 2-row sample summary, not telemetry."
+      ],
+      "access_notes": "Telemetry CSV, 1 Hz XLSX, and metadata downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-101",
+      "acronym": "SAME-R",
+      "title": "Smoke Aerosol Measurement Experiment-Reflight",
+      "doi": "10.60555/2np7-jv14",
+      "role": "primary",
+      "archive_status": "available",
+      "file_count": 342,
+      "removed_file_count": 379,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 6308124750.0,
+      "registered_total_gb_decimal": 6.31,
+      "mvp_use": "Primary SAME-R smoke and aerosol housekeeping data for detector response, particle counts, and test-state context, plus a 109-row sample/test table with material, inlet velocity, Rt/R0, duration, and aging times.",
+      "supports": [
+        "98-channel HKP telemetry for SAME-R runs",
+        "P-Trak and DustTrak aerosol channels",
+        "ISS and STS detector voltages",
+        "Gas plume temperature and sample resistance",
+        "Test, sample, and carousel identifiers",
+        "109-row sample/test log"
+      ],
+      "does_not_support": [
+        "Flame-spread rate",
+        "Material identity from the HKP CSV alone (join test logs)",
+        "P-Trak -999 as a concentration",
+        "DustTrakA all-zero as a measured zero",
+        "Detector voltage as obscuration percentage without calibration"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-101_Raw Data_HKPData_gmt250_1.csv",
+          "bytes": 222568.0,
+          "in_added": true,
+          "data_rows": 558,
+          "columns": 98,
+          "sha256": "69c25a566b6af6b43fb263ceadad82499b6e18e69e5fdad928e8088124ee43a3",
+          "notes": "Representative run only; the record contains many HKP CSV files."
+        },
+        {
+          "file_name": "PSI-101_Analyzed Data_SAME, SAME-R_Results.xlsx",
+          "bytes": 4061669.0,
+          "in_added": true,
+          "sheets": 43,
+          "sha256": "6d3a539ccf425b1fa8edc19cc75d828f57d650c7ce734d4e7aa686fea9593218",
+          "notes": "43-sheet results workbook with inconsistent sheet names; sheet-level validation required."
+        },
+        {
+          "file_name": "PSI-101_Experimental table_SAME-R.csv",
+          "bytes": 5674,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 109,
+          "physical_rows": 109,
+          "columns": 10,
+          "sha256": "87164b7dc9168a4273c159f7a9f23699afbd06ad97b77974377e79b9bf8a3bef"
+        },
+        {
+          "file_name": "PSI-101_Reports_SAME-R_Final Report.pdf",
+          "role": "report",
+          "notes": "SAME-R final report; not a processed table."
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-101_Experimental table_SAME-R.csv",
+          "bytes": 5674,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 109,
+          "physical_rows": 109,
+          "columns": 10,
+          "sha256": "87164b7dc9168a4273c159f7a9f23699afbd06ad97b77974377e79b9bf8a3bef"
+        }
+      ],
+      "limitations": [
+        "One CSV per run; run metadata and test logs are in separate XLS/XLSX files.",
+        "Many columns are device states, solenoid commands, or power flags rather than physical measurements.",
+        "Column names encode units; preserve them and do not strip unit text.",
+        "Legacy .xls analyzed files require a converter or xlrd; they are not all CSV.",
+        "No flame-spread measurements; this is a smoke-aerosol and detector dataset.",
+        "342 current files and 379 removed files; 6.31 GB.",
+        "The experimental table is a 109-row sample/test log, not the 98-channel HKP telemetry."
+      ],
+      "access_notes": "HKP CSV and results workbook downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-102",
+      "acronym": "SAME",
+      "title": "Smoke and Aerosol Measurement Experiment",
+      "doi": "10.60555/gd4k-8h62",
+      "role": "supporting",
+      "archive_status": "available",
+      "file_count": 104,
+      "removed_file_count": 52,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 657608178.0,
+      "registered_total_gb_decimal": 0.66,
+      "mvp_use": "Supporting SAME record for earlier smoke and aerosol analyzed workbooks and test logs, plus an 8-row sample table with material, air flow, weight-loss rate, and aging duration.",
+      "supports": [
+        "Background and comparison context for SAME-R",
+        "Analyzed workbooks and test logs in legacy .xls and .xlsx formats",
+        "8-row sample summary"
+      ],
+      "does_not_support": [
+        "Flame-spread rate",
+        "A single standardized table across runs"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-102_Experimental table_SAME.csv",
+          "bytes": 331,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 8,
+          "physical_rows": 8,
+          "columns": 5,
+          "sha256": "268d1e121d2f211b124407dd32b9475617bd269ede2c2d1749441da3e949a2af"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-102_Experimental table_SAME.csv",
+          "bytes": 331,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 8,
+          "physical_rows": 8,
+          "columns": 5,
+          "sha256": "268d1e121d2f211b124407dd32b9475617bd269ede2c2d1749441da3e949a2af"
+        }
+      ],
+      "limitations": [
+        "Legacy .xls binaries; the results workbook has 43 sheets with inconsistent naming.",
+        "No raw HKP CSV series comparable to SAME-R; the analyzed workbooks are the primary tabular artifacts.",
+        "104 current files and 52 removed files; 0.66 GB.",
+        "Requires sheet-level validation before loading into the canonical schema.",
+        "The experimental table has 8 sample rows; the analyzed workbooks remain the primary artifacts."
+      ],
+      "access_notes": "Inventory and metadata package inspected on 2026-11-08; analyzed workbooks not fully parsed."
+    },
+    {
+      "accession": "PSI-106",
+      "acronym": "SLICE",
+      "title": "Structure and Liftoff In Combustion Experiment",
+      "doi": "10.60555/pm12-rg61",
+      "role": "future",
+      "archive_status": "available",
+      "file_count": 1,
+      "removed_file_count": 0,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 72914598688.0,
+      "registered_total_gb_decimal": 72.91,
+      "mvp_use": "Future. SLICE exposes one 12-row, 2-column experimental table with test date and fuel type; no measured variables.",
+      "supports": [
+        "Test dates and fuel types as published"
+      ],
+      "does_not_support": [
+        "Quantitative analysis",
+        "Flame liftoff measurements from the summary alone"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-106_Experimental table_Slice.csv",
+          "bytes": 734,
+          "in_added": true,
+          "data_rows": 12,
+          "columns": 2,
+          "sha256": "89ef980810ca6d9aa8be817b42e36cd2adff23f5e9058361b5a33d18b4363f4d",
+          "physical_rows": 12
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-106_Experimental table_Slice.csv",
+          "bytes": 734,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 12,
+          "columns": 2,
+          "sha256": "89ef980810ca6d9aa8be817b42e36cd2adff23f5e9058361b5a33d18b4363f4d",
+          "physical_rows": 12
+        }
+      ],
+      "limitations": [
+        "The only experimental table has 12 data rows and 2 columns: Test Date and Fuel Type.",
+        "No measured variables are present in the table.",
+        "72.91 GB is registered, but only one file is exposed.",
+        "Cannot support quantitative analysis without additional data."
+      ],
+      "access_notes": "Experimental table downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-107",
+      "acronym": "SPICE",
+      "title": "Smoke Point In Co-flow Experiment",
+      "doi": "10.60555/9kbh-e962",
+      "role": "future",
+      "archive_status": "available",
+      "file_count": 186,
+      "removed_file_count": 216,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 1,
+      "registered_total_bytes": 6946864573.0,
+      "registered_total_gb_decimal": 6.95,
+      "mvp_use": "Future. SPICE provides a 469-row flame-length and airflow table plus raw flame-length, smoke-point, airflow-calibration, and fuel-flow files. The summary supports soot-point context; the raw files need a format audit.",
+      "supports": [
+        "469-row flame-length and airflow table",
+        "Raw calibration and smoke-point files for future analysis"
+      ],
+      "does_not_support": [
+        "MVP analysis until the XLS/XLSX files are audited",
+        "A processed smoke-point result table"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-107_Experimental table_Spice.csv",
+          "bytes": 31205,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 469,
+          "physical_rows": 469,
+          "columns": 9,
+          "sha256": "fb0d7e60cf5367afb429089e9901d27288f78038efd26c8de1db4fbe04117136"
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-107_Experimental table_Spice.csv",
+          "bytes": 31205,
+          "in_added": false,
+          "restricted": false,
+          "data_rows": 469,
+          "physical_rows": 469,
+          "columns": 9,
+          "sha256": "fb0d7e60cf5367afb429089e9901d27288f78038efd26c8de1db4fbe04117136"
+        }
+      ],
+      "limitations": [
+        "The public experimental table has 469 rows of flame-length and airflow data; no processed smoke-point result table was identified.",
+        "186 files, mostly XLS/XLSX, require a format audit and calibration-metadata review.",
+        "6.95 GB; 216 removed files.",
+        "Not part of the MVP."
+      ],
+      "access_notes": "Inventory verified and experimental table downloaded/inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-115",
+      "acronym": "",
+      "title": "Utilization of the Smoke Aerosol Measurement Experiment Data for Advanced Modeling and Simulation of Smoke Generation in Micro-Gravity",
+      "doi": "10.60555/q0v5-1v28",
+      "role": "context",
+      "archive_status": "available",
+      "file_count": 47,
+      "removed_file_count": 38,
+      "experimental_table_count": 0,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 264404901.0,
+      "registered_total_gb_decimal": 0.26,
+      "mvp_use": "Context only. Ground-based modeling and simulation of smoke generation using SAME data.",
+      "supports": [
+        "Background on SAME smoke modeling"
+      ],
+      "does_not_support": [
+        "Direct measurement analysis"
+      ],
+      "documented_artifacts": [],
+      "experimental_tables": [],
+      "limitations": [
+        "47 files, 0.26 GB; ground investigation.",
+        "No publications are attached to the PSI record.",
+        "Simulation output is not a microgravity measurement and must be labeled as model context."
+      ],
+      "access_notes": "Metadata package inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-117",
+      "acronym": "",
+      "title": "Effect of External Thermo-Convective Perturbation on Cool Flame Dynamics: A Multidimensional Multi-Physics CFD Analysis",
+      "doi": "10.60555/gz0q-b577",
+      "role": "context",
+      "archive_status": "available",
+      "file_count": 15,
+      "removed_file_count": 0,
+      "experimental_table_count": 0,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 70820870,
+      "registered_total_gb_decimal": 0.07,
+      "mvp_use": "Context only. Ground-based CFD analysis of cool-flame dynamics under thermo-convective perturbation.",
+      "supports": [
+        "Modeling context for cool-flame behavior"
+      ],
+      "does_not_support": [
+        "Direct measurement analysis"
+      ],
+      "documented_artifacts": [],
+      "experimental_tables": [],
+      "limitations": [
+        "15 files, 0.07 GB; ground investigation.",
+        "Analyzed CSV files are small and publication-specific, not a unified experiment table.",
+        "Must not be labeled as ISS microgravity data."
+      ],
+      "access_notes": "Inventory verified on 2026-11-08."
+    },
+    {
+      "accession": "PSI-142",
+      "acronym": "",
+      "title": "Quantitative Studies of Cool Flame Transitions at Radiation / Stretch Extinction Using Counterflow Flames",
+      "doi": "10.60555/80qf-vj95",
+      "role": "context",
+      "archive_status": "available",
+      "file_count": 2,
+      "removed_file_count": 3,
+      "experimental_table_count": 1,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 748117.0,
+      "registered_total_gb_decimal": 0.0,
+      "mvp_use": "Context only. Eight-row data index linking figures to a reference publication; not a measurement table.",
+      "supports": [
+        "Bibliography and figure index"
+      ],
+      "does_not_support": [
+        "Measurement analysis"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-142_Experimental table_Data Summary Table.csv",
+          "bytes": 727,
+          "in_added": true,
+          "data_rows": 8,
+          "columns": 4,
+          "sha256": "c66d135b0053590d239f06b9e8627d826e3d726b8443fd2cbccc37484b6a8e7f",
+          "physical_rows": 8
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-142_Experimental table_Data Summary Table.csv",
+          "bytes": 727,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 8,
+          "columns": 4,
+          "sha256": "c66d135b0053590d239f06b9e8627d826e3d726b8443fd2cbccc37484b6a8e7f",
+          "physical_rows": 8
+        }
+      ],
+      "limitations": [
+        "The 'experimental table' is an 8-row index with Data ID, Data Description, Reference Publication Link, and Figure ID; it contains no measurements.",
+        "2 files, 0.75 MB.",
+        "Use only as a bibliography/figure index."
+      ],
+      "access_notes": "Experimental-table CSV downloaded and inspected on 2026-11-08."
+    },
+    {
+      "accession": "PSI-159",
+      "acronym": "ACME CFI-G",
+      "title": "Advanced Combustion via Microgravity Experiments / Cool Flames Investigation with Gases",
+      "doi": "10.60555/cyt1-kh64",
+      "role": "primary",
+      "archive_status": "available",
+      "file_count": 3756,
+      "removed_file_count": 0,
+      "experimental_table_count": 2,
+      "experimental_table_only_count": 0,
+      "registered_total_bytes": 2085592429259,
+      "registered_total_gb_decimal": 2085.59,
+      "mvp_use": "Primary gas-flame test table for cool flames, hot ignition, extinction mode, burn time, peak burner temperature, oxygen, pressure, and computed adiabatic flame temperature.",
+      "supports": [
+        "Normal and inverse flame configurations",
+        "Ethane, propane, and butane blends",
+        "Hot ignition outcomes",
+        "Cool-flame flag with PCI stage text",
+        "Extinction mode (SE or FT)",
+        "Measured peak burner temperature in C and K",
+        "Computed Tad and Zst",
+        "TFP categorical flag"
+      ],
+      "does_not_support": [
+        "TFP as a temperature",
+        "Merging the C and K peak burner columns without a documented conversion",
+        "Treating blank Cool flame? as no",
+        "Flame-spread rate",
+        "Time-series telemetry"
+      ],
+      "documented_artifacts": [
+        {
+          "file_name": "PSI-159_Experimental table_CFI-G_Normal Flames.csv",
+          "bytes": 22166,
+          "in_added": true,
+          "data_rows": 179,
+          "columns": 18,
+          "sha256": "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a",
+          "physical_rows": 179
+        },
+        {
+          "file_name": "PSI-159_Experimental table_CFI-G_Inverse Flames.csv",
+          "bytes": 39422,
+          "in_added": true,
+          "data_rows": 154,
+          "columns": 20,
+          "sha256": "d4d44f8b9896936728748e34d1b6ad0812032a92fa5289599b708c138e3a9b39",
+          "notes": "The CSV has 1,015 physical rows, but 861 are entirely blank; 154 contain data.",
+          "physical_rows": 1015
+        }
+      ],
+      "experimental_tables": [
+        {
+          "file_name": "PSI-159_Experimental table_CFI-G_Normal Flames.csv",
+          "bytes": 22166,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 179,
+          "columns": 18,
+          "sha256": "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a",
+          "physical_rows": 179
+        },
+        {
+          "file_name": "PSI-159_Experimental table_CFI-G_Inverse Flames.csv",
+          "bytes": 39422,
+          "in_added": true,
+          "restricted": false,
+          "data_rows": 154,
+          "columns": 20,
+          "sha256": "d4d44f8b9896936728748e34d1b6ad0812032a92fa5289599b708c138e3a9b39",
+          "notes": "The CSV has 1,015 physical rows, but 861 are entirely blank; 154 contain data.",
+          "physical_rows": 1015
+        }
+      ],
+      "limitations": [
+        "The inverse CSV contains 861 trailing blank rows; 154 rows contain data. Drop all-empty rows and report the valid count.",
+        "The Cool flame? column is blank in 171 of 179 normal-flame rows; blank must not be interpreted as 'no cool flame'.",
+        "TFP is a categorical Yes/No field, not a numeric temperature; the source header does not expand the acronym.",
+        "The normal-flame table contains #DIV/0! in Tad (K) and Zst for 2 rows; the inverse table contains #VALUE! in Peak burner temp (K) for 2 rows. Preserve these as invalid values, not zeros.",
+        "A hyphen ('-') appears in Peak burner temperature, Self-ext/flow-term, and Color columns; it is a source sentinel, not a measured zero.",
+        "Peak burner temperature appears as both C and K in the inverse table; do not merge the columns.",
+        "Some column labels have leading/trailing spaces and inconsistent hyphenation (for example, 'Self -ext or flow term').",
+        "The summary tables are small; the 2.09 TB raw archive is not ingested in the MVP.",
+        "Tad (K) is a computed adiabatic flame temperature, not a measured temperature."
+      ],
+      "access_notes": "Both experimental tables and the ISA-Tab metadata package downloaded and inspected on 2026-11-08."
+    }
+  ]
+}
