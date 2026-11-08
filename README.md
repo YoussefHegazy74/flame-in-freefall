@@ -7,7 +7,7 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository is currently at **Milestone 0: scientific foundation and metadata registry**. It contains verified source documentation, a reproducible metadata collector, a machine-readable inventory, and the target architecture and API contract. It does **not** yet contain a running API, frontend, or assistant, and it does not claim results that have not been computed from source data.
+This repository is currently at **Phase 1: NASA data acquisition, validation, parsing, and canonical Parquet outputs**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, and 150 passing tests. It does **not** yet contain a running API, frontend, or assistant, and it does not claim results that have not been computed from source data.
 
 ---
 
@@ -35,6 +35,48 @@ PSI exposes two different public file lists: `added` (the archive inventory) and
 - PSI-99 — SAFFIRE-II: 15-row sample summary (1-g comparisons only)
 
 No record in the 24-record collection is `no_public_files`. Some files that are listed in the `added` inventory still return HTTP 404 on download. Those are recorded as `listed_404` limitations. They are not silently replaced.
+
+---
+
+## Phase 1 results (2026-11-09)
+
+The pipeline acquired only the curated selection. It never downloaded the full ~13.5 TB PSI archive.
+
+| Acquisition check | Result |
+|---|---:|
+| Selected files | 72 |
+| Expected bytes | 56,238,344 |
+| Downloaded | 70 |
+| Already present and verified | 2 |
+| Failed | 0 |
+| Bytes downloaded | 56,194,097 |
+| Checksums verified | 72 / 72 |
+| Known 404s re-verified | 2 |
+| Duplicate checksum groups | 0 |
+
+Parsing produced 57 interim outputs from 79 parse sources across the 72 selected files. The five SAFFIRE-III telemetry exports/sheets and 44 SAME-R HKP CSVs are separate runs; they are never concatenated. The canonical build produced 13 Parquet tables with **8,058,206 rows** and **82,953,195 bytes**, identified by dataset version:
+
+```text
+2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb
+```
+
+| Canonical table | Rows |
+|---|---:|
+| `psi_investigation` | 24 |
+| `psi_file` | 16,354 |
+| `experimental_table` | 22 |
+| `gas_flame_test` | 660 |
+| `telemetry_run` | 5 |
+| `telemetry_point` | 1,762,436 |
+| `smoke_run` | 44 |
+| `smoke_point` | 6,251,427 |
+| `smoke_test_log` | 119 |
+| `material_test` | 259 |
+| `droplet_test` | 274 |
+| `experimental_table_cell` | 24,573 |
+| `source_row` | 2,009 |
+
+Acquisition validation passed for 72 of 72 selected files. Canonical validation passed all 13 table checks with 0 failures. The quality report records 6 issues: 0 errors, 5 warnings, and 1 informational note. The test suite passes **150 tests**: 136 unit tests and 14 integration tests.
 
 ---
 
@@ -71,57 +113,108 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 ├── DATA_DICTIONARY.md                Exact headers, units, sentinels, canonical schema
 ├── API_DOCUMENTATION.md              Target read-only API contract (not implemented yet)
 ├── CONTRIBUTING.md                   Contribution workflow and review rules
+├── requirements.txt                  Pinned Phase 1 runtime and test dependencies
+├── pytest.ini                        Test configuration and integration marker
 ├── .env.example                      Placeholder environment variables only
 ├── .gitignore                        Excludes raw data, secrets, and build artifacts
 ├── data/
 │   ├── registry/
 │   │   ├── annotations.json          Curated roles, rationales, limitations, checksums
+│   │   ├── canonical_schema.json     Implemented Arrow schema for 13 canonical tables
+│   │   ├── download_manifest.json    Curated 72-file acquisition selection
+│   │   ├── experimental_table_schemas.json  Exact headers and row counts for 22 tables
 │   │   ├── mvp_dataset_catalog.json  Machine-readable MVP selection
 │   │   ├── psi_combustion_investigations.json
 │   │   ├── psi_experimental_tables.csv  22-row experimental-table manifest
 │   │   ├── psi_file_inventory.csv    16,354-row `added` file manifest
 │   │   └── README.md                 Registry file guide
-│   └── fixtures/                     Small real-header fixtures (added in Phase 1)
+│   ├── manifests/
+│   │   └── download_manifest.csv     Acquisition status, checksums, timestamps
+│   ├── reports/
+│   │   ├── acquisition_report.json   HTTP, size, checksum, and 404 verification
+│   │   ├── dataset_quality_report.json  Missingness, flags, channels, provenance
+│   │   ├── processing_report.json    Canonical table counts and dataset version
+│   │   └── validation_report.json    Acquisition and canonical gate results
+│   └── fixtures/
+│       ├── csv/                      Seven exact excerpts from NASA sources
+│       ├── fixtures_manifest.json    Source rows, checksums, and purpose
+│       └── README.md                 Fixture provenance and regeneration
 ├── docs/
 │   ├── decisions/
-│   │   └── 0001-mvp-dataset-selection.md
+│   │   ├── 0001-mvp-dataset-selection.md
+│   │   └── 0002-phase-1-pipeline-contracts.md
 │   └── research/
 │       └── source-verification-log.md
-└── scripts/
-    ├── build_mvp_catalog.py          Reproducible MVP catalog generator
-    ├── fetch_psi_metadata.py         Standard-library PSI metadata collector
-    └── README.md                     Script usage
+├── scripts/
+│   ├── build_download_manifest.py    Build or check the 72-file selection
+│   ├── build_et_schemas.py           Build or check the 22-table schema registry
+│   ├── build_fixtures.py             Build or check authentic parser fixtures
+│   ├── build_mvp_catalog.py          Reproducible MVP catalog generator
+│   ├── download_psi_files.py         Thin wrapper around the acquisition CLI
+│   ├── fetch_psi_metadata.py         Standard-library PSI metadata collector
+│   └── README.md                     Script and CLI usage
+├── src/data_pipeline/
+│   ├── __main__.py                   `download`, `validate`, `parse`, `build-canonical`, `report`
+│   ├── downloader.py                 Resumable, checksum-verifying acquisition
+│   ├── manifest.py                   Curated selection and URL construction
+│   ├── pipeline.py                   Parse orchestration and interim Parquet
+│   ├── canonical.py                  Canonical builders and dataset version
+│   ├── validation.py                 Acquisition and canonical gates
+│   ├── quality.py                    Missingness and channel quality report
+│   ├── schemas.py                    Arrow schemas and Parquet I/O
+│   ├── channels.py                   Telemetry channel unit mappings
+│   ├── provenance.py                 Source hashes, URLs, and observation IDs
+│   ├── config.py                     Paths and version constants
+│   └── parsers/                      CSV, XLSX, XLS, gas-flame, telemetry, smoke, material, droplet
+└── tests/
+    ├── test_*.py                     Unit tests
+    └── test_integration.py           Full raw/processed-data checks
 ```
 
-Raw NASA files, interim parses, and processed Parquet tables are **not** committed. They are reproducible artifacts stored outside Git. See `PROJECT_ARCHITECTURE.md` §6.
+Raw NASA files (`data/raw/`), interim parses (`data/interim/`), and processed Parquet (`data/processed/`) are **not** committed. They are reproducible artifacts stored outside Git. See `PROJECT_ARCHITECTURE.md` §6.
 
 ---
 
 ## Quick start
 
-The metadata collector uses only the Python 3 standard library. No virtual environment is required for the foundation milestone.
+Phase 1 uses a local virtual environment with pinned dependencies. The metadata collector itself remains standard-library only.
 
 ```bash
 git clone https://github.com/YoussefHegazy74/flame-in-freefall.git
 cd flame-in-freefall
 
-# Verify that the committed snapshot still matches the live NASA PSI API.
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+
+# Verify committed metadata, selection, schema, and fixture snapshots.
 python3 scripts/fetch_psi_metadata.py --check
-
-# Regenerate the snapshot from the live API (writes into data/registry/).
-python3 scripts/fetch_psi_metadata.py
-
-# Regenerate from cached detail JSON without hitting the API.
-python3 scripts/fetch_psi_metadata.py --details-dir /tmp/psi_details
-
-# Regenerate the MVP catalog and verify it matches the committed file.
-python3 scripts/build_mvp_catalog.py
 python3 scripts/build_mvp_catalog.py --check
+python3 scripts/build_download_manifest.py --check
+python3 scripts/build_et_schemas.py --check
+python3 scripts/build_fixtures.py --check
+python -m src.data_pipeline manifest --check
+
+# Check the 72-file selection and limits without downloading.
+python -m src.data_pipeline download --all --dry-run
+
+# Acquire the curated selection into data/raw/ (gitignored).
+python -m src.data_pipeline download --all
+
+# Parse, build canonical Parquet, validate, and write reports.
+python -m src.data_pipeline parse
+python -m src.data_pipeline build-canonical
+python -m src.data_pipeline validate
+python -m src.data_pipeline report
+
+# Run unit tests, then full-data integration tests.
+python -m pytest -m "not integration"
+python -m pytest -m integration
 ```
 
-`--check` exits with status 1 and prints every changed accession, field, and value when the live API drifts from the committed snapshot. It never rewrites the snapshot.
+`download --all` selects exactly the 72 files in `data/registry/download_manifest.json` (56,238,344 bytes). The downloader refuses selections above 100 files or 100,000,000 bytes unless `--allow-large` is passed. It never downloads the full archive.
 
-The collector does **not** download experimental data files. It records file names, sizes, formats, categories, and versions only. The 22 experimental tables were downloaded and inspected during the research phase; their row counts, column counts, and SHA-256 checksums are recorded in `data/registry/annotations.json` and `data/registry/psi_experimental_tables.csv`.
+The metadata collector does **not** download experimental data files. The pipeline downloader does, but only the curated selection. Raw files are chmod 444 and remain outside Git. The 22 experimental tables, telemetry exports, HKP CSVs, workbooks, and test log have exact checksums and retrieval timestamps in `data/manifests/download_manifest.csv` and `data/reports/acquisition_report.json`.
 
 ---
 
@@ -158,22 +251,30 @@ These rules are binding for code, charts, prose, and assistant answers:
 
 ## Current status and next steps
 
-**Done**
+**Done in Phase 0**
 
 - Verified the PSI API, the 24 combustion records, the download endpoint, the `added` inventory, and the `experimentalTable` inventory.
-- Downloaded and inspected all 22 experimental tables plus the MVP telemetry samples, readmes, and metadata packages.
 - Recorded exact headers, row counts, missingness, sentinel tokens, and SHA-256 checksums.
 - Wrote the source inventory, data dictionary, architecture, roadmap, API contract, and contribution rules.
 - Generated a reproducible metadata registry and MVP catalog.
 
-**Next**
+**Done in Phase 1**
 
-1. Run `python3 scripts/fetch_psi_metadata.py --check` and confirm no drift.
-2. Build the download manifest and checksum manifest for the MVP files.
-3. Add pinned parser dependencies (`polars`, `pyarrow`, `openpyxl`, `xlrd`) and small real-header fixtures.
-4. Implement and test the PSI-10 and PSI-159 parsers first.
-5. Implement the PSI-100 and PSI-101 parsers next.
-6. Build the read-only API, then the frontend, then the grounded insight layer.
+- Built a curated 72-file acquisition manifest (56,238,344 bytes) with explicit limits and two documented 404s.
+- Implemented a resumable, checksum-verifying downloader with HTTP status, size, SHA-256, retrieval time, and duplicate detection.
+- Implemented modular CSV/XLSX/XLS parsers for gas-flame, telemetry, smoke, material, droplet, test-log, and all 22 summary tables.
+- Built 13 canonical Parquet tables with row-level provenance and explicit quality flags.
+- Added seven authentic NASA fixtures and 150 tests, including failure behavior for missing files and unexpected headers.
+- Wrote acquisition, validation, processing, schema, and dataset-quality reports.
+- Verified all 72 selected files and all 13 canonical tables.
+
+**Next (Phase 2 and later)**
+
+1. Add the comparability allowlist and blocked-dataset serving state described in `DEVELOPMENT_ROADMAP.md` Phase 2.
+2. Evaluate DuckDB query patterns over the canonical Parquet tables and document the serving contract.
+3. Build the read-only API.
+4. Build the frontend only after the API contract and data gates are stable.
+5. Add the grounded insight layer last, with citations and a golden-set evaluation.
 
 The full sequence and exit gates are in `DEVELOPMENT_ROADMAP.md`.
 

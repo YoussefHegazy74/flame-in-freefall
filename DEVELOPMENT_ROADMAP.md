@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status date:** 2026-11-08
+**Status date:** 2026-11-09
 
 This roadmap is sequenced by dependency, not by calendar. It does not assume a competition deadline, a team size, or a deployment budget. Each phase has an exit gate; a phase is not "done" because a demo works, but because its acceptance criteria and tests pass.
 
@@ -28,8 +28,8 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 | Phase | Name | Status | Exit gate |
 |---|---|---|---|
 | 0 | Scientific foundation and metadata registry | **Complete** (commit `b927bac`, pushed to `origin/main`) | Registry validates against live PSI; docs agree; initialization commit pushed |
-| 1 | Data acquisition and parser foundation | Planned | MVP files downloaded, checksummed, parsed, and tested on fixtures |
-| 2 | Scientific validation and canonical data | Planned | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
+| 1 | Data acquisition and parser foundation | **Complete** (2026-11-09) | MVP files downloaded, checksummed, parsed, and tested on fixtures |
+| 2 | Scientific validation and canonical data | **In progress** | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
 | 3 | Read-only API | Planned | OpenAPI contract, provenance, pagination, and contract tests pass |
 | 4 | Frontend exploration experience | Planned | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
 | 5 | Grounded insight layer | Planned | Golden-set evaluation passes; numeric claims are 100% cited |
@@ -92,6 +92,8 @@ Establish a verified, reproducible inventory of NASA PSI combustion data and the
 
 ## 4. Phase 1 — Data acquisition and parser foundation
 
+**Status:** Complete (2026-11-09). See §4.6 for the verified result.
+
 ### 4.1 Goal
 
 Turn the verified metadata into reproducible, checksummed, parsed source tables. Do not build charts yet.
@@ -100,66 +102,120 @@ Turn the verified metadata into reproducible, checksummed, parsed source tables.
 
 #### 4.2.1 Download manifest
 
-- [ ] Define `data/registry/download_manifest.json` with the exact MVP files.
-- [ ] Include accession, file name, expected bytes, source URL, and intended use.
-- [ ] Exclude files known to return 404. Include `experimental_table_only` summary tables only within their documented limits; do not fabricate a replacement archive.
-- [ ] Record access status for every selected file.
+- [x] Define `data/registry/download_manifest.json` with the exact MVP files.
+- [x] Include accession, file name, expected bytes, source URL, and intended use.
+- [x] Exclude files known to return 404. Include `experimental_table_only` summary tables only within their documented limits; do not fabricate a replacement archive.
+- [x] Record access status for every selected file.
 
 #### 4.2.2 Downloader
 
-- [ ] Implement `scripts/download_psi_files.py` with standard library or `httpx`.
-- [ ] Stream downloads to `data/raw/<accession>/<file_name>`.
-- [ ] Verify HTTP status, content length when available, and SHA-256.
-- [ ] Write a checksum manifest with retrieval timestamps.
-- [ ] Support resume and rate limiting.
-- [ ] Never bypass authentication or access controls.
-- [ ] Record `listed_404` instead of failing silently.
+- [x] Implement `scripts/download_psi_files.py` and `src/data_pipeline/downloader.py` with the standard library.
+- [x] Stream downloads to `data/raw/<accession>/<file_name>`.
+- [x] Verify HTTP status, content length when available, and SHA-256.
+- [x] Write a checksum manifest with retrieval timestamps.
+- [x] Support resume and rate limiting.
+- [x] Never bypass authentication or access controls.
+- [x] Record `listed_404` instead of failing silently.
 
 #### 4.2.3 Parsers
 
-- [ ] CSV parser with exact-header validation.
-- [ ] XLSX parser using `openpyxl`; sheet selection by name.
-- [ ] XLS parser using `xlrd` or a documented converter.
-- [ ] PSI-10 normal/inverse parser.
-- [ ] PSI-159 normal/inverse parser.
-- [ ] PSI-100 raw/cleaned CSV parser.
-- [ ] PSI-100 XLSX sheet parser (`RawData`, `SaffireData`, `CygnusData`, smoke/pressure/temperature sheets).
-- [ ] PSI-101 HKP CSV parser.
-- [ ] PSI-25 BASS-II workbook parser.
-- [ ] PSI-26 BASS CSV and as-run workbook parser.
-- [ ] PSI-20, PSI-21, PSI-106, PSI-142 small-table parsers.
-- [ ] Emit provenance for every row.
-- [ ] Classify every missing/sentinel token.
+- [x] CSV parser with exact-header validation.
+- [x] XLSX parser using `openpyxl`; sheet selection by name.
+- [x] XLS parser using `xlrd`.
+- [x] PSI-10 normal/inverse parser.
+- [x] PSI-159 normal/inverse parser.
+- [x] PSI-100 raw/cleaned CSV parser.
+- [x] PSI-100 XLSX sheet parser for `RawData`, `SaffireData`, and `CygnusData`. Chart-only sheets with nested headers or dummy data are documented and not parsed.
+- [x] PSI-101 HKP CSV parser.
+- [x] PSI-25 BASS-II workbook parser.
+- [x] PSI-26 BASS experimental table and as-run workbook parser.
+- [x] PSI-20, PSI-21, PSI-106, PSI-142 small tables through the generic summary-table parser; all 22 experimental tables are preserved cell-by-cell.
+- [x] Emit provenance for every row.
+- [x] Classify every missing/sentinel token.
 
 #### 4.2.4 Fixtures
 
-- [ ] Commit small fixtures with exact headers and 3–10 rows.
-- [ ] Include at least one fixture per sentinel: blank, `-`, `n/a`, `none`, `OR`, `RAMP`, `RAMPED`, `LOW O2`, `#DIV/0!`, `#VALUE!`, `-999`, sentinel timestamp.
-- [ ] Do not commit full raw files or video.
+- [x] Commit small fixtures with exact headers and 3–4 rows.
+- [x] Cover the parser-critical tokens with authentic excerpts: blank, dash, `RAMPED`, `#VALUE!`, `-999`, `-1.#IND`, cp1252 en dash, and a negative sentinel timestamp. Token-level tests cover the full sentinel vocabulary.
+- [x] Do not commit full raw files or video.
+
+#### 4.2.5 Canonical Parquet and reports
+
+- [x] Build 13 canonical Parquet tables with explicit Arrow schemas, primary keys, and row-level provenance.
+- [x] Generate `data/registry/canonical_schema.json`.
+- [x] Generate `data/reports/acquisition_report.json`, `validation_report.json`, `dataset_quality_report.json`, and `processing_report.json`.
+- [x] Generate `data/manifests/download_manifest.csv` and `data/processed/dataset_manifest.json`.
+- [x] Evaluate DuckDB for local duplicate-primary-key checks; keep a pyarrow fallback so the pipeline does not depend on DuckDB being installed.
 
 ### 4.3 Acceptance criteria
 
-1. Every selected MVP file downloads successfully or is explicitly marked `listed_404`.
-2. Every downloaded file has a SHA-256 and a retrieval timestamp.
-3. Parsers fail on unexpected headers; they do not guess.
-4. Every parser has fixture tests for normal, missing, sentinel, and malformed rows.
-5. Parsed row counts match the committed table statistics, or the difference is explained.
-6. No parser writes to `data/raw/`.
-7. A clean checkout can reproduce the parsed interim tables from the manifest and raw files.
+1. [x] Every selected MVP file downloads successfully or is explicitly marked `listed_404`.
+2. [x] Every downloaded file has a SHA-256 and a retrieval timestamp.
+3. [x] Parsers fail on unexpected headers; they do not guess.
+4. [x] Every parser has fixture tests for normal, missing, sentinel, and malformed rows.
+5. [x] Parsed row counts match the committed table statistics, or the difference is explained.
+6. [x] No parser writes to `data/raw/`.
+7. [x] A clean checkout can reproduce the parsed interim tables from the manifest and raw files.
 
 ### 4.4 Tests
 
-- Unit tests for header validation and sentinel classification.
-- Fixture tests for each parser.
-- Checksum tests for each downloaded file.
-- A negative test that an unexpected header raises a typed error.
-- A negative test that a sentinel is not coerced to zero.
+- [x] Unit tests for header validation and sentinel classification.
+- [x] Fixture tests for each parser.
+- [x] Checksum tests for each downloaded file.
+- [x] A negative test that an unexpected header raises a typed error.
+- [x] A negative test that a sentinel is not coerced to zero.
+- [x] Full unit and integration suites pass.
 
 ### 4.5 Known blockers
 
-- `pandas`, `openpyxl`, and `xlrd` are not installed in the current environment. The parser phase must add pinned dependencies.
-- Legacy `.xls` files require `xlrd` or a converter.
-- SAFFIRE-I telemetry files are listed but return 404. Do not plan around them.
+- `gh` is unavailable in the environment; pushes must use the configured Git credential and the remote SHA must be verified separately.
+- `www.spaceappschallenge.org` is not reachable from the environment, so the public AFAQ roster cannot be verified. Do not invent team members.
+- PSI-98 SAFFIRE-I telemetry and sensor XLSX files are listed but return HTTP 404. Sampled PSI-39 `.metadata` also returns 404.
+- PSI-159 `TFP` and `Xf` remain unexpanded by the source. They stay categorical/undefined until a source document confirms their meaning.
+- PSI-26 `O2 % by volume` values are around 0.22 while the header says percent; they are stored as `o2_pct` and flagged `unit_ambiguity`, not relabeled.
+- PSI-69 `Burning rate; mm` is preserved exactly as labeled and flagged `unit_ambiguity`; it is not converted to mm/s.
+- Chart-only PSI-100 sheets are not parsed because they contain nested headers and dummy data, not measurements.
+
+### 4.6 Phase 1 completion record
+
+| Check | Verified result |
+|---|---|
+| Acquisition selection | 72 files, 56,238,344 expected bytes |
+| Download outcome | 70 downloaded, 2 already present, 0 failed |
+| Bytes downloaded | 56,194,097 |
+| Checksum verification | 72 / 72 |
+| Known 404s re-verified | 2 |
+| Duplicate checksum groups | 0 |
+| Parsed sources | 79 sources across 72 files |
+| Interim outputs | 57 Parquet files plus `parse_report.json` |
+| Parse issues | 4 source-attributed issues: PSI-69 encoding fallback (two tables), PSI-102 headerless log, PSI-101 truncated row |
+| Canonical tables | 13 |
+| Canonical rows | 8,058,206 |
+| Canonical bytes | 82,953,195 |
+| Dataset version | `2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb` |
+| Acquisition validation | Pass, 72 / 72 verified |
+| Canonical validation | Pass, 13 checks, 0 failed |
+| Quality report | Pass, 6 issues, 0 errors, 5 warnings, 1 informational note |
+| Test suite | 150 passed: 136 unit, 14 integration |
+
+Reproducibility checks that passed:
+
+```bash
+python scripts/build_download_manifest.py --check
+python scripts/build_et_schemas.py --check
+python scripts/build_fixtures.py --check
+python -m src.data_pipeline manifest --check
+```
+
+The full run commands are:
+
+```bash
+python -m src.data_pipeline download --all
+python -m src.data_pipeline parse --force
+python -m src.data_pipeline build-canonical
+python -m src.data_pipeline validate
+python -m src.data_pipeline report
+```
 
 ---
 
@@ -497,19 +553,20 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 ### Milestone 1 — Parsed MVP
 
-- [ ] Download manifest and checksums complete.
-- [ ] Parsers for PSI-10, PSI-159, PSI-100, PSI-101, PSI-25, PSI-26 pass fixtures.
-- [ ] Small-table parsers for PSI-20, PSI-21, PSI-106, PSI-142 pass.
-- [ ] Missingness and sentinel report complete.
-- [ ] No raw data in Git.
+- [x] Download manifest and checksums complete.
+- [x] Parsers for PSI-10, PSI-159, PSI-100, PSI-101, PSI-25, PSI-26 pass fixtures.
+- [x] Small-table parsers for PSI-20, PSI-21, PSI-106, PSI-142 pass through the generic summary-table parser.
+- [x] Missingness and sentinel report complete.
+- [x] No raw data in Git.
+- [x] Canonical Parquet tables built as a Phase 1 deliverable (13 tables, 8,058,206 rows).
 
 ### Milestone 2 — Canonical data
 
-- [ ] Canonical tables pass data-quality gates.
-- [ ] Units resolved or labeled `not stated`.
+- [x] Canonical tables pass data-quality gates.
+- [x] Units resolved or labeled `not stated`; unresolved unit ambiguities are flagged.
 - [ ] Comparability allowlist implemented.
 - [ ] Blocked-dataset state implemented.
-- [ ] Data-quality report reproducible.
+- [x] Data-quality report reproducible.
 
 ### Milestone 3 — API
 
@@ -585,14 +642,11 @@ A feature is done when:
 
 ## 15. Immediate next actions
 
-1. Finish the remaining foundation documents and registry catalog.
-2. Run the metadata drift check.
-3. Commit and push the initialization milestone; verify the remote SHA.
-4. Build the download manifest for the MVP files.
-5. Add pinned parser dependencies and fixtures.
-6. Implement the PSI-10 and PSI-159 parsers first, because they are the smallest and most testable.
-7. Implement the PSI-100 and PSI-101 parsers next.
-8. Implement the BASS/BASS-II test-matrix parsers last.
-9. Only then start the API and frontend.
+1. Implement the comparability allowlist and blocked-dataset state from Phase 2.
+2. Document DuckDB query patterns over the canonical Parquet tables.
+3. Add a serving-layer contract test that reads only processed tables, not raw files.
+4. Build the read-only API after the data gates are stable.
+5. Build the frontend after the API contract is stable.
+6. Add the grounded insight layer last, with citations and a golden-set evaluation.
 
 The order matters: the gas-flame tables establish the test-level schema; the telemetry and smoke tables establish the time-series schema; the material matrices establish the context schema. Building the UI before these contracts exist would force the data into the interface, which is the opposite of the project's principle.

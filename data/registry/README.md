@@ -82,8 +82,16 @@ python3 scripts/build_mvp_catalog.py --check
 ## What is not here
 
 - Raw NASA files. They are large and stay outside Git.
-- Parsed or canonical tables. They arrive in Phase 1–2.
+- Parsed or canonical Parquet tables. Phase 1 builds them under `data/interim/` and `data/processed/`, which are gitignored; this directory holds only their committed schema and manifests.
 - Credentials, tokens, or presigned URLs. None are stored in this repository.
 - Team member names or roles. The public challenge profile does not expose a verified roster.
 
-For the field-level meaning of every column, see `DATA_DICTIONARY.md` §3.1–§3.2.1. For the source-level narrative, see `DATA_SOURCES.md`.
+Phase 1 adds these committed registry files:
+
+| File | Purpose |
+|---|---|
+| `download_manifest.json` | Curated 72-file acquisition selection with URLs, expected sizes, checksums, parsers, and limits. |
+| `experimental_table_schemas.json` | Exact header, row counts, encoding, and checksum for all 22 experimental tables. |
+| `canonical_schema.json` | Implemented Arrow schema, primary keys, and descriptions for the 13 canonical tables. |
+
+For the field-level meaning of every column, see `DATA_DICTIONARY.md` §3. For the source-level narrative, see `DATA_SOURCES.md`. For the pipeline contracts, see `docs/decisions/0002-phase-1-pipeline-contracts.md`.

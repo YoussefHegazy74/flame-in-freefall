@@ -4,9 +4,9 @@
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
 **Snapshot date:** 2026-11-08
-**Status:** Source-verified dictionary and proposed canonical schema. No parser or frontend is implemented in this milestone.
+**Status:** Source-verified dictionary and implemented canonical schema (parser version 1.0.1). The 13 canonical Parquet tables are built; the API and frontend are not implemented in this milestone.
 
-This document defines every field used by the MVP, the original header text, the unit or absence of a unit, the missing-value conventions, and the proposed canonical name. It is the contract between the data pipeline, the API, and the interface. If a field is not defined here, it must not be displayed as a measured quantity.
+This document defines every field used by the MVP, the original header text, the unit or absence of a unit, the missing-value conventions, and the canonical name. It is the contract between the data pipeline, the API, and the interface. If a field is not defined here, it must not be displayed as a measured quantity.
 
 The companion documents are:
 
@@ -64,29 +64,31 @@ The following tokens were observed in the inspected MVP files. The canonical `qu
 
 | Source token | Canonical flag | Meaning | Where observed |
 |---|---|---|---|
-| empty string | `missing_blank` | No value was entered in the source cell. | PSI-10, PSI-159, PSI-20, PSI-21, PSI-26 |
-| `-` | `sentinel_dash` | A dash entered by the source author. It usually means not applicable or not measured, but the source does not define it per column. Preserve and inspect context. | PSI-159 peak burner temperature, extinction mode, color |
-| `n/a`, `N/A` | `not_applicable` | Not applicable for that test or configuration. | PSI-26 as-run matrix |
-| `none` | `not_available` | No value or no frame count was recorded. | PSI-25 BASS-II matrices |
-| `OR` | `over_range` | Over range. In BASS-II, the readme defines it as CO > 1000 ppm. | PSI-25 CO columns |
-| `RAMP`, `RAMPED` | `qualifier_ramp` | The test used a ramped condition rather than a fixed set point. This is an experiment qualifier, not a number. | PSI-10 normal and inverse tables |
-| `LOW O2` | `qualifier_low_o2` | The test was flagged as a low-oxygen condition. Not a numeric value. | PSI-10 inverse table |
-| `#DIV/0!` | `spreadsheet_error_div0` | A spreadsheet division-by-zero error. The value is invalid. | PSI-159 normal `Tad (K)`, `Zst` |
-| `#VALUE!` | `spreadsheet_error_value` | A spreadsheet type error. The value is invalid. | PSI-159 inverse `Peak burner temp (K)` |
-| `-999` | `sentinel_minus_999` | Instrument sentinel observed in the SAME-R P-Trak channel. It is not a negative concentration. | PSI-101 `PTrakMeasurement(PtPerCC)` |
-| `-1` | `raw_negative_one` | A negative value observed in BASS-II initial CO. The source does not define it; do not treat it as a physical concentration without confirmation. | PSI-25 `Initial CO (ppm)` |
-| `~ 0` | `approx_zero_text` | An approximate-zero text value. It is not a numeric zero and cannot be averaged. | PSI-99 microgravity burn/spread columns |
-| `Insignificant` | `qualifier_insignificant` | A non-numeric burn-time outcome. Preserve as text. | PSI-99 `Burn Time (s)` |
-| `Complete`, `Acceleratory` | `qualifier_outcome_text` | Non-numeric burn/spread outcome descriptions. Preserve as text. | PSI-99 1-g columns |
-| `n/a (Nomex)` | `not_applicable` | Not applicable for the Nomex sample. The parenthetical is part of the source text. | PSI-99 spread columns |
-| `~6`, `~9` | `approx_value_text` | Approximate numeric text. Parse only with a documented rule that preserves the approximation flag. | PSI-69 `Burn time; s` |
-| `�` (U+FFFD) | `invalid_encoding` | A replacement character produced by a non-UTF-8 byte in the source. It is not a measurement. Preserve the raw byte and flag the field. | PSI-69 droplet/extinction diameter columns |
-| `>500`, `over` | `over_range_text` | Non-numeric over-range text in a CO column. Do not coerce to 500 or to a numeric value. | PSI-25 final CO |
+| empty string | `missing` | No value was entered in the source cell. | PSI-10, PSI-159, PSI-20, PSI-21, PSI-26 |
+| `-`, `--`, `–`, `—` | `sentinel_dash` | A dash entered by the source author. It usually means not applicable or not measured, but the source does not define it per column. Preserve and inspect context. In PSI-69 the Windows-1252 byte `0x96` is an en dash, not a replacement character. | PSI-159 peak burner temperature, extinction mode, color; PSI-69 initial/extinction diameter |
+| `n/a`, `N/A`, `na`, `not applicable` | `not_applicable` | Not applicable for that test or configuration. | PSI-26 as-run matrix |
+| `none` | `not_measured` | No value or no frame count was recorded. | PSI-25 BASS-II matrices |
+| `OR`, `over range` | `over_range` | Over range. In BASS-II, the readme defines it as CO > 1000 ppm. | PSI-25 CO columns |
+| `RAMP`, `RAMPED` | `ramped_condition` | The test used a ramped condition rather than a fixed set point. This is an experiment qualifier, not a number. | PSI-10 normal and inverse tables |
+| `LOW O2` | `low_oxygen_condition` | The test was flagged as a low-oxygen condition. Not a numeric value. | PSI-10 inverse table |
+| `#DIV/0!`, `#VALUE!`, `#N/A`, `#REF!`, `#NAME?`, `#NUM!`, `#NULL!` | `spreadsheet_error` | A spreadsheet error. The value is invalid and is not coerced. | PSI-159 normal `Tad (K)`, `Zst`; PSI-159 inverse `Peak burner temp (K)` |
+| `-999` | `sentinel` | Instrument sentinel observed in the SAME-R P-Trak channel. It is not a negative concentration. The parser emits a null `value` and preserves `raw_value`. | PSI-101 `PTrakMeasurement(PtPerCC)` |
+| `-1` | `sentinel_minus_one` | A negative value observed in BASS-II initial CO. The source does not define it; do not treat it as a physical concentration without confirmation. | PSI-25 `Initial CO (ppm)` |
+| `~ 0` | `approximate` | Stored as numeric `0.0` with an `approximate` flag. It is not an exact zero and must not be averaged without an explicit approximation policy. | PSI-99 microgravity burn/spread columns |
+| `Insignificant` | `non_numeric_qualifier` | A non-numeric burn-time outcome. Preserve as text. | PSI-99 `Burn Time (s)` |
+| `Complete`, `Acceleratory` | `non_numeric` | Non-numeric burn/spread outcome descriptions. Preserve as text. | PSI-99 1-g columns |
+| `n/a (Nomex)` | `non_numeric` | Not applicable for the Nomex sample; the parenthetical is part of the source text, so it is preserved as non-numeric text rather than generalized to `not_applicable`. | PSI-99 spread columns |
+| `~6`, `~9` | `approximate` | Approximate numeric text. Stored as numeric values with an `approximate` flag. | PSI-69 `Burn time; s` |
+| `�` (U+FFFD) | `invalid_encoding` | A last-resort replacement character. The authenticated PSI-69 file decodes cleanly as Windows-1252 and does not contain U+FFFD. If replacement decoding is ever used, preserve the raw byte and flag the field. | None in the authenticated Phase 1 files |
+| `>500` | `inequality_text` | Non-numeric over-range text in a CO column. Do not coerce to 500 or to a numeric value. | PSI-25 final CO |
+| `over` | `non_numeric` | Non-numeric over-range text. Preserve as text. | PSI-25 final CO |
 | `1.5 - 5`, `0.1 - 5`, `0.5; 1.0; ...` | `range_text` | A range or semicolon-separated condition list. It is not a single observation. | PSI-68 condition table |
 | `?` in a header | `literal_question_mark_header` | A literal question mark in the source header, likely a lost micro sign (`µ`). Preserve the raw header; do not invent a replacement label. | PSI-99 `?-g Burn Length`, `?-g Spread Length` |
 | `-63632300000000` | `sentinel_timestamp_footer` | A large negative footer/sentinel value in the SAFFIRE raw telemetry `RelativeSeconds` column. | PSI-100 raw CSV |
 | `-63632288338155` | `sentinel_timestamp_footer` | A large negative footer/sentinel value in the SAFFIRE cleaned telemetry `RelativeSeconds` column. | PSI-100 cleaned CSV |
 | `?` | `unknown` | A question mark entered by the source author. Not observed in the inspected MVP tables, but reserved. | — |
+
+Token interpretation is channel-specific. `-999` is a sentinel only in the SAME-R P-Trak channel; `-1` is flagged only in the BASS-II initial CO context. Do not apply a global numeric sentinel rule. The implementation is parser version 1.0.1; changes to token semantics require a parser-version bump and regenerated reports.
 
 **Zero is not a missing code.** A zero can be a real zero, an off channel, a commanded state, or an uninstrumented channel. The pipeline must not label all zeros as missing. Channel-level context is required.
 
@@ -167,9 +169,27 @@ The following tokens were observed in the inspected MVP files. The canonical `qu
 
 ---
 
-## 3. Proposed canonical schema
+## 3. Canonical schema (implemented)
 
-The canonical schema is a target contract. It is not implemented in this milestone. The purpose is to make provenance explicit and to prevent the API or frontend from inventing joins.
+The canonical schema is implemented as 13 Parquet tables under `data/processed/`, with explicit Arrow schemas in `data/registry/canonical_schema.json` and primary keys in `src/data_pipeline/schemas.py`. The purpose is to make provenance explicit and to prevent the API or frontend from inventing joins.
+
+| Canonical table | Rows | Primary key |
+|---|---:|---|
+| `psi_investigation` | 24 | `accession` |
+| `psi_file` | 16,354 | `file_id` |
+| `experimental_table` | 22 | `table_id` |
+| `gas_flame_test` | 660 | `observation_id` |
+| `telemetry_run` | 5 | `run_id` |
+| `telemetry_point` | 1,762,436 | `observation_id` |
+| `smoke_run` | 44 | `run_id` |
+| `smoke_point` | 6,251,427 | `observation_id` |
+| `smoke_test_log` | 119 | `log_id` |
+| `material_test` | 259 | `observation_id` |
+| `droplet_test` | 274 | `observation_id` |
+| `experimental_table_cell` | 24,573 | `cell_id` |
+| `source_row` | 2,009 | `source_row_id` |
+
+The current dataset version is `2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb`, derived from the 72 source checksums, parser version 1.0.1, pipeline version 1.0.0, and canonical schema version 1.0.0.
 
 ### 3.1 `psi_investigation`
 
@@ -1071,8 +1091,8 @@ The 22 `experimentalTable` entries are the curated summary layer of PSI. They ar
 | 7 | `N initial ambient composition; mole fraction` | `nitrogen_mole_fraction` | float | mole fraction | none | Initial ambient N2. |
 | 8 | `CO initial ambient composition; mole fraction` | `co_mole_fraction` | float | mole fraction | none | Initial ambient CO as labeled. Do not assume CO2. |
 | 9 | `He initial ambient composition; mole fraction` | `helium_mole_fraction` | float | mole fraction | none | Initial ambient He. |
-| 10 | `Droplet initial diameter; mm` | `initial_droplet_diameter_mm` | float | mm | blank (6), `�` (6) | The replacement character indicates a non-UTF-8 source byte; it is not a measurement. |
-| 11 | `Visible flame extinction diameter; mm` | `visible_flame_extinction_diameter_mm` | float | mm | blank (49), `�` (28) | Visible flame extinction diameter. |
+| 10 | `Droplet initial diameter; mm` | `initial_droplet_diameter_mm` | float | mm | blank (6), `–` (6) | The source is Windows-1252; `0x96` is an en dash and is flagged `sentinel_dash`, not a replacement character. |
+| 11 | `Visible flame extinction diameter; mm` | `visible_flame_extinction_diameter_mm` | float | mm | blank (49), `–` (28) | Visible flame extinction diameter; en-dash sentinels are flagged. |
 | 12 | `Burning rate; mm` | `burning_rate_mm_as_labeled` | float | mm (as labeled) | blank (16) | The header states mm, not mm/s. Do not relabel it as a rate unit without source confirmation. |
 | 13 | `Burn time; s` | `burn_time_s` | float | s | blank (6), `~6` (1), `~9` (1) | Approximate text values must be flagged, not silently parsed. |
 | 14 | `Test end` | `test_end` | category | — | none | `Completion`, `Disruption`, `Extinction`. |
@@ -1223,7 +1243,7 @@ The 22 `experimentalTable` entries are the curated summary layer of PSI. They ar
 | PSI-10 normal | 207 | 207 | 20 blank final XO2/pfinal/pmean; 60 rows with `RAMP`/`RAMPED` |
 | PSI-10 inverse | 120 | 120 | 11 rows with `RAMP`/`LOW O2`; no blank cells |
 | PSI-159 normal | 179 | 179 | `Cool flame?` blank 171; Comments blank 135; burn time blank 4; `#DIV/0!` 2; `-` 46 in peak burner T |
-| PSI-159 inverse | 1,015 | 154 | 861 all-blank rows; `#VALUE!` 2; `-` sentinels in peak burner T and color; Comments blank 115 among valid |
+| PSI-159 inverse | 1,015 | 154 | 861 all-blank rows; `#VALUE!` 2; `-` sentinels in peak burner T, extinction mode, and color; Comments blank 115 among valid |
 | PSI-100 raw CSV | 3,972 | 3,966 | 6 negative/sentinel `RelativeSeconds` rows |
 | PSI-100 cleaned CSV | 11,450 | 11,449 | 1 sentinel `RelativeSeconds` row |
 | PSI-100 XLSX `RawData` | 73,462 | 11,449 | 62,013 empty formatting rows |
@@ -1239,7 +1259,7 @@ The 22 `experimentalTable` entries are the curated summary layer of PSI. They ar
 | PSI-39 CFI | 87 | 87 | Fiber blank 9; pressure is text with units |
 | PSI-47 DAFT | 2 | 2 | No missing values |
 | PSI-68 FLEX-2 | 8 | 8 | No blanks; all condition ranges/lists |
-| PSI-69 FLEX | 274 | 274 | `�` 6 in initial diameter, 28 in extinction diameter; blanks 6/49/16/6; `~6`, `~9` |
+| PSI-69 FLEX | 274 | 274 | `–` (cp1252 en dash) 6 in initial diameter, 28 in extinction diameter; blanks 6/49/16/6; `~6`, `~9` |
 | PSI-98 SAFFIRE-I | 4 | 2 sample + 2 pre-test | Sample fields blank in the two pre-test rows |
 | PSI-99 SAFFIRE-II | 15 | 9 sample + 6 note/pre-test | Sample fields blank 6; `n/a`, `~ 0`, `Insignificant`, `Complete`, `Acceleratory` |
 | PSI-100 sample | 2 | 2 | No missing values |
@@ -1283,7 +1303,7 @@ This mapping is intentionally conservative. "Equivalent" means the source defini
 
 ## 7. Open questions
 
-These are unresolved source questions, not assumptions:
+These are unresolved source questions, not assumptions. Phase 1 resolved the PSI-69 encoding question: the file is Windows-1252, its `0x96` bytes are en dashes, and no U+FFFD replacement characters occur in the authenticated source. The remaining questions require source documentation or a later comparability decision.
 
 1. **PSI-100 timestamp reconciliation.** Which export is authoritative for each sensor? The raw CSV, cleaned CSV, and XLSX have different row counts and time spans.
 2. **PSI-100 calibration.** The raw signal names and human-readable XLSX headers need a documented mapping and calibration source. Radiometer, anemometer, fan tach, smoke wire, and igniter units are not stated in the inspected headers.

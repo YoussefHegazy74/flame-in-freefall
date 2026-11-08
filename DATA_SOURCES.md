@@ -102,6 +102,20 @@ It never downloads raw experimental files and never writes credentials.
 
 `scripts/build_mvp_catalog.py` regenerates `data/registry/mvp_dataset_catalog.json` from the registry and annotations. It embeds only curated role/use text; every count, size, checksum, and archive status comes from the registry.
 
+The Phase 1 pipeline adds a curated downloader and parser CLI:
+
+```bash
+python -m src.data_pipeline manifest --check
+python -m src.data_pipeline download --all --dry-run
+python -m src.data_pipeline download --all
+python -m src.data_pipeline parse
+python -m src.data_pipeline build-canonical
+python -m src.data_pipeline validate
+python -m src.data_pipeline report
+```
+
+The downloader reads `data/registry/download_manifest.json`, streams only the 72 selected files into `data/raw/<accession>/`, verifies HTTP status, expected size, and SHA-256, and writes `data/manifests/download_manifest.csv` plus `data/reports/acquisition_report.json`. It refuses selections above 100 files or 100,000,000 bytes unless `--allow-large` is passed. It never downloads the full PSI archive.
+
 ---
 
 ## 3. Collection-level inventory
@@ -569,6 +583,51 @@ These SHA-256 values are recorded in `data/registry/annotations.json` and the ge
 | PSI-100 cleaned telemetry | 11,450 | 11,449 | 1 sentinel row |
 | PSI-101 HKP gmt250_1 | 558 | 558 | Representative run |
 
+### 8.4 Phase 1 acquisition and parse verification (2026-11-09)
+
+| Check | Result |
+|---|---:|
+| Selected files | 72 |
+| Expected bytes | 56,238,344 |
+| Downloaded | 70 |
+| Already present and verified | 2 |
+| Failed | 0 |
+| Bytes downloaded | 56,194,097 |
+| Checksums verified | 72 / 72 |
+| Known 404s re-verified | 2 |
+| Duplicate checksum groups | 0 |
+
+The two documented 404s are the PSI-98 SAFFIRE-I telemetry and sensor XLSX files. They remain `listed_404`; no substitute data were acquired.
+
+Parsing produced 57 interim outputs from 79 parse sources across the 72 selected files. Four source-attributed issues were recorded:
+
+- PSI-69 cp1252 decoding fallback, reported once for the droplet parser and once for the summary-table parser. The source is Windows-1252; the `0x96` bytes are en dashes, not replacement characters.
+- PSI-102 legacy `.xls` test log has no header row; positional columns are preserved.
+- PSI-101 `gmt251_5` has one truncated final row (25 fields instead of 98); the raw row is preserved and not emitted as points.
+
+Key parser counts:
+
+| Source family | Physical rows | Valid rows | Canonical points/rows |
+|---|---:|---:|---:|
+| PSI-10 normal + inverse | 327 | 327 | 327 gas-flame tests |
+| PSI-159 normal + inverse | 1,194 | 333 | 333 gas-flame tests |
+| PSI-100 raw CSV | 3,972 | 3,966 | part of 1,762,436 telemetry points |
+| PSI-100 cleaned CSV | 11,450 | 11,449 | part of 1,762,436 telemetry points |
+| PSI-100 XLSX `RawData` | 73,462 | 11,449 | part of 1,762,436 telemetry points |
+| PSI-101 44 HKP CSVs | 68,699 | 68,697 | 6,251,427 smoke points |
+| PSI-25 six sheets | 129 | 129 | 129 material-test rows |
+| PSI-26 as-run sheet | 131 | 130 non-empty | 130 material-test rows (122 tests + 8 notes) |
+| PSI-69 FLEX | 274 | 274 | 274 droplet tests |
+| PSI-102 test log | 119 | 119 | 119 log rows |
+
+The canonical build produced 13 Parquet tables with 8,058,206 rows and 82,953,195 bytes. Dataset version:
+
+```text
+2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb
+```
+
+Acquisition validation passed 72 of 72 files. Canonical validation passed all 13 table checks with 0 failures. The quality report passed with 6 issues: 0 errors, 5 warnings, and 1 informational note. The test suite passed 150 tests: 136 unit and 14 integration.
+
 ---
 
 ## 9. Attribution and licensing
@@ -585,7 +644,7 @@ These SHA-256 values are recorded in `data/registry/annotations.json` and the ge
 
 These are known unknowns, not assumptions:
 
-1. **SAFFIRE-I telemetry access:** The XLSX files are listed but return 404. Can they be retrieved from an alternate NASA path, or are they permanently unavailable?
+1. **SAFFIRE-I telemetry access:** The XLSX files are listed but return 404. They were re-verified on 2026-11-09 and remain `listed_404`. Can they be retrieved from an alternate NASA path, or are they permanently unavailable?
 2. **PSI-100 timestamp reconciliation:** The raw CSV, cleaned CSV, and 1 Hz XLSX have different row counts and time spans. Which export is authoritative for each sensor?
 3. **PSI-100 sensor calibration:** The raw signal names and the human-readable XLSX headers need a documented mapping and calibration source.
 4. **PSI-159 `TFP` meaning:** The field is a categorical `Yes`/`No` flag. The source header does not expand the acronym. Confirm its meaning from the CFI-G readme or publication before using it in analysis; do not assign a unit.
@@ -610,4 +669,4 @@ The verified foundation is strong enough to build a scientifically honest MVP:
 - **Comparison and limitations:** PSI-98 SAFFIRE-I, PSI-102 SAME, PSI-20, PSI-21, PSI-22, PSI-23, PSI-39, PSI-47, PSI-68, PSI-99, PSI-106, PSI-107, PSI-142.
 - **No record is entirely without a public artifact.** Four records are `experimental_table_only`; none is `no_public_files`.
 
-The next phase must download and checksum the MVP files, build parsers with row-level provenance, and validate every field against the source documentation before any chart or AI answer is exposed.
+Phase 1 completed the download, checksum, parse, and canonical Parquet work for the curated selection. The next phase is scientific validation at the serving boundary: a comparability allowlist, a blocked-dataset state, and a documented query contract before any chart or AI answer is exposed.

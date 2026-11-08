@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a reproducible collector, and documentation. It does not yet contain an API, a frontend, or a production data store.
+**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, and documentation. It does not yet contain an API, a frontend, or a production data store.
 
 This document describes the target system and the boundaries between what exists now and what must be built next. It is intentionally explicit about provenance, missingness, and scientific limits, because those are product requirements, not implementation details.
 
@@ -51,24 +51,35 @@ This document describes the target system and the boundaries between what exists
 
 ## 3. Current state versus target state
 
-### 3.1 Implemented in this milestone
+### 3.1 Implemented in Phase 0 and Phase 1
 
 - `scripts/fetch_psi_metadata.py`: standard-library PSI metadata collector with `--check`, `--details-dir`, and `--raw-dir`.
 - `scripts/build_mvp_catalog.py`: reproducible MVP catalog generator with `--check`.
+- `scripts/build_download_manifest.py`: builds or checks the curated 72-file acquisition selection.
+- `scripts/download_psi_files.py`: thin wrapper around the acquisition CLI.
+- `scripts/build_et_schemas.py`: builds or checks exact headers, row counts, encodings, and checksums for the 22 experimental tables.
+- `scripts/build_fixtures.py`: builds or checks seven authentic NASA fixtures without rewriting the manifest in `--check` mode.
 - `data/registry/psi_combustion_investigations.json`: 24 combustion investigations, generated from the PSI detail API.
 - `data/registry/psi_file_inventory.csv`: 16,354 current `added` files.
 - `data/registry/psi_experimental_tables.csv`: 22 public experimental summary tables.
 - `data/registry/annotations.json`: curated roles, rationales, limitations, table statistics, and checksums.
 - `data/registry/mvp_dataset_catalog.json`: machine-readable MVP catalog with roles and archive status.
+- `data/registry/download_manifest.json`: curated 72-file acquisition selection with limits, URLs, and expected checksums.
+- `data/registry/experimental_table_schemas.json`: exact header and row-count registry for all 22 experimental tables.
+- `data/registry/canonical_schema.json`: implemented Arrow schema and primary keys for 13 canonical tables.
+- `data/manifests/download_manifest.csv`: acquisition status, HTTP status, bytes, SHA-256, retrieval time, attempts, and errors.
+- `data/reports/acquisition_report.json`, `validation_report.json`, `dataset_quality_report.json`, and `processing_report.json`.
+- `src/data_pipeline/`: downloader, manifest, provenance, channels, parsers, Parquet schemas, parse orchestration, canonical builders, validation, quality, and CLI.
+- `data/fixtures/`: seven exact excerpts from authenticated NASA sources with checksums and source-row provenance.
+- `tests/`: 136 unit tests and 14 integration tests covering parsers, schemas, downloader safety, CLI routing, validation failure paths, and full-data counts.
 - `DATA_SOURCES.md`: verified source inventory, per-record cards, comparability matrix, access limitations, verification log.
-- `DATA_DICTIONARY.md`: exact source headers, units, missingness, and proposed canonical schema.
+- `DATA_DICTIONARY.md`: exact source headers, units, missingness, and the implemented canonical schema.
 - Architecture, roadmap, API contract, contribution guide, and decision records.
 
 ### 3.2 Not implemented yet
 
-- Raw data download and checksum manifest for the MVP files.
-- Parsers for CSV/XLSX/XLS.
-- Canonical Parquet tables and a query store.
+- Comparability allowlist and blocked-dataset serving state.
+- A documented DuckDB serving/query contract (DuckDB is currently used only for optional duplicate-key checks).
 - FastAPI service and OpenAPI contract.
 - Next.js frontend.
 - Grounded assistant and evaluation harness.
@@ -143,14 +154,16 @@ The LLM is optional. The platform must remain useful and truthful without it. Wh
 
 ```text
 data/
-├── registry/           committed metadata, annotations, catalog
+├── registry/           committed metadata, annotations, catalog, manifest, schema
+├── manifests/          committed acquisition manifest with checksums and timestamps
+├── reports/            committed acquisition, validation, quality, and processing reports
 ├── raw/                gitignored; exact NASA downloads, read-only
 ├── interim/            gitignored; parsed but not validated
 ├── processed/          gitignored; canonical Parquet, versioned
 └── fixtures/           committed small samples for parser tests
 ```
 
-Only `data/registry/` and `data/fixtures/` are committed. Raw, interim, and processed data are reproducible artifacts. A processed artifact is identified by a `dataset_version` derived from the source checksums and the pipeline version.
+Only `data/registry/`, `data/manifests/`, `data/reports/`, and `data/fixtures/` are committed. Raw, interim, and processed data are reproducible artifacts. A processed artifact is identified by a `dataset_version` derived from the source checksums and the pipeline/parser/schema versions.
 
 ### 6.2 Provenance envelope
 
@@ -201,14 +214,20 @@ A canonical dataset version is:
 
 ```text
 sha256(
-  sorted(source_file_sha256 list)
+  sorted(source_file_id + source_sha256 list)
   + parser_version
+  + pipeline_version
   + canonical_schema_version
-  + transformation_config_hash
 )
 ```
 
-The version is stored in the metadata database and exposed by the API. A change in any input or transformation produces a new version. The UI can show "data version" and "retrieved at" without exposing a Git commit as a proxy for data freshness.
+The current Phase 1 dataset version is:
+
+```text
+2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb
+```
+
+The version is stored in `data/processed/dataset_manifest.json` and `data/reports/processing_report.json`. A change in any input or transformation produces a new version. The UI can show "data version" and "retrieved at" without exposing a Git commit as a proxy for data freshness.
 
 ### 6.5 Raw data handling
 
@@ -682,6 +701,7 @@ A parser is done when:
 ### 16.1 Decisions
 
 - **ADR 0001:** MVP dataset selection. See `docs/decisions/0001-mvp-dataset-selection.md`.
+- **ADR 0002:** Phase 1 pipeline contracts, sentinel policy, and canonical Parquet outputs. See `docs/decisions/0002-phase-1-pipeline-contracts.md`.
 - **Metadata in Git, raw data outside Git.** This keeps the repository reviewable and avoids committing terabytes.
 - **Summary tables first.** PSI-10 and PSI-159 are the initial gas-flame foundation; PSI-100 and PSI-101 are the initial telemetry/smoke foundation.
 - **No BASS spread-rate derivation in the MVP.** The test matrices do not contain a processed spread rate, and video computer vision is a separate program.
@@ -700,13 +720,26 @@ A parser is done when:
 
 ## 17. Current milestone acceptance
 
-This milestone is complete when:
+Phase 1 is complete when:
 
-1. `scripts/fetch_psi_metadata.py --check` reports no metadata drift against the live PSI API.
-2. The registry contains 24 combustion investigations, 16,354 current files, and 13,496.77 GB registered total.
-3. `DATA_SOURCES.md`, `DATA_DICTIONARY.md`, `PROJECT_ARCHITECTURE.md`, `DEVELOPMENT_ROADMAP.md`, `API_DOCUMENTATION.md`, `README.md`, `AGENTS.md`, and `CONTRIBUTING.md` exist and agree on the verified numbers.
-4. `data/registry/annotations.json` and the generated registry agree on roles, limitations, table statistics, and checksums.
-5. No raw NASA data, credentials, or `.env` file is committed.
-6. The initialization commit is pushed to `origin/main` and the remote SHA is verified.
+1. The curated manifest selects only documented files and never the full archive.
+2. Every selected file is present, size-checked, SHA-256 verified, and has a retrieval timestamp, or is explicitly documented as `listed_404`.
+3. Parsers fail on unexpected headers and preserve every missing/sentinel token.
+4. Interim and canonical Parquet tables reproduce the committed row counts.
+5. Canonical rows carry accession, file, sheet, row, source URL, SHA-256, retrieval time, parser version, units, quality flags, and transformation history.
+6. Acquisition and canonical validation pass with zero failures.
+7. Unit and integration tests pass.
+8. No raw NASA data, credentials, or `.env` file is committed.
+9. The Phase 1 commit is pushed to `origin/main` and the remote SHA is verified.
 
-The next milestone is the data acquisition and parser phase described in `DEVELOPMENT_ROADMAP.md`.
+Verified Phase 1 result:
+
+- 72 selected files, 56,238,344 expected bytes; 70 downloaded, 2 already present, 0 failed.
+- 72 / 72 checksums verified; 2 documented 404s re-verified.
+- 79 parsed sources, 57 interim outputs.
+- 13 canonical tables, 8,058,206 rows, 82,953,195 bytes.
+- Acquisition validation pass; canonical validation pass (13 checks, 0 failed).
+- Quality report pass with 6 issues: 0 errors, 5 warnings, 1 informational note.
+- 150 tests pass: 136 unit, 14 integration.
+
+The next milestone is Phase 2: comparability allowlist, blocked-dataset state, and the serving/query contract described in `DEVELOPMENT_ROADMAP.md`.
