@@ -1,0 +1,1503 @@
+{
+  "schema_version": "1.0.0",
+  "tables": {
+    "psi_investigation": {
+      "description": "One row per PSI investigation, from the committed registry and annotations.",
+      "primary_key": "accession",
+      "columns": [
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "acronym",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "doi",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "research_area",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sub_research_area",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "project_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "start_date",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "version",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "public",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "restricted",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "file_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "removed_file_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "experimental_table_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "experimental_table_bytes",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "experimental_table_only_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "archive_status",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "registered_total_bytes",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "mvp_role",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "rationale",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "limitations_json",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "psi_file": {
+      "description": "One row per current public PSI file in the added inventory, with selected-file acquisition status.",
+      "primary_key": "file_id",
+      "columns": [
+        {
+          "name": "file_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "file_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "file_size_bytes",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "format",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "restricted",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "version",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "access_status",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "experimental_table": {
+      "description": "One row per public experimental summary table, with exact checksum and row counts.",
+      "primary_key": "table_id",
+      "columns": [
+        {
+          "name": "table_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "file_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "file_size_bytes",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "in_added",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "restricted",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "data_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "physical_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "columns",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "encoding_fallback",
+          "type": "bool",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "gas_flame_test": {
+      "description": "One row per PSI-10 or PSI-159 gas-flame test summary row.",
+      "primary_key": "observation_id",
+      "columns": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "flame_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "day",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "fuel",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "test_code",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "fuel_mole_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "fuel_mass_flow_mg_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "diluent_mass_flow_mg_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "total_mass_flow_mg_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "oxygen_mole_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "oxygen_mole_fraction_initial",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "oxygen_mole_fraction_final",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "oxygen_mole_fraction_before",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "oxygen_mole_fraction_after",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "pressure_initial_atm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "pressure_final_atm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "pressure_mean_atm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "pressure_approx_bar",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "oxidizer_mass_flow_mg_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "fuel_mole_fraction_initial",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "fuel_mole_fraction_final",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "fuel_mole_fraction_before",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "fuel_mole_fraction_after",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "fuel_burn_rate_mg_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "stoich_mixture_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "adiabatic_flame_temp_k",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cool_flame_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "tfp_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "hot_ignition",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "burn_time_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "extinction_mode",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "peak_burner_temp_c",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "peak_burner_temp_k",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "color",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "comments",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "quality_flags",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "telemetry_run": {
+      "description": "One row per SAFFIRE-III telemetry export or workbook sheet; exports are never concatenated.",
+      "primary_key": "run_id",
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "export_kind",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "physical_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "empty_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "invalid_time_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sentinel_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "valid_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "time_min_ms",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "time_max_ms",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "column_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "channel_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "constant_channels_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "channel_profiles_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "telemetry_point": {
+      "description": "Tidy long telemetry points with exact channel names, units, and quality flags.",
+      "primary_key": "observation_id",
+      "columns": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "run_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "relative_time_ms",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "relative_time_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "channel_name_raw",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "channel_name_canonical",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_value",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "quality_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "smoke_run": {
+      "description": "One row per SAME-R HKP telemetry run.",
+      "primary_key": "run_id",
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "test_number",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sample_number",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "carousel_number",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "test_numbers_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sample_numbers_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "carousel_numbers_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "run_mode_codes_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "time_min_unix_s",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "time_max_unix_s",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "elapsed_test_time_min_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "elapsed_test_time_max_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "physical_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "empty_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "malformed_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "invalid_time_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sentinel_time_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "valid_rows",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "column_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "channel_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "constant_channels_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sentinel_channels_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "channel_profiles_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "issues_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "smoke_point": {
+      "description": "Tidy long SAME-R points with exact channel names, units, and quality flags.",
+      "primary_key": "observation_id",
+      "columns": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "run_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "unix_time_s",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "elapsed_test_time_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "source_time_string",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "channel_name_raw",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "channel_name_canonical",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_value",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "quality_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "smoke_test_log": {
+      "description": "One row per legacy SAME test-log event.",
+      "primary_key": "log_id",
+      "columns": [
+        {
+          "name": "log_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "source_timestamp_string",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "event_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "event_detail",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "material_test": {
+      "description": "One row per BASS-II or BASS as-run test-matrix row; context only.",
+      "primary_key": "observation_id",
+      "columns": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "record_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "test_date",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "gmt_day",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "as_run_test_no",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "test_no",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sample_no",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "material",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "flow_restrictor",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "fan_display",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "air_display",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "radiometer_gain",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "total_frames",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "initial_o2_pct",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "final_o2_pct",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "o2_pct",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "initial_co2_pct",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "final_co2_pct",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "initial_co_ppm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "final_co_ppm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "pressure_atm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "co2_mm_hg",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "observations",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "context_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "quality_flags",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "droplet_test": {
+      "description": "One row per FLEX droplet-combustion test.",
+      "primary_key": "observation_id",
+      "columns": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "flex_test_number",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "test_date",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "flex_identifier",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "test_gmt",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "fuel",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ambient_pressure_mm_hg",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "o2_initial_mole_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "n2_initial_mole_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "co_initial_mole_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "he_initial_mole_fraction",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "droplet_initial_diameter_mm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "visible_flame_extinction_diameter_mm",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "burning_rate_mm_as_labeled",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "burn_time_s",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "test_end",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "quality_flags",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "experimental_table_cell": {
+      "description": "One row per non-empty cell in the 22 public experimental summary tables.",
+      "primary_key": "cell_id",
+      "columns": [
+        {
+          "name": "cell_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "source_column_index",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "source_column_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "raw_value",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "numeric_value",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "value_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    "source_row": {
+      "description": "One row per non-empty row in the 22 public experimental summary tables, preserving the raw row.",
+      "primary_key": "source_row_id",
+      "columns": [
+        {
+          "name": "source_row_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "nonempty_cell_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "numeric_cell_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    }
+  }
+}

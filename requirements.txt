@@ -1,0 +1,10 @@
+# Phase 1 pipeline and test dependencies.
+# Versions are pinned to the environment that produced the committed reports.
+# The downloader, manifest builder, and metadata collector use the standard
+# library only; these packages are required for Parquet, Excel, DuckDB, and
+# tests.
+duckdb==2.0.0
+openpyxl==3.1.5
+pyarrow==26.0.1
+pytest==9.2.0
+xlrd==2.0.2

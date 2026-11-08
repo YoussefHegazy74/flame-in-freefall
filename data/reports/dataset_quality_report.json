@@ -1,0 +1,2454 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-11-08T23:43:27Z",
+  "pipeline_version": "1.0.0",
+  "status": "pass",
+  "summary": {
+    "tables": 13,
+    "total_rows": 8058206,
+    "point_rows": 8013863,
+    "issues": 6,
+    "errors": 0,
+    "warnings": 5
+  },
+  "tables": {
+    "psi_investigation": {
+      "table_name": "psi_investigation",
+      "path": "data/processed/psi_investigation.parquet",
+      "rows": 24,
+      "columns": 22,
+      "primary_key": "accession",
+      "column_missingness": [
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "acronym",
+          "type": "string",
+          "null_count": 5,
+          "null_rate": 0.208333,
+          "empty_string_count": 0
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "doi",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "research_area",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "sub_research_area",
+          "type": "string",
+          "null_count": 1,
+          "null_rate": 0.041667,
+          "empty_string_count": 0
+        },
+        {
+          "name": "project_type",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "start_date",
+          "type": "string",
+          "null_count": 3,
+          "null_rate": 0.125,
+          "empty_string_count": 0
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "null_count": 4,
+          "null_rate": 0.166667,
+          "empty_string_count": 0
+        },
+        {
+          "name": "version",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "public",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "restricted",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "file_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "removed_file_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "experimental_table_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "experimental_table_bytes",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "experimental_table_only_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "archive_status",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "registered_total_bytes",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "mvp_role",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "rationale",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "limitations_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "psi_file": {
+      "table_name": "psi_file",
+      "path": "data/processed/psi_file.parquet",
+      "rows": 16354,
+      "columns": 13,
+      "primary_key": "file_id",
+      "column_missingness": [
+        {
+          "name": "file_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "file_name",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "file_size_bytes",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "format",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "null_count": 314,
+          "null_rate": 0.0192,
+          "empty_string_count": 0
+        },
+        {
+          "name": "restricted",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "version",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "null_count": 16296,
+          "null_rate": 0.996453,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 16296,
+          "null_rate": 0.996453,
+          "empty_string_count": 0
+        },
+        {
+          "name": "access_status",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 16296,
+          "null_rate": 0.996453,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "experimental_table": {
+      "table_name": "experimental_table",
+      "path": "data/processed/experimental_table.parquet",
+      "rows": 22,
+      "columns": 16,
+      "primary_key": "table_id",
+      "column_missingness": [
+        {
+          "name": "table_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "file_name",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "file_size_bytes",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "in_added",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "restricted",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "data_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "physical_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "columns",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "null_count": 21,
+          "null_rate": 0.954545,
+          "empty_string_count": 0
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "encoding_fallback",
+          "type": "bool",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "gas_flame_test": {
+      "table_name": "gas_flame_test",
+      "path": "data/processed/gas_flame_test.parquet",
+      "rows": 660,
+      "columns": 46,
+      "primary_key": "observation_id",
+      "column_missingness": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "null_count": 660,
+          "null_rate": 1.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "flame_type",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "day",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "fuel",
+          "type": "string",
+          "null_count": 120,
+          "null_rate": 0.181818,
+          "empty_string_count": 0
+        },
+        {
+          "name": "test_code",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "fuel_mole_fraction",
+          "type": "double",
+          "null_count": 334,
+          "null_rate": 0.506061,
+          "empty_string_count": null
+        },
+        {
+          "name": "fuel_mass_flow_mg_s",
+          "type": "double",
+          "null_count": 334,
+          "null_rate": 0.506061,
+          "empty_string_count": null
+        },
+        {
+          "name": "diluent_mass_flow_mg_s",
+          "type": "double",
+          "null_count": 404,
+          "null_rate": 0.612121,
+          "empty_string_count": null
+        },
+        {
+          "name": "total_mass_flow_mg_s",
+          "type": "double",
+          "null_count": 404,
+          "null_rate": 0.612121,
+          "empty_string_count": null
+        },
+        {
+          "name": "oxygen_mole_fraction",
+          "type": "double",
+          "null_count": 397,
+          "null_rate": 0.601515,
+          "empty_string_count": null
+        },
+        {
+          "name": "oxygen_mole_fraction_initial",
+          "type": "double",
+          "null_count": 453,
+          "null_rate": 0.686364,
+          "empty_string_count": null
+        },
+        {
+          "name": "oxygen_mole_fraction_final",
+          "type": "double",
+          "null_count": 473,
+          "null_rate": 0.716667,
+          "empty_string_count": null
+        },
+        {
+          "name": "oxygen_mole_fraction_before",
+          "type": "double",
+          "null_count": 481,
+          "null_rate": 0.728788,
+          "empty_string_count": null
+        },
+        {
+          "name": "oxygen_mole_fraction_after",
+          "type": "double",
+          "null_count": 481,
+          "null_rate": 0.728788,
+          "empty_string_count": null
+        },
+        {
+          "name": "pressure_initial_atm",
+          "type": "double",
+          "null_count": 333,
+          "null_rate": 0.504545,
+          "empty_string_count": null
+        },
+        {
+          "name": "pressure_final_atm",
+          "type": "double",
+          "null_count": 353,
+          "null_rate": 0.534848,
+          "empty_string_count": null
+        },
+        {
+          "name": "pressure_mean_atm",
+          "type": "double",
+          "null_count": 353,
+          "null_rate": 0.534848,
+          "empty_string_count": null
+        },
+        {
+          "name": "pressure_approx_bar",
+          "type": "double",
+          "null_count": 327,
+          "null_rate": 0.495455,
+          "empty_string_count": null
+        },
+        {
+          "name": "oxidizer_mass_flow_mg_s",
+          "type": "double",
+          "null_count": 394,
+          "null_rate": 0.59697,
+          "empty_string_count": null
+        },
+        {
+          "name": "fuel_mole_fraction_initial",
+          "type": "double",
+          "null_count": 540,
+          "null_rate": 0.818182,
+          "empty_string_count": null
+        },
+        {
+          "name": "fuel_mole_fraction_final",
+          "type": "double",
+          "null_count": 540,
+          "null_rate": 0.818182,
+          "empty_string_count": null
+        },
+        {
+          "name": "fuel_mole_fraction_before",
+          "type": "double",
+          "null_count": 506,
+          "null_rate": 0.766667,
+          "empty_string_count": null
+        },
+        {
+          "name": "fuel_mole_fraction_after",
+          "type": "double",
+          "null_count": 506,
+          "null_rate": 0.766667,
+          "empty_string_count": null
+        },
+        {
+          "name": "fuel_burn_rate_mg_s",
+          "type": "double",
+          "null_count": 506,
+          "null_rate": 0.766667,
+          "empty_string_count": null
+        },
+        {
+          "name": "stoich_mixture_fraction",
+          "type": "double",
+          "null_count": 73,
+          "null_rate": 0.110606,
+          "empty_string_count": null
+        },
+        {
+          "name": "adiabatic_flame_temp_k",
+          "type": "double",
+          "null_count": 73,
+          "null_rate": 0.110606,
+          "empty_string_count": null
+        },
+        {
+          "name": "cool_flame_flag",
+          "type": "string",
+          "null_count": 652,
+          "null_rate": 0.987879,
+          "empty_string_count": 0
+        },
+        {
+          "name": "tfp_flag",
+          "type": "string",
+          "null_count": 327,
+          "null_rate": 0.495455,
+          "empty_string_count": 0
+        },
+        {
+          "name": "hot_ignition",
+          "type": "string",
+          "null_count": 327,
+          "null_rate": 0.495455,
+          "empty_string_count": 0
+        },
+        {
+          "name": "burn_time_s",
+          "type": "double",
+          "null_count": 331,
+          "null_rate": 0.501515,
+          "empty_string_count": null
+        },
+        {
+          "name": "extinction_mode",
+          "type": "string",
+          "null_count": 388,
+          "null_rate": 0.587879,
+          "empty_string_count": 0
+        },
+        {
+          "name": "peak_burner_temp_c",
+          "type": "double",
+          "null_count": 376,
+          "null_rate": 0.569697,
+          "empty_string_count": null
+        },
+        {
+          "name": "peak_burner_temp_k",
+          "type": "double",
+          "null_count": 508,
+          "null_rate": 0.769697,
+          "empty_string_count": null
+        },
+        {
+          "name": "color",
+          "type": "string",
+          "null_count": 540,
+          "null_rate": 0.818182,
+          "empty_string_count": 0
+        },
+        {
+          "name": "comments",
+          "type": "string",
+          "null_count": 577,
+          "null_rate": 0.874242,
+          "empty_string_count": 0
+        },
+        {
+          "name": "quality_flags",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "telemetry_run": {
+      "table_name": "telemetry_run",
+      "path": "data/processed/telemetry_run.parquet",
+      "rows": 5,
+      "columns": 21,
+      "primary_key": "run_id",
+      "column_missingness": [
+        {
+          "name": "run_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 2
+        },
+        {
+          "name": "export_kind",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "physical_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "empty_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "invalid_time_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "sentinel_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "valid_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "time_min_ms",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "time_max_ms",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "column_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "channel_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "constant_channels_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "channel_profiles_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "telemetry_point": {
+      "table_name": "telemetry_point",
+      "path": "data/processed/telemetry_point.parquet",
+      "rows": 1762436,
+      "columns": 17,
+      "primary_key": "observation_id",
+      "column_missingness": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "run_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "relative_time_ms",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "relative_time_s",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "channel_name_raw",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "channel_name_canonical",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "raw_value",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "quality_flag",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        }
+      ]
+    },
+    "smoke_run": {
+      "table_name": "smoke_run",
+      "path": "data/processed/smoke_run.parquet",
+      "rows": 44,
+      "columns": 31,
+      "primary_key": "run_id",
+      "column_missingness": [
+        {
+          "name": "run_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "test_number",
+          "type": "int64",
+          "null_count": 39,
+          "null_rate": 0.886364,
+          "empty_string_count": null
+        },
+        {
+          "name": "sample_number",
+          "type": "int64",
+          "null_count": 11,
+          "null_rate": 0.25,
+          "empty_string_count": null
+        },
+        {
+          "name": "carousel_number",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "test_numbers_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "sample_numbers_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "carousel_numbers_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "run_mode_codes_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "time_min_unix_s",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "time_max_unix_s",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "elapsed_test_time_min_s",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "elapsed_test_time_max_s",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "physical_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "empty_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "malformed_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "invalid_time_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "sentinel_time_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "valid_rows",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "column_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "channel_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "constant_channels_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "sentinel_channels_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "channel_profiles_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "issues_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "notes",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "smoke_point": {
+      "table_name": "smoke_point",
+      "path": "data/processed/smoke_point.parquet",
+      "rows": 6251427,
+      "columns": 17,
+      "primary_key": "observation_id",
+      "column_missingness": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "run_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "unix_time_s",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "elapsed_test_time_s",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_time_string",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "channel_name_raw",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "channel_name_canonical",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "raw_value",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "null_count": 2194,
+          "null_rate": 0.000351,
+          "empty_string_count": null
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "quality_flag",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        }
+      ]
+    },
+    "smoke_test_log": {
+      "table_name": "smoke_test_log",
+      "path": "data/processed/smoke_test_log.parquet",
+      "rows": 119,
+      "columns": 13,
+      "primary_key": "log_id",
+      "column_missingness": [
+        {
+          "name": "log_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_timestamp_string",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "event_type",
+          "type": "string",
+          "null_count": 1,
+          "null_rate": 0.008403,
+          "empty_string_count": 0
+        },
+        {
+          "name": "event_detail",
+          "type": "string",
+          "null_count": 33,
+          "null_rate": 0.277311,
+          "empty_string_count": 0
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "material_test": {
+      "table_name": "material_test",
+      "path": "data/processed/material_test.parquet",
+      "rows": 259,
+      "columns": 35,
+      "primary_key": "observation_id",
+      "column_missingness": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "record_type",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "test_date",
+          "type": "string",
+          "null_count": 6,
+          "null_rate": 0.023166,
+          "empty_string_count": 0
+        },
+        {
+          "name": "gmt_day",
+          "type": "string",
+          "null_count": 130,
+          "null_rate": 0.501931,
+          "empty_string_count": 0
+        },
+        {
+          "name": "as_run_test_no",
+          "type": "string",
+          "null_count": 130,
+          "null_rate": 0.501931,
+          "empty_string_count": 0
+        },
+        {
+          "name": "test_no",
+          "type": "string",
+          "null_count": 9,
+          "null_rate": 0.034749,
+          "empty_string_count": 0
+        },
+        {
+          "name": "sample_no",
+          "type": "string",
+          "null_count": 9,
+          "null_rate": 0.034749,
+          "empty_string_count": 0
+        },
+        {
+          "name": "material",
+          "type": "string",
+          "null_count": 8,
+          "null_rate": 0.030888,
+          "empty_string_count": 0
+        },
+        {
+          "name": "flow_restrictor",
+          "type": "string",
+          "null_count": 9,
+          "null_rate": 0.034749,
+          "empty_string_count": 0
+        },
+        {
+          "name": "fan_display",
+          "type": "string",
+          "null_count": 23,
+          "null_rate": 0.088803,
+          "empty_string_count": 0
+        },
+        {
+          "name": "air_display",
+          "type": "string",
+          "null_count": 25,
+          "null_rate": 0.096525,
+          "empty_string_count": 0
+        },
+        {
+          "name": "radiometer_gain",
+          "type": "string",
+          "null_count": 9,
+          "null_rate": 0.034749,
+          "empty_string_count": 0
+        },
+        {
+          "name": "total_frames",
+          "type": "string",
+          "null_count": 16,
+          "null_rate": 0.061776,
+          "empty_string_count": 0
+        },
+        {
+          "name": "initial_o2_pct",
+          "type": "double",
+          "null_count": 130,
+          "null_rate": 0.501931,
+          "empty_string_count": null
+        },
+        {
+          "name": "final_o2_pct",
+          "type": "double",
+          "null_count": 132,
+          "null_rate": 0.509653,
+          "empty_string_count": null
+        },
+        {
+          "name": "o2_pct",
+          "type": "double",
+          "null_count": 136,
+          "null_rate": 0.525097,
+          "empty_string_count": null
+        },
+        {
+          "name": "initial_co2_pct",
+          "type": "double",
+          "null_count": 132,
+          "null_rate": 0.509653,
+          "empty_string_count": null
+        },
+        {
+          "name": "final_co2_pct",
+          "type": "double",
+          "null_count": 136,
+          "null_rate": 0.525097,
+          "empty_string_count": null
+        },
+        {
+          "name": "initial_co_ppm",
+          "type": "double",
+          "null_count": 144,
+          "null_rate": 0.555985,
+          "empty_string_count": null
+        },
+        {
+          "name": "final_co_ppm",
+          "type": "double",
+          "null_count": 139,
+          "null_rate": 0.53668,
+          "empty_string_count": null
+        },
+        {
+          "name": "pressure_atm",
+          "type": "double",
+          "null_count": 136,
+          "null_rate": 0.525097,
+          "empty_string_count": null
+        },
+        {
+          "name": "co2_mm_hg",
+          "type": "double",
+          "null_count": 146,
+          "null_rate": 0.563707,
+          "empty_string_count": null
+        },
+        {
+          "name": "observations",
+          "type": "string",
+          "null_count": 135,
+          "null_rate": 0.521236,
+          "empty_string_count": 0
+        },
+        {
+          "name": "context_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "quality_flags",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "droplet_test": {
+      "table_name": "droplet_test",
+      "path": "data/processed/droplet_test.parquet",
+      "rows": 274,
+      "columns": 27,
+      "primary_key": "observation_id",
+      "column_missingness": [
+        {
+          "name": "observation_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sheet",
+          "type": "string",
+          "null_count": 274,
+          "null_rate": 1.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "flex_test_number",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "test_date",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "flex_identifier",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "test_gmt",
+          "type": "string",
+          "null_count": 1,
+          "null_rate": 0.00365,
+          "empty_string_count": 0
+        },
+        {
+          "name": "fuel",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "ambient_pressure_mm_hg",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "o2_initial_mole_fraction",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "n2_initial_mole_fraction",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "co_initial_mole_fraction",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "he_initial_mole_fraction",
+          "type": "double",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "droplet_initial_diameter_mm",
+          "type": "double",
+          "null_count": 12,
+          "null_rate": 0.043796,
+          "empty_string_count": null
+        },
+        {
+          "name": "visible_flame_extinction_diameter_mm",
+          "type": "double",
+          "null_count": 77,
+          "null_rate": 0.281022,
+          "empty_string_count": null
+        },
+        {
+          "name": "burning_rate_mm_as_labeled",
+          "type": "double",
+          "null_count": 16,
+          "null_rate": 0.058394,
+          "empty_string_count": null
+        },
+        {
+          "name": "burn_time_s",
+          "type": "double",
+          "null_count": 6,
+          "null_rate": 0.021898,
+          "empty_string_count": null
+        },
+        {
+          "name": "test_end",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "quality_flags",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "experimental_table_cell": {
+      "table_name": "experimental_table_cell",
+      "path": "data/processed/experimental_table_cell.parquet",
+      "rows": 24573,
+      "columns": 14,
+      "primary_key": "cell_id",
+      "column_missingness": [
+        {
+          "name": "cell_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_column_index",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "source_column_name",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "raw_value",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "numeric_value",
+          "type": "double",
+          "null_count": 8951,
+          "null_rate": 0.364262,
+          "empty_string_count": null
+        },
+        {
+          "name": "value_flag",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    },
+    "source_row": {
+      "table_name": "source_row",
+      "path": "data/processed/source_row.parquet",
+      "rows": 2009,
+      "columns": 12,
+      "primary_key": "source_row_id",
+      "column_missingness": [
+        {
+          "name": "source_row_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "table_id",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "accession",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_file",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_row",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "nonempty_cell_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "numeric_cell_count",
+          "type": "int64",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": null
+        },
+        {
+          "name": "raw_row_json",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_sha256",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "retrieved_at",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "source_url",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        },
+        {
+          "name": "parser_version",
+          "type": "string",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "empty_string_count": 0
+        }
+      ]
+    }
+  },
+  "point_tables": {
+    "telemetry_point": {
+      "rows": 1762436,
+      "quality_flag_counts": {
+        "uncalibrated": 613008,
+        "constant": 574733,
+        "ok": 536382,
+        "not_stated_unit": 38313
+      },
+      "unit_counts": {
+        "not stated": 1072783,
+        "V": 153252,
+        "rad/s": 114939,
+        "psi": 114939,
+        "m/s²": 114939,
+        "Pa": 76626,
+        "°C": 38313,
+        "Unix epoch ms": 38313,
+        "psi/K": 38313,
+        "s": 19
+      },
+      "accessions": {
+        "PSI-100": 1762436
+      }
+    },
+    "smoke_point": {
+      "rows": 6251427,
+      "quality_flag_counts": {
+        "not_stated_unit": 2774134,
+        "constant": 1550184,
+        "ok": 1224241,
+        "uncalibrated": 700674,
+        "sentinel": 1974,
+        "invalid_indefinite": 220
+      },
+      "unit_counts": {
+        "not stated": 4121820,
+        "V": 893061,
+        "PSIA": 343485,
+        "LPM": 274788,
+        "°C": 137394,
+        "mg/m³": 137394,
+        "KB": 68697,
+        "Ω": 68697,
+        "PSIG": 68697,
+        "pt/cc": 68697,
+        "SCCM": 68697
+      },
+      "accessions": {
+        "PSI-101": 6251427
+      }
+    }
+  },
+  "run_tables": {
+    "telemetry_run": {
+      "runs": 5,
+      "channel_count": 104,
+      "constant_channel_count": 32,
+      "constant_channels": [
+        "FIZ1 Smoke Detector Obscuration  (V)",
+        "P@CDH_F1PCM_SMK_DET_OBS_SENS_P",
+        "P@sfsHk.Sample3IgniterCurrent",
+        "P@sfsHk.Sample3IgniterVoltage",
+        "P@sfsHk.Sample4IgniterCurrent",
+        "P@sfsHk.Sample4IgniterVoltage",
+        "P@sfsHk.Sample5IgniterCurrent",
+        "P@sfsHk.Sample5IgniterVoltage",
+        "P@sfsHk.Sample6IgniterCurrent",
+        "P@sfsHk.Sample6IgniterVoltage",
+        "P@sfsHk.Sample7IgniterCurrent",
+        "P@sfsHk.Sample7IgniterVoltage",
+        "P@sfsHk.Sample8IgniterCurrent",
+        "P@sfsHk.Sample8IgniterVoltage",
+        "P@sfsHk.Sample9IgniterCurrent",
+        "P@sfsHk.Sample9IgniterVoltage",
+        "Rel-to-Cygnus Time (s)",
+        "Sample3IgniterI",
+        "Sample3IgniterV",
+        "Sample4IgniterI",
+        "Sample4IgniterV",
+        "Sample5IgniterI",
+        "Sample5IgniterV",
+        "Sample6IgniterI",
+        "Sample6IgniterV",
+        "Sample7IgniterI",
+        "Sample7IgniterV",
+        "Sample8IgniterI",
+        "Sample8IgniterV",
+        "Sample9IgniterI",
+        "Sample9IgniterV",
+        "Tach/100"
+      ],
+      "sentinel_channel_count": 0,
+      "sentinel_channels": []
+    },
+    "smoke_run": {
+      "runs": 44,
+      "channel_count": 91,
+      "constant_channel_count": 49,
+      "constant_channels": [
+        "12VDCHeaterEnable",
+        "CarouselPower",
+        "CarouselProximitySensor(Volts)",
+        "CommDiagADilutionSolenoid[PN24]",
+        "CommDiagASolenoid[VR11]",
+        "CommDiagBDilutionSolenoid[PN27]",
+        "DriveKBRemaining",
+        "DustTrakAKeySelect",
+        "DustTrakAMeasurement(MgPerM3)",
+        "DustTrakAPower",
+        "DustTrakAState",
+        "DustTrakBKeySelect",
+        "DustTrakBPower",
+        "DustTrakBState",
+        "EnetOverride",
+        "EventSet",
+        "GN2MainSolenoid[PN03]",
+        "GateEnableSolenoid[PN07]",
+        "HeatingInProgress",
+        "ISSDetectorSelfTest",
+        "OKStatus",
+        "PTrakKeySelect",
+        "PTrakPower",
+        "PTrakState",
+        "PistonVacuumSolenoid[BN16]",
+        "PositionerClock",
+        "PositionerDirectionIn",
+        "PositionerEnable",
+        "ProximitySensor1(Volts)",
+        "ProximitySensor2(Volts)",
+        "ProximitySensor4(Volts)",
+        "STSDetectorAlarm",
+        "STSDetectorAlarmReset",
+        "STSDetectorPower",
+        "STSDetectorSelfTest",
+        "SampleHeaterOverride",
+        "TestRunning",
+        "ThermalPrecipitatorPostAgeCableSense",
+        "ThermalPrecipitatorPostAgeChannel",
+        "ThermalPrecipitatorPostAgeHeater",
+        "ThermalPrecipitatorPostAgeValve",
+        "ThermalPrecipitatorPreAgeCableSense",
+        "ThermalPrecipitatorPreAgeChannel",
+        "ThermalPrecipitatorPreAgeHeater",
+        "ThermalPrecipitatorPreAgeValve",
+        "ThermalPrecipitatorSolenoid[VM06]",
+        "VideoPaused",
+        "WatchdogReset",
+        "ZeroLFE"
+      ],
+      "sentinel_channel_count": 1,
+      "sentinel_channels": [
+        "PTrakMeasurement(PtPerCC)"
+      ]
+    }
+  },
+  "flag_tables": {
+    "gas_flame_test": {
+      "missing": 496,
+      "ramped_condition": 411,
+      "sentinel_dash": 133,
+      "has_ramped_condition": 69,
+      "has_missing_final_state": 20,
+      "low_oxygen_condition": 12,
+      "spreadsheet_error": 6,
+      "has_spreadsheet_error": 4
+    },
+    "material_test": {
+      "missing": 28,
+      "not_measured": 15,
+      "sentinel_minus_one": 11,
+      "non_numeric": 6,
+      "over_range": 3,
+      "inequality_text": 1,
+      "unparsed_date": 1
+    },
+    "droplet_test": {
+      "unit_ambiguity": 258,
+      "missing": 78,
+      "sentinel_dash": 34,
+      "approximate": 2
+    }
+  },
+  "experimental_tables": {
+    "cell_count": 24573,
+    "value_flag_counts": {
+      "ok": 15567,
+      "non_numeric": 5966,
+      "unit_text": 2261,
+      "ramped_condition": 411,
+      "sentinel_dash": 167,
+      "range_text": 86,
+      "percent_text": 40,
+      "not_measured": 16,
+      "not_applicable": 16,
+      "approximate": 15,
+      "low_oxygen_condition": 12,
+      "spreadsheet_error": 6,
+      "non_numeric_qualifier": 5,
+      "over_range": 3,
+      "inequality_text": 2
+    },
+    "table_cell_counts": {
+      "PSI-10": 4725,
+      "PSI-100": 18,
+      "PSI-101": 965,
+      "PSI-102": 28,
+      "PSI-106": 24,
+      "PSI-107": 4161,
+      "PSI-142": 32,
+      "PSI-159": 5866,
+      "PSI-20": 128,
+      "PSI-21": 225,
+      "PSI-22": 204,
+      "PSI-23": 147,
+      "PSI-25": 2174,
+      "PSI-26": 729,
+      "PSI-39": 861,
+      "PSI-47": 10,
+      "PSI-68": 56,
+      "PSI-69": 4032,
+      "PSI-98": 30,
+      "PSI-99": 158
+    },
+    "source_row_count": 2009
+  },
+  "provenance": {
+    "gas_flame_test": {
+      "rows": 660,
+      "source_sha256_nonnull": 660,
+      "distinct_source_sha256": 4,
+      "complete": true
+    },
+    "telemetry_point": {
+      "rows": 1762436,
+      "source_sha256_nonnull": 1762436,
+      "distinct_source_sha256": 3,
+      "complete": true
+    },
+    "smoke_point": {
+      "rows": 6251427,
+      "source_sha256_nonnull": 6251427,
+      "distinct_source_sha256": 44,
+      "complete": true
+    },
+    "smoke_test_log": {
+      "rows": 119,
+      "source_sha256_nonnull": 119,
+      "distinct_source_sha256": 1,
+      "complete": true
+    },
+    "material_test": {
+      "rows": 259,
+      "source_sha256_nonnull": 259,
+      "distinct_source_sha256": 2,
+      "complete": true
+    },
+    "droplet_test": {
+      "rows": 274,
+      "source_sha256_nonnull": 274,
+      "distinct_source_sha256": 1,
+      "complete": true
+    },
+    "experimental_table_cell": {
+      "rows": 24573,
+      "source_sha256_nonnull": 24573,
+      "distinct_source_sha256": 22,
+      "complete": true
+    },
+    "source_row": {
+      "rows": 2009,
+      "source_sha256_nonnull": 2009,
+      "distinct_source_sha256": 22,
+      "complete": true
+    }
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "unit_ambiguity",
+      "message": "The source header says percent but the observed values are around 0.22. The values are preserved as o2_pct and are not relabeled as initial/final O2.",
+      "details": {
+        "accession": "PSI-26",
+        "column": "o2_pct",
+        "header": "O2 % by volume",
+        "non_null_count": 123,
+        "min": 0.159,
+        "max": 0.22721982701616103,
+        "issue": "The source header says percent but the observed values are around 0.22. The values are preserved as o2_pct and are not relabeled as initial/final O2."
+      }
+    },
+    {
+      "severity": "warning",
+      "code": "unit_ambiguity",
+      "message": "PSI-69 `Burning rate; mm` is preserved as labeled. It is not converted to mm/s without source confirmation.",
+      "details": {
+        "column": "burning_rate_mm_as_labeled",
+        "count": 258
+      }
+    },
+    {
+      "severity": "warning",
+      "code": "missing_final_state",
+      "message": "Some gas-flame tests have a missing final O2/pressure state.",
+      "details": {
+        "count": 20
+      }
+    },
+    {
+      "severity": "warning",
+      "code": "spreadsheet_error",
+      "message": "Spreadsheet error tokens are preserved as non-numeric values.",
+      "details": {
+        "count": 6
+      }
+    },
+    {
+      "severity": "info",
+      "code": "uncalibrated_channels",
+      "message": "Some telemetry channels are raw/uncalibrated and are labeled as such.",
+      "details": {
+        "count": 613008
+      }
+    },
+    {
+      "severity": "warning",
+      "code": "sentinel_points",
+      "message": "SAME-R -999 sentinels are preserved with null values.",
+      "details": {
+        "count": 1974
+      }
+    }
+  ]
+}

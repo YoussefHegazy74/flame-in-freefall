@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+  "generated_at": "2026-11-08T23:43:21Z",
+  "started_at": "2026-11-08T23:43:08Z",
+  "pipeline_version": "1.0.0",
+  "parser_version": "1.0.1",
+  "canonical_schema_version": "1.0.0",
+  "tables": {
+    "psi_investigation": {
+      "table_name": "psi_investigation",
+      "path": "data/processed/psi_investigation.parquet",
+      "rows": 24,
+      "bytes": 19018,
+      "row_groups": 1,
+      "source": "committed registry"
+    },
+    "psi_file": {
+      "table_name": "psi_file",
+      "path": "data/processed/psi_file.parquet",
+      "rows": 16354,
+      "bytes": 336188,
+      "row_groups": 1,
+      "source": "committed registry"
+    },
+    "experimental_table": {
+      "table_name": "experimental_table",
+      "path": "data/processed/experimental_table.parquet",
+      "rows": 22,
+      "bytes": 8373,
+      "row_groups": 1,
+      "source": "committed registry"
+    },
+    "gas_flame_test": {
+      "table_name": "gas_flame_test",
+      "path": "data/processed/gas_flame_test.parquet",
+      "rows": 660,
+      "bytes": 103051,
+      "row_groups": 1,
+      "source": "data/interim/gas_flame_test.parquet"
+    },
+    "telemetry_run": {
+      "table_name": "telemetry_run",
+      "path": "data/processed/telemetry_run.parquet",
+      "rows": 5,
+      "bytes": 13257,
+      "row_groups": 1,
+      "source": "data/interim/telemetry_run.parquet"
+    },
+    "smoke_run": {
+      "table_name": "smoke_run",
+      "path": "data/processed/smoke_run.parquet",
+      "rows": 44,
+      "bytes": 55190,
+      "row_groups": 1,
+      "source": "data/interim/smoke_run.parquet"
+    },
+    "smoke_test_log": {
+      "table_name": "smoke_test_log",
+      "path": "data/processed/smoke_test_log.parquet",
+      "rows": 119,
+      "bytes": 12156,
+      "row_groups": 1,
+      "source": "data/interim/smoke_test_log.parquet"
+    },
+    "material_test": {
+      "table_name": "material_test",
+      "path": "data/processed/material_test.parquet",
+      "rows": 259,
+      "bytes": 81477,
+      "row_groups": 1,
+      "source": "data/interim/material_test.parquet"
+    },
+    "droplet_test": {
+      "table_name": "droplet_test",
+      "path": "data/processed/droplet_test.parquet",
+      "rows": 274,
+      "bytes": 36851,
+      "row_groups": 1,
+      "source": "data/interim/droplet_test.parquet"
+    },
+    "experimental_table_cell": {
+      "table_name": "experimental_table_cell",
+      "path": "data/processed/experimental_table_cell.parquet",
+      "rows": 24573,
+      "bytes": 387585,
+      "row_groups": 1,
+      "source": "data/interim/experimental_table_cell.parquet"
+    },
+    "source_row": {
+      "table_name": "source_row",
+      "path": "data/processed/source_row.parquet",
+      "rows": 2009,
+      "bytes": 108699,
+      "row_groups": 1,
+      "source": "data/interim/source_row.parquet"
+    },
+    "telemetry_point": {
+      "table_name": "telemetry_point",
+      "path": "data/processed/telemetry_point.parquet",
+      "rows": 1762436,
+      "bytes": 17061838,
+      "row_groups": 21,
+      "inputs": [
+        "data/interim/telemetry_points/psi-100-psi-100-raw-data-raw-telemetry-file.parquet",
+        "data/interim/telemetry_points/psi-100-psi-100-raw-data-saffire-data-table2017-161-00-42-03-eu.parquet",
+        "data/interim/telemetry_points/psi-100-psi-100-raw-data-saffire-iii-1-hz-telemetry-data-rawdata.parquet",
+        "data/interim/telemetry_points/psi-100-psi-100-raw-data-saffire-iii-1-hz-telemetry-data-saffiredata.parquet",
+        "data/interim/telemetry_points/psi-100-psi-100-raw-data-saffire-iii-1-hz-telemetry-data-cygnusdata.parquet"
+      ]
+    },
+    "smoke_point": {
+      "table_name": "smoke_point",
+      "path": "data/processed/smoke_point.parquet",
+      "rows": 6251427,
+      "bytes": 64729512,
+      "row_groups": 89,
+      "inputs": [
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt211-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt211-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt211-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt214-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt214-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt235-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt235-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt235-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt235-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt236-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt236-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt236-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt237-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt238-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt238-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt238-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt238-5.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt239-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt239-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt239-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt239-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt239-5.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt242-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt242-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt242-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt242-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt242-6-run89.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt242-7.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt250-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt250-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt250-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt250-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt250-5.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt250-6.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt251-1.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt251-2.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt251-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt251-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt251-5.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt251-6.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt252-3.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt252-4.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt252-5.parquet",
+        "data/interim/smoke_points/psi-101-psi-101-raw-data-hkpdata-gmt252-6.parquet"
+      ]
+    }
+  },
+  "table_count": 13,
+  "total_rows": 8058206,
+  "total_bytes": 82953195,
+  "notes": [
+    "PSI-100 raw CSV, cleaned CSV, and XLSX sheets remain separate runs.",
+    "PSI-101 HKP runs remain separate runs.",
+    "No BASS/BASS-II flame-spread rate is derived.",
+    "No SAME/SAME-R device state is relabeled as a physical measurement."
+  ]
+}

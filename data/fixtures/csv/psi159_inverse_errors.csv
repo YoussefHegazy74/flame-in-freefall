@@ -1,0 +1,5 @@
+﻿Flame Type,Day,Fuel,Test,Xf  before test,Xf  after test,approx p (bar),XO2,HC burnrate (mg/s),O2 flow rate (mg/s),TFP,Tad (K),Zst,Hot ignition,burn time (sec),Self -ext or flow term,Peak burner Temp (C),Peak burner temp (K),Color,Comments
+Inverse,1,ethane,21196 A1,0.298100,0.298100,1.10,0.21,1.5,5.59,No,2120,0.1665,No,0,-,27.1,300.25,-,Failed to ignite
+inverse,7,propane,21235 C1,0.202126356,0.200883448,1.1033,0.5,1,3.627981859,No,2674.062129,0.340149819,Yes,66,FT,381.5,654.65,,
+inverse,8,propane,21242 F4,0.424514159,0.424514159,0.55165,0.21,1,3.627981859,No,2207.969786,0.106732291,No,0,-,-,#VALUE!,-,
+inverse,8,propane,21242 P2,0.424514159,0.424514159,0.55165,0.3,1.5,5.441972789,No,2506.233979,0.144273053,No,0,-,-,#VALUE!,-,Most data lost this day.
