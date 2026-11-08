@@ -27,7 +27,7 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 
 | Phase | Name | Status | Exit gate |
 |---|---|---|---|
-| 0 | Scientific foundation and metadata registry | **In progress** (files written; commit pending) | Registry validates against live PSI; docs agree; initialization commit pushed |
+| 0 | Scientific foundation and metadata registry | **Complete** (commit `b927bac`, pushed to `origin/main`) | Registry validates against live PSI; docs agree; initialization commit pushed |
 | 1 | Data acquisition and parser foundation | Planned | MVP files downloaded, checksummed, parsed, and tested on fixtures |
 | 2 | Scientific validation and canonical data | Planned | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
 | 3 | Read-only API | Planned | OpenAPI contract, provenance, pagination, and contract tests pass |
@@ -66,7 +66,7 @@ Establish a verified, reproducible inventory of NASA PSI combustion data and the
 - [x] Write `data/registry/mvp_dataset_catalog.json`, `data/registry/README.md`, `scripts/README.md`.
 - [x] Write `docs/research/source-verification-log.md` and `docs/decisions/0001-mvp-dataset-selection.md`.
 - [x] Run `python scripts/fetch_psi_metadata.py --check` and `python scripts/build_mvp_catalog.py --check`.
-- [ ] Commit and push the initialization milestone; verify the remote SHA.
+- [x] Commit and push the initialization milestone; verify the remote SHA.
 
 ### 3.3 Acceptance criteria
 
@@ -485,15 +485,15 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 ### Milestone 0 — Foundation
 
-- [ ] `python scripts/fetch_psi_metadata.py --check` passes.
-- [ ] 24 combustion investigations in the registry.
-- [ ] 16,354 `added` files, 22 experimental tables, 13,496.77 GB registered total.
-- [ ] `experimental_table_only` records documented: PSI-22, PSI-68, PSI-69, PSI-99. No `no_public_files` records.
-- [ ] Listed-but-404 files documented: SAFFIRE-I telemetry/sensor XLSX; sampled CFI `.metadata`.
-- [ ] All required docs exist and agree.
-- [ ] `data/registry/mvp_dataset_catalog.json` exists and matches the registry.
-- [ ] No raw data or secrets committed.
-- [ ] Initialization commit pushed; remote SHA verified.
+- [x] `python scripts/fetch_psi_metadata.py --check` passes.
+- [x] 24 combustion investigations in the registry.
+- [x] 16,354 `added` files, 22 experimental tables, 13,496.77 GB registered total.
+- [x] `experimental_table_only` records documented: PSI-22, PSI-68, PSI-69, PSI-99. No `no_public_files` records.
+- [x] Listed-but-404 files documented: SAFFIRE-I telemetry/sensor XLSX; sampled CFI `.metadata`.
+- [x] All required docs exist and agree.
+- [x] `data/registry/mvp_dataset_catalog.json` exists and matches the registry.
+- [x] No raw data or secrets committed.
+- [x] Initialization commit pushed; remote SHA verified.
 
 ### Milestone 1 — Parsed MVP
 
