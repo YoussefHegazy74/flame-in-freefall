@@ -122,7 +122,7 @@ class AnalyticsService:
             meta_payload.update(meta)
         quality_payload: dict[str, Any] = {
             "status": quality_status,
-            "flags": _dedupe(flags),
+            "flags": _dedupe(flag for flag in flags if flag != "ok"),
         }
         unique_warnings = _dedupe(warnings)
         if unique_warnings:

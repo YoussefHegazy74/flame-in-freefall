@@ -399,6 +399,7 @@ def test_telemetry_runs_detail_and_series(client):
     assert series["meta"]["excluded_sentinel_rows"] == 1
     assert series["provenance"][0]["row_range"] == [2, 5]
     assert series["quality"]["status"] == "partial"
+    assert "ok" not in series["quality"]["flags"]
 
     assert_error(
         client.get(
