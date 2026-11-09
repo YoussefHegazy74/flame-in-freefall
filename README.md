@@ -7,7 +7,7 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository is currently at **Phase 1: NASA data acquisition, validation, parsing, and canonical Parquet outputs**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, and 150 passing tests. It does **not** yet contain a running API, frontend, or assistant, and it does not claim results that have not been computed from source data.
+This repository is currently at **Phase 2: scientific comparability, serving states, a bounded DuckDB query layer, and a read-only FastAPI service**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two committed scientific registries, and **270 passing tests**. It does **not** yet contain a frontend or an assistant, and it does not claim results that have not been computed from source data.
 
 ---
 
@@ -76,7 +76,31 @@ Parsing produced 57 interim outputs from 79 parse sources across the 72 selected
 | `experimental_table_cell` | 24,573 |
 | `source_row` | 2,009 |
 
-Acquisition validation passed for 72 of 72 selected files. Canonical validation passed all 13 table checks with 0 failures. The quality report records 6 issues: 0 errors, 5 warnings, and 1 informational note. The test suite passes **150 tests**: 136 unit tests and 14 integration tests.
+Acquisition validation passed for 72 of 72 selected files. Canonical validation passed all 13 table checks with 0 failures. The quality report records 6 issues: 0 errors, 5 warnings, and 1 informational note.
+
+---
+
+## Phase 2 results (2026-11-09)
+
+Phase 2 adds scientific state and a read-only service on top of the canonical tables. It does not change a canonical value, unit, or quality flag. This delivery milestone completes roadmap Phase 2 and the core of roadmap Phase 3; the remaining API contract gaps are tracked in `DEVELOPMENT_ROADMAP.md` §6.5.
+
+| Phase 2 artifact | Result |
+|---|---|
+| Comparability registry | 93 measurements, 60 pair-specific rules |
+| Serving registry | 9 curated datasets, 93 measurement states |
+| DuckDB query layer | 13 read-only views over canonical Parquet |
+| FastAPI service | 23 documented paths under `/api/v1` |
+| Test suite | 270 tests: 239 unit, 31 integration |
+| Canonical dataset | 8,058,206 rows, version `2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb` |
+
+The registries make two decisions explicit:
+
+- **Comparability.** An unregistered pair is `not_comparable` by default. A rule is downgraded or blocked when units differ without a declared conversion, value kinds differ, either side is uncalibrated, or the physical quantity differs. `GET /api/v1/compare` returns the decision as a normal `200` response.
+- **Serving.** Every dataset and measurement is evaluated for `exploration`, `quantitative_comparison`, `time_series`, and `provenance`. A downloaded file can still be `blocked` for a use. Metadata-only records never render as zero-valued data.
+
+The DuckDB layer exposes named operations only. It never accepts SQL, table names, file paths, or free-form filters. Pages are capped at 200 rows, series at 20,000 points and 8 channels, and oversized ranges return `413 range_too_large` instead of being silently downsampled. A watchdog interrupts queries that exceed the configured time budget.
+
+The API is read-only, uses one success and one error envelope, rejects unknown or repeated query parameters, propagates `X-Request-ID`, and reads CORS origins from `FLAME_CORS_ORIGINS`. See `docs/api-implementation.md`.
 
 ---
 
@@ -111,9 +135,9 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 ├── DEVELOPMENT_ROADMAP.md            Phases 0–7, exit gates, acceptance criteria
 ├── DATA_SOURCES.md                   Verified NASA source inventory and limitations
 ├── DATA_DICTIONARY.md                Exact headers, units, sentinels, canonical schema
-├── API_DOCUMENTATION.md              Target read-only API contract (not implemented yet)
+├── API_DOCUMENTATION.md              Target API contract and implementation status
 ├── CONTRIBUTING.md                   Contribution workflow and review rules
-├── requirements.txt                  Pinned Phase 1 runtime and test dependencies
+├── requirements.txt                  Pinned Phase 1 and Phase 2 dependencies
 ├── pytest.ini                        Test configuration and integration marker
 ├── .env.example                      Placeholder environment variables only
 ├── .gitignore                        Excludes raw data, secrets, and build artifacts
@@ -135,6 +159,9 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   │   ├── dataset_quality_report.json  Missingness, flags, channels, provenance
 │   │   ├── processing_report.json    Canonical table counts and dataset version
 │   │   └── validation_report.json    Acquisition and canonical gate results
+│   ├── metadata/
+│   │   ├── comparability_registry.json  93 measurements and 60 comparison rules
+│   │   └── serving_registry.json     9 dataset states and 93 measurement states
 │   └── fixtures/
 │       ├── csv/                      Seven exact excerpts from NASA sources
 │       ├── fixtures_manifest.json    Source rows, checksums, and purpose
@@ -142,7 +169,14 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 ├── docs/
 │   ├── decisions/
 │   │   ├── 0001-mvp-dataset-selection.md
-│   │   └── 0002-phase-1-pipeline-contracts.md
+│   │   ├── 0002-phase-1-pipeline-contracts.md
+│   │   └── 0003-phase-2-comparability-serving-and-api.md
+│   ├── comparability.md              States, registry, decision order, restrictions
+│   ├── serving-states.md             Dataset and measurement states by use
+│   ├── query-contract.md             DuckDB operations, bounds, timeout, provenance
+│   ├── api-implementation.md         Running service, routes, envelopes, errors
+│   ├── frontend-readiness.md         What the frontend may rely on and must not infer
+│   ├── known-limitations.md          Consolidated scientific and API limitations
 │   └── research/
 │       └── source-verification-log.md
 ├── scripts/
@@ -150,6 +184,7 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── build_et_schemas.py           Build or check the 22-table schema registry
 │   ├── build_fixtures.py             Build or check authentic parser fixtures
 │   ├── build_mvp_catalog.py          Reproducible MVP catalog generator
+│   ├── build_phase2_registries.py    Comparability and serving registry generator
 │   ├── download_psi_files.py         Thin wrapper around the acquisition CLI
 │   ├── fetch_psi_metadata.py         Standard-library PSI metadata collector
 │   └── README.md                     Script and CLI usage
@@ -166,8 +201,21 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── provenance.py                 Source hashes, URLs, and observation IDs
 │   ├── config.py                     Paths and version constants
 │   └── parsers/                      CSV, XLSX, XLS, gas-flame, telemetry, smoke, material, droplet
+├── src/analytics/
+│   ├── catalog.py                    Authoritative dataset, measurement, rule, serving definitions
+│   ├── registry.py                   Registry loaders and strict validation
+│   ├── comparability.py              Comparability engine and decisions
+│   ├── serving.py                    Serving-state engine
+│   ├── db.py                         Bounded read-only DuckDB operations
+│   ├── service.py                    API-ready envelopes over registries and queries
+│   ├── errors.py                     Typed analytics errors and HTTP mapping
+│   └── logging.py                    Structured logger helper
+├── backend/
+│   ├── app.py                        FastAPI app, routes, strict query validation, CORS
+│   └── models.py                     Pydantic envelopes and error models
 └── tests/
-    ├── test_*.py                     Unit tests
+    ├── test_*.py                     Unit tests, including synthetic API/DB contracts
+    ├── test_analytics_integration.py Real canonical Parquet checks
     └── test_integration.py           Full raw/processed-data checks
 ```
 
@@ -177,7 +225,7 @@ Raw NASA files (`data/raw/`), interim parses (`data/interim/`), and processed Pa
 
 ## Quick start
 
-Phase 1 uses a local virtual environment with pinned dependencies. The metadata collector itself remains standard-library only.
+Phase 1 and Phase 2 use a local virtual environment with pinned dependencies. The metadata collector itself remains standard-library only.
 
 ```bash
 git clone https://github.com/YoussefHegazy74/flame-in-freefall.git
@@ -194,6 +242,7 @@ python3 scripts/build_download_manifest.py --check
 python3 scripts/build_et_schemas.py --check
 python3 scripts/build_fixtures.py --check
 python -m src.data_pipeline manifest --check
+python3 scripts/build_phase2_registries.py --check
 
 # Check the 72-file selection and limits without downloading.
 python -m src.data_pipeline download --all --dry-run
@@ -210,6 +259,10 @@ python -m src.data_pipeline report
 # Run unit tests, then full-data integration tests.
 python -m pytest -m "not integration"
 python -m pytest -m integration
+
+# Run the read-only API against the canonical data.
+uvicorn backend.app:app --host 127.0.0.1 --port 8000
+# OpenAPI: http://127.0.0.1:8000/api/v1/docs
 ```
 
 `download --all` selects exactly the 72 files in `data/registry/download_manifest.json` (56,238,344 bytes). The downloader refuses selections above 100 files or 100,000,000 bytes unless `--allow-large` is passed. It never downloads the full archive.
@@ -227,6 +280,12 @@ The metadata collector does **not** download experimental data files. The pipeli
 | How will the system be built? | `PROJECT_ARCHITECTURE.md` |
 | What is the build order and what counts as done? | `DEVELOPMENT_ROADMAP.md` |
 | What will the API look like? | `API_DOCUMENTATION.md` |
+| What does the running API implement? | `docs/api-implementation.md` |
+| How are comparisons decided? | `docs/comparability.md` |
+| When may a dataset be served? | `docs/serving-states.md` |
+| How does DuckDB query the canonical tables? | `docs/query-contract.md` |
+| What can the frontend rely on? | `docs/frontend-readiness.md` |
+| What is known to be limited or unavailable? | `docs/known-limitations.md` |
 | Why were these datasets selected? | `docs/decisions/0001-mvp-dataset-selection.md` |
 | How was each source verified? | `docs/research/source-verification-log.md` |
 | How do I contribute? | `CONTRIBUTING.md` |
@@ -268,13 +327,21 @@ These rules are binding for code, charts, prose, and assistant answers:
 - Wrote acquisition, validation, processing, schema, and dataset-quality reports.
 - Verified all 72 selected files and all 13 canonical tables.
 
-**Next (Phase 2 and later)**
+**Done in Phase 2**
 
-1. Add the comparability allowlist and blocked-dataset serving state described in `DEVELOPMENT_ROADMAP.md` Phase 2.
-2. Evaluate DuckDB query patterns over the canonical Parquet tables and document the serving contract.
-3. Build the read-only API.
-4. Build the frontend only after the API contract and data gates are stable.
-5. Add the grounded insight layer last, with citations and a golden-set evaluation.
+- Added a committed comparability registry with 93 measurements and 60 pair-specific rules; unknown pairs default to `not_comparable`.
+- Added a committed serving registry with 9 dataset states and 93 measurement states across `exploration`, `quantitative_comparison`, `time_series`, and `provenance`.
+- Implemented a bounded, read-only DuckDB layer with parameterized filters, pagination, series caps, sentinel exclusion, provenance resolution, quality slices, and a timeout watchdog.
+- Implemented a FastAPI service with 23 paths, one success envelope, one error envelope, strict query allowlisting, request IDs, environment-driven CORS, and OpenAPI.
+- Added 120 tests for comparability, serving, DuckDB, API contracts, invalid inputs, blocked comparisons, and real canonical integration.
+- Documented comparability, serving states, the query contract, the API implementation, and frontend readiness.
+
+**Next (roadmap Phase 3 completion, then Phase 4 and later)**
+
+1. Finish the remaining Phase 3 API gaps: citation records, file/field/publication endpoints, facets, ETag/cache headers, and rate limiting.
+2. Build the Phase 4 frontend exploration experience against the read-only API and its explicit states.
+3. Add the Phase 5 grounded insight layer last, with citations and a golden-set evaluation.
+4. Add Phase 6 CI/CD, deployment, and observability.
 
 The full sequence and exit gates are in `DEVELOPMENT_ROADMAP.md`.
 

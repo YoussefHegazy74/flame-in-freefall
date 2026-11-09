@@ -1331,3 +1331,124 @@ Any change to this dictionary must:
 5. record the change in the commit message and, for a semantic change, in `docs/decisions/`.
 
 Do not add a unit, a field interpretation, or a cross-dataset equivalence without a source citation.
+
+---
+
+## 9. Phase 2 comparability and serving registries
+
+Phase 2 adds two committed artifacts that sit beside the canonical schema. They do not change any canonical value, unit, or quality flag. They define what may be compared and what may be served.
+
+### 9.1 `data/metadata/comparability_registry.json`
+
+| Field | Meaning |
+|---|---|
+| `registry_version`, `schema_version` | Artifact contract versions. |
+| `dataset_version` | Canonical dataset version the registry was generated against. |
+| `generated_by` | Generator script. |
+| `state_definitions` | Definitions for the five comparability states. |
+| `default_policy` | Default for unregistered pairs; currently `not_comparable`. |
+| `measurements` | 93 measurement entries. |
+| `comparison_rules` | 60 pair-specific rules. |
+
+A measurement entry has:
+
+| Field | Meaning |
+|---|---|
+| `measurement_id` | Stable `<dataset_id>.<parameter>` identifier. |
+| `dataset_id`, `accession`, `experiment_family`, `parameter` | Identity and source family. |
+| `canonical_field`, `canonical_channel` | Binding to a canonical column or channel; either may be null. |
+| `physical_quantity`, `physical_meaning` | What the value represents physically. |
+| `unit`, `unit_status` | Unit label and one of `stated`, `not_stated`, `ambiguous`, `not_applicable`. |
+| `measurement_method` | How the value was produced. |
+| `value_kind` | `measured`, `computed`, `raw`, or `categorical`. |
+| `calibration_status` | `not_documented`, `not_applicable`, or `uncalibrated`. |
+| `availability` | `available`, `missing`, or `metadata_only`. |
+| `quality_restrictions` | Stable restriction codes. |
+| `scientific_justification`, `notes` | Review rationale. |
+| `source_file_keys`, `source_references` | NASA files and dictionary sections. |
+| `compatible_datasets`, `incompatible_datasets` | Dataset-level guidance, not a comparison decision. |
+| `comparison_status` | Registry-level status for the measurement. |
+
+A comparison rule has:
+
+| Field | Meaning |
+|---|---|
+| `rule_id` | Stable rule identifier. |
+| `left_measurement_id`, `right_measurement_id` | Exact pair covered by the rule. |
+| `status` | Declared state before conditions and hard checks. |
+| `required_conditions` | Named conditions with descriptions. |
+| `policies` | Unit, value-kind, physical-quantity, and calibration policies. |
+| `scientific_justification` | Why the pair is or is not comparable. |
+| `source_references` | Supporting files or dictionary sections. |
+
+Registry totals:
+
+| Comparison status | Measurements |
+|---|---:|
+| `not_comparable` | 49 |
+| `blocked` | 20 |
+| `insufficient_metadata` | 14 |
+| `conditionally_comparable` | 10 |
+| `comparable` | 0 at registry level; produced only by verified conditions |
+
+### 9.2 `data/metadata/serving_registry.json`
+
+| Field | Meaning |
+|---|---|
+| `registry_version`, `schema_version` | Artifact contract versions. |
+| `dataset_version` | Canonical dataset version. |
+| `state_definitions` | Definitions for the five serving states. |
+| `use_definitions` | Definitions for the four uses. |
+| `datasets` | 9 curated dataset entries. |
+| `measurement_states` | 93 measurement-level states. |
+
+A dataset entry records `download_status`, `measurement_file_status`, `access_scope`, `base_state`, use-specific `use_states`, `reasons`, `restrictions`, `source_references`, and the canonical tables and row filter it maps to.
+
+A measurement state records the measurement ID, dataset ID, base `serving_state`, use-specific `use_states`, reasons, and restrictions.
+
+Serving states:
+
+| State | Meaning |
+|---|---|
+| `available` | Usable for the requested use without a material limitation. |
+| `available_with_warnings` | Usable, but limitations must travel with the response. |
+| `restricted` | Usable only with an explicit restriction and approved scope. |
+| `blocked` | Prohibited for the requested use. |
+| `metadata_only` | No measurement data; metadata only. |
+
+Uses:
+
+| Use | Meaning |
+|---|---|
+| `exploration` | Browse and summarize with warnings. |
+| `quantitative_comparison` | Enter a numeric comparison. |
+| `time_series` | Serve as a time series. |
+| `provenance` | Serve source metadata and citations. |
+
+### 9.3 Binding rules
+
+1. Registry `unit` values are labels, not conversions. `not_stated` and `ambiguous` must not be converted.
+2. `value_kind` is part of the value identity. A `computed` value is never treated as `measured`.
+3. `calibration_status: uncalibrated` blocks quantitative comparison for that measurement.
+4. `availability: missing` blocks numeric use even if the column exists.
+5. A dataset-level state does not override a stricter measurement-level state.
+6. The API maps serving and comparability states to `quality.status`; it does not invent a sixth state.
+
+### 9.4 Regeneration
+
+```bash
+python scripts/build_phase2_registries.py
+python scripts/build_phase2_registries.py --check
+```
+
+The generator reads the committed catalog definitions and source references. It does not read raw NASA files or invent measurements. The `--check` mode fails if the committed JSON differs from the generated content.
+
+### 9.5 Related documents
+
+- `docs/comparability.md`
+- `docs/serving-states.md`
+- `docs/query-contract.md`
+- `docs/api-implementation.md`
+- `docs/frontend-readiness.md`
+- `docs/known-limitations.md`
+- `docs/decisions/0003-phase-2-comparability-serving-and-api.md`

@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, and documentation. It does not yet contain an API, a frontend, or a production data store.
+**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, and a read-only FastAPI service. It does not yet contain a frontend, an assistant, or a production data store.
 
 This document describes the target system and the boundaries between what exists now and what must be built next. It is intentionally explicit about provenance, missingness, and scientific limits, because those are product requirements, not implementation details.
 
@@ -71,18 +71,23 @@ This document describes the target system and the boundaries between what exists
 - `data/reports/acquisition_report.json`, `validation_report.json`, `dataset_quality_report.json`, and `processing_report.json`.
 - `src/data_pipeline/`: downloader, manifest, provenance, channels, parsers, Parquet schemas, parse orchestration, canonical builders, validation, quality, and CLI.
 - `data/fixtures/`: seven exact excerpts from authenticated NASA sources with checksums and source-row provenance.
-- `tests/`: 136 unit tests and 14 integration tests covering parsers, schemas, downloader safety, CLI routing, validation failure paths, and full-data counts.
+- `tests/`: 239 unit tests and 31 integration tests covering parsers, schemas, downloader safety, CLI routing, validation failure paths, comparability, serving states, DuckDB queries, API contracts, and full-data counts.
+- `src/analytics/`: comparability engine, serving engine, registry loaders, bounded DuckDB operations, API-ready service envelopes, typed errors, and logging.
+- `data/metadata/comparability_registry.json`: 93 measurements and 60 pair-specific comparison rules.
+- `data/metadata/serving_registry.json`: 9 curated dataset states and 93 measurement states across four uses.
+- `backend/`: read-only FastAPI application with 23 paths, strict query validation, shared envelopes, request IDs, CORS, and OpenAPI.
+- `scripts/build_phase2_registries.py`: deterministic registry generator with `--check`.
+- `docs/comparability.md`, `docs/serving-states.md`, `docs/query-contract.md`, `docs/api-implementation.md`, `docs/frontend-readiness.md`, `docs/known-limitations.md`: Phase 2 contracts, limitations, and frontend handoff.
 - `DATA_SOURCES.md`: verified source inventory, per-record cards, comparability matrix, access limitations, verification log.
-- `DATA_DICTIONARY.md`: exact source headers, units, missingness, and the implemented canonical schema.
+- `DATA_DICTIONARY.md`: exact source headers, units, missingness, the implemented canonical schema, and Phase 2 registry fields.
 - Architecture, roadmap, API contract, contribution guide, and decision records.
 
 ### 3.2 Not implemented yet
 
-- Comparability allowlist and blocked-dataset serving state.
-- A documented DuckDB serving/query contract (DuckDB is currently used only for optional duplicate-key checks).
-- FastAPI service and OpenAPI contract.
-- Next.js frontend.
+- Next.js frontend and visual exploration.
 - Grounded assistant and evaluation harness.
+- Citation, file-listing, field, publication, and facet endpoints from the broader target contract.
+- ETag/cache headers, rate limiting, and authentication.
 - CI/CD, deployment, observability, and production operations.
 
 The roadmap in `DEVELOPMENT_ROADMAP.md` defines the gates between these states.
@@ -319,35 +324,47 @@ If a gate fails:
 
 ## 8. API architecture
 
-The full contract is in `API_DOCUMENTATION.md`. The architecture is:
+The full contract is in `API_DOCUMENTATION.md`; the implemented surface is in `docs/api-implementation.md`. The architecture is:
 
 ```text
 Client
-  -> FastAPI router
-  -> request validation (Pydantic)
-  -> service layer (catalog, tests, telemetry, smoke, compare, provenance)
-  -> repository layer (DuckDB over Parquet, PostgreSQL metadata)
-  -> response serializer (units, quality flags, citations)
+  -> FastAPI router (strict query allowlist, request ID, CORS)
+  -> service layer (registries, serving, comparability, envelopes)
+  -> DuckDB repository (read-only views over canonical Parquet)
+  -> response serializer (provenance, units, quality flags, warnings)
 ```
+
+The implemented service uses:
+
+- `backend/app.py`: app factory, routes, strict query route, error handlers, CORS, request IDs.
+- `backend/models.py`: Pydantic success and error envelopes.
+- `src/analytics/service.py`: API-ready shaping over registries, quality, and queries.
+- `src/analytics/db.py`: named, bounded DuckDB operations.
+- `src/analytics/comparability.py` and `src/analytics/serving.py`: scientific decisions.
+- `data/metadata/*.json`: committed comparability and serving registries.
 
 ### 8.1 Design rules
 
-- **Read-only by default.** The public API does not expose write endpoints in the MVP.
+- **Read-only by default.** The public API exposes no write endpoints.
 - **Allowlisted datasets and fields.** No arbitrary file paths, table names, or SQL.
-- **Parameterized queries only.** The insight layer cannot generate raw SQL.
-- **Pagination and limits.** Time-series endpoints require a time range and a channel allowlist.
+- **Parameterized queries only.** The client cannot generate SQL.
+- **Pagination and limits.** Pages are capped at 200 rows; series at 20,000 points and 8 channels; oversized ranges return `413 range_too_large`.
+- **Strict query parameters.** Unknown or repeated parameters are rejected with `400 invalid_query`.
 - **Units in every response.** A numeric value includes `unit` or `not stated`.
-- **Quality flags in every response.** Missingness and sentinels are part of the payload.
-- **Citations in every response.** Dataset, file, field, and row/range.
-- **Stable error codes.** `not_found`, `invalid_query`, `dataset_blocked`, `field_not_available`, `range_too_large`, `rate_limited`.
-- **No hidden aggregation.** If a response aggregates, it states the method and the input row count.
+- **Quality flags in every response.** Missingness, sentinels, calibration limits, and serving restrictions travel with the payload.
+- **Provenance in every data response.** Dataset version, source file, row or row range, checksum, and retrieval time.
+- **Stable error codes.** `invalid_query`, `not_found`, `unknown_measurement`, `range_too_large`, `validation_error`, `service_unavailable`, `query_timeout`, `query_error`, `internal_error`.
+- **Scientific decisions are payloads.** `GET /compare` returns `200` with the comparability state, including `blocked` and `not_comparable`.
+- **No hidden aggregation.** The API returns bounded rows and series; it does not compute new scientific aggregates.
 
-### 8.2 Caching
+### 8.2 Caching and operations
 
-- Catalog and dataset metadata: cacheable with an ETag derived from the registry snapshot.
-- Test summaries: cacheable by dataset version and filter hash.
-- Telemetry series: cacheable by run, channel set, and time range; bounded size.
-- Assistant answers: not cached across users unless the answer is deterministic and citation-identical; a cache key includes the dataset version and tool results.
+- CORS origins come from `FLAME_CORS_ORIGINS`.
+- `X-Request-ID` is echoed or generated and appears in the envelope.
+- Query timeout comes from `FLAME_QUERY_TIMEOUT_SECONDS` (default 10 s).
+- ETag/cache headers, rate limiting, and authentication are not implemented yet.
+- Catalog and dataset metadata are cacheable in a future layer with an ETag derived from the registry snapshot.
+- Telemetry series are cacheable by run, channel set, and time range once a cache layer exists.
 
 ---
 
@@ -702,6 +719,7 @@ A parser is done when:
 
 - **ADR 0001:** MVP dataset selection. See `docs/decisions/0001-mvp-dataset-selection.md`.
 - **ADR 0002:** Phase 1 pipeline contracts, sentinel policy, and canonical Parquet outputs. See `docs/decisions/0002-phase-1-pipeline-contracts.md`.
+- **ADR 0003:** Phase 2 comparability registry, serving states, bounded DuckDB layer, and read-only API. See `docs/decisions/0003-phase-2-comparability-serving-and-api.md`.
 - **Metadata in Git, raw data outside Git.** This keeps the repository reviewable and avoids committing terabytes.
 - **Summary tables first.** PSI-10 and PSI-159 are the initial gas-flame foundation; PSI-100 and PSI-101 are the initial telemetry/smoke foundation.
 - **No BASS spread-rate derivation in the MVP.** The test matrices do not contain a processed spread rate, and video computer vision is a separate program.
@@ -710,7 +728,7 @@ A parser is done when:
 ### 16.2 Open decisions
 
 1. **Charting library:** uPlot vs Plotly. Choose based on time-series performance, accessibility, and bundle size.
-2. **Analytical store:** DuckDB over Parquet for the MVP; PostgreSQL for metadata. Revisit if concurrent analytical load grows.
+2. **Analytical store:** DuckDB over Parquet for the MVP; PostgreSQL for metadata. Decided for Phase 2: DuckDB read-only views with bounded named queries. Revisit if concurrent analytical load grows.
 3. **LLM provider:** provider-agnostic interface; no provider is required for the core product.
 4. **Authentication:** not needed for the public MVP; revisit if saved views or private annotations are added.
 5. **Processed data hosting:** local filesystem for development; object storage for staging/production.
@@ -742,4 +760,25 @@ Verified Phase 1 result:
 - Quality report pass with 6 issues: 0 errors, 5 warnings, 1 informational note.
 - 150 tests pass: 136 unit, 14 integration.
 
-The next milestone is Phase 2: comparability allowlist, blocked-dataset state, and the serving/query contract described in `DEVELOPMENT_ROADMAP.md`.
+Phase 2 is complete when:
+
+1. A committed comparability registry covers every curated measurement and every approved comparison pair.
+2. An unregistered pair defaults to `not_comparable`.
+3. A committed serving registry evaluates every dataset and measurement for exploration, quantitative comparison, time series, and provenance.
+4. DuckDB queries are named, read-only, parameterized, and bounded.
+5. Oversized pages and series return an explicit error, never a silent downsample.
+6. The read-only API exposes the catalog, datasets, quality, measurements, observation tables, telemetry, smoke, comparability, comparisons, and provenance.
+7. Every response carries dataset version, provenance, quality state, and warnings.
+8. Unknown or repeated query parameters are rejected.
+9. Blocked comparisons return a scientific decision, not a transport failure.
+10. Unit, API contract, and real-data integration tests pass.
+
+Verified Phase 2 result:
+
+- 93 measurements and 60 comparison rules.
+- 9 dataset states and 93 measurement states across four uses.
+- 13 read-only DuckDB views, 23 API paths, one success envelope, one error envelope.
+- 270 tests pass: 239 unit, 31 integration.
+- No canonical value, unit, or quality flag changed.
+
+The next milestone is Phase 3: frontend exploration against the read-only API, followed by the remaining target-contract endpoints and the grounded insight layer.

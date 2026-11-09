@@ -2,10 +2,10 @@
 
 **Project:** Flame in Freefall
 **Team:** AFAQ
-**API version:** `v1` (contract)
-**Status:** Design contract. **No API is implemented in the current milestone.** The repository contains the verified registry, collector, and documentation. The endpoints below define the target behavior that Phase 3 must implement and test.
+**API version:** `v1`
+**Status:** Read-only Phase 2 implementation exists under `backend/`. This document remains the target contract; the implemented surface, exact paths, and known gaps are recorded in `docs/api-implementation.md`. Endpoints below that are not implemented are marked in §1.1.
 
-This document is a contract, not a description of a running service. Do not call these endpoints against a production URL until a deployment exists and is listed in the release notes.
+The local service is runnable with `uvicorn backend.app:app`. Do not call these endpoints against a production URL until a deployment exists and is listed in the release notes.
 
 ---
 
@@ -31,6 +31,47 @@ It does not expose:
 - computed risk scores, material rankings, or predictions;
 - any value that is not backed by a source row and a citation.
 
+### 1.1 Implementation status (Phase 2)
+
+Implemented and tested:
+
+| Implemented path | Purpose |
+|---|---|
+| `GET /api/v1/health` | Liveness, dataset version, table readiness. |
+| `GET /api/v1/meta` | Registry snapshot, canonical counts, dataset and measurement counts. |
+| `GET /api/v1/investigations` | NASA PSI catalog. |
+| `GET /api/v1/investigations/{accession}` | One investigation and curated datasets. |
+| `GET /api/v1/datasets` | Curated dataset registry with use-specific serving states. |
+| `GET /api/v1/datasets/quality` | Quality summary for all curated datasets. |
+| `GET /api/v1/datasets/{dataset_id}` | One dataset, all four serving decisions, measurements. |
+| `GET /api/v1/datasets/{dataset_id}/quality` | Quality report slice. |
+| `GET /api/v1/measurements` | Measurement registry with serving states. |
+| `GET /api/v1/measurements/{measurement_id}` | One measurement, serving decision, rules. |
+| `GET /api/v1/gas-flame/tests` | PSI-10/PSI-159 rows with filters. |
+| `GET /api/v1/gas-flame/tests/{observation_id}` | One gas-flame row. |
+| `GET /api/v1/material/tests` | PSI-25/PSI-26 rows with filters. |
+| `GET /api/v1/droplet/tests` | PSI-69 rows with filters. |
+| `GET /api/v1/telemetry/runs` | PSI-100 runs. |
+| `GET /api/v1/telemetry/runs/{run_id}` | Run metadata and channels. |
+| `GET /api/v1/telemetry/runs/{run_id}/series` | Bounded telemetry series. |
+| `GET /api/v1/smoke/runs` | PSI-101 runs. |
+| `GET /api/v1/smoke/runs/{run_id}` | Run metadata and channels. |
+| `GET /api/v1/smoke/runs/{run_id}/series` | Bounded smoke series. |
+| `GET /api/v1/comparability` | Comparability summary. |
+| `GET /api/v1/compare` | One comparison decision. |
+| `GET /api/v1/provenance` | Source-file and optional row provenance. |
+
+Known differences from the target contract below:
+
+- The investigation catalog is `/investigations`, not `/datasets`; `/datasets` now means curated datasets.
+- The material path is `/material/tests`, not `/materials/tests`.
+- `/datasets/{accession}/files`, `/fields`, `/limitations`, `/publications`, `/gas-flame/facets`, `/citations/{citation_id}`, and assistant endpoints are **not implemented**.
+- ETag/cache headers, rate limiting, and authentication are **not implemented**.
+- A blocked or not-comparable decision is returned as HTTP `200` from `/compare`, with the decision in `data.status`.
+- The implemented success envelope always includes `data`, `meta`, `provenance`, and `quality`; `quality.status` uses the five values listed in §3.6.
+
+Run the service and tests as described in `docs/api-implementation.md`.
+
 ---
 
 ## 2. Base URL and versioning
@@ -43,14 +84,14 @@ It does not expose:
 
 The path version is part of the URL (`/api/v1`). Breaking changes require `/api/v2`. Additive fields are allowed within `v1`; clients must ignore unknown fields.
 
-OpenAPI documents will be served at:
+OpenAPI is served at:
 
 ```text
 GET /api/v1/openapi.json
 GET /api/v1/docs
 ```
 
-The OpenAPI schema is the machine-readable source of truth once Phase 3 begins. This document explains intent and examples; the schema will pin exact types and validation.
+The OpenAPI schema is the machine-readable source of truth for the implemented surface. This document explains intent and examples; `docs/api-implementation.md` records the exact implemented paths and validation.
 
 ---
 
@@ -101,7 +142,7 @@ Every successful response uses the same envelope:
 | `data` | object or array | The requested resource. |
 | `meta.request_id` | string | Correlation identifier for logs and support. |
 | `meta.registry_snapshot` | date | Date of the committed PSI metadata snapshot. |
-| `meta.dataset_version` | string or null | Canonical dataset version. `null` for metadata-only responses until Phase 2. |
+| `meta.dataset_version` | string or null | Canonical dataset version for data-bearing responses. The Phase 2 service reports the committed canonical version; the target contract allows `null` for metadata-only responses. |
 | `meta.retrieved_at` | timestamp or null | Source retrieval time. `null` when the response is derived from the committed registry only. |
 | `meta.generated_at` | timestamp | Time the response was produced. |
 | `provenance` | array | Source references for the data in this response. |
@@ -202,13 +243,15 @@ Every field endpoint and every value-bearing response uses this shape:
 | HTTP | Code | When |
 |---:|---|---|
 | 400 | `invalid_query` | Missing, malformed, or contradictory parameters. |
-| 404 | `not_found` | Accession, run, observation, or citation does not exist. |
-| 409 | `dataset_blocked` | Dataset version failed a validation gate and is not servable. |
+| 404 | `not_found` | Accession, dataset, run, or observation does not exist. |
+| 404 | `unknown_measurement` | Measurement identifier is not in the comparability registry. |
+| 409 | `dataset_blocked` | Target-contract code; not emitted by the Phase 2 API. |
 | 413 | `range_too_large` | Time range or page size exceeds the documented limit. |
-| 422 | `validation_error` | Request body fails schema validation. |
-| 429 | `rate_limited` | Client exceeded the rate limit; `Retry-After` is set. |
+| 422 | `validation_error` | Query or request validation failed. |
+| 429 | `rate_limited` | Target-contract code; rate limiting is not implemented yet. |
 | 500 | `internal_error` | Unhandled server error; no source details are leaked. |
-| 503 | `service_unavailable` | Database, object store, or upstream dependency is unavailable. |
+| 503 | `service_unavailable` | A required canonical table is absent. |
+| 503 | `query_timeout` | A bounded query exceeded its time budget. |
 
 Error messages never include secrets, raw rows, SQL, or filesystem paths.
 

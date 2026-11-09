@@ -29,8 +29,8 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 |---|---|---|---|
 | 0 | Scientific foundation and metadata registry | **Complete** (commit `b927bac`, pushed to `origin/main`) | Registry validates against live PSI; docs agree; initialization commit pushed |
 | 1 | Data acquisition and parser foundation | **Complete** (2026-11-09) | MVP files downloaded, checksummed, parsed, and tested on fixtures |
-| 2 | Scientific validation and canonical data | **In progress** | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
-| 3 | Read-only API | Planned | OpenAPI contract, provenance, pagination, and contract tests pass |
+| 2 | Scientific validation and canonical data | **Complete** (2026-11-09) | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
+| 3 | Read-only API | **In progress** (core implemented 2026-11-09) | OpenAPI contract, provenance, pagination, and contract tests pass |
 | 4 | Frontend exploration experience | Planned | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
 | 5 | Grounded insight layer | Planned | Golden-set evaluation passes; numeric claims are 100% cited |
 | 6 | Hardening and deployment | Planned | CI/CD, observability, security, backups, and runbook verified |
@@ -229,14 +229,14 @@ Produce canonical tables that are scientifically defensible, with units, missing
 
 #### 5.2.1 Canonical tables
 
-- [ ] Implement the `gas_flame_test` table for PSI-10 and PSI-159.
-- [ ] Implement `telemetry_run` and `telemetry_point` for PSI-100.
-- [ ] Implement `smoke_run` and `smoke_point` for PSI-101.
-- [ ] Implement `material_test` for PSI-25 and PSI-26.
-- [ ] Implement `derived_metric` and `citation`.
-- [ ] Write Parquet with a stable schema and dataset version.
-- [ ] Load metadata and provenance into PostgreSQL.
-- [ ] Add DuckDB views over Parquet for local analytics.
+- [x] Implement the `gas_flame_test` table for PSI-10 and PSI-159.
+- [x] Implement `telemetry_run` and `telemetry_point` for PSI-100.
+- [x] Implement `smoke_run` and `smoke_point` for PSI-101.
+- [x] Implement `material_test` for PSI-25 and PSI-26.
+- [ ] Implement `derived_metric` and `citation`. (Deferred; no derived metrics are served, and citation records remain part of the target API contract.)
+- [x] Write Parquet with a stable schema and dataset version.
+- [ ] Load metadata and provenance into PostgreSQL. (Deferred; DuckDB over Parquet is the Phase 2 analytical store.)
+- [x] Add DuckDB views over Parquet for local analytics.
 
 #### 5.2.2 Unit and field audit
 
@@ -252,18 +252,18 @@ Produce canonical tables that are scientifically defensible, with units, missing
 
 #### 5.2.3 Comparability
 
-- [ ] Implement the comparability matrix as a machine-readable allowlist.
-- [ ] Add tests that reject incompatible comparisons.
-- [ ] Add a UI/API reason for each rejected comparison.
-- [ ] Do not create a flame-spread axis for BASS/BASS-II or SAME/SAME-R.
+- [x] Implement the comparability matrix as a machine-readable allowlist.
+- [x] Add tests that reject incompatible comparisons.
+- [x] Add a UI/API reason for each rejected comparison.
+- [x] Do not create a flame-spread axis for BASS/BASS-II or SAME/SAME-R.
 
 #### 5.2.4 Data quality
 
-- [ ] Implement schema, row-count, checksum, time, range, and unit gates.
-- [ ] Implement a missingness report per table and field.
-- [ ] Implement a constant-channel report.
-- [ ] Implement a blocked-dataset state.
-- [ ] Add a data-quality dashboard or report artifact.
+- [x] Implement schema, row-count, checksum, time, range, and unit gates.
+- [x] Implement a missingness report per table and field.
+- [x] Implement a constant-channel report.
+- [x] Implement a blocked-dataset state.
+- [x] Add a data-quality dashboard or report artifact. (JSON report and API quality endpoints; no visual dashboard yet.)
 
 ### 5.3 Acceptance criteria
 
@@ -288,6 +288,23 @@ Produce canonical tables that are scientifically defensible, with units, missing
 - A test that `TFP` is categorical and not numeric.
 - A test that PSI-159 inverse drops all-blank rows and reports 154 valid rows.
 
+### 5.5 Phase 2 completion record (2026-11-09)
+
+Completed:
+
+- Comparability registry: 93 measurements, 60 pair-specific rules, five states, default `not_comparable`.
+- Serving registry: 9 datasets, 93 measurement states, four uses, five states.
+- Bounded DuckDB layer: 13 read-only views, parameterized filters, pagination, series caps, sentinel handling, provenance, quality slices, timeout watchdog.
+- Read-only FastAPI service: 23 paths, strict query allowlist, shared envelopes, request IDs, CORS, OpenAPI.
+- Tests: 120 new tests; 270 total (239 unit, 31 integration).
+- Documentation: comparability, serving states, query contract, API implementation, frontend readiness, and ADR 0003.
+
+Deferred, with no effect on the Phase 2 serving contract:
+
+- `derived_metric` and citation tables.
+- PostgreSQL metadata store.
+- Confirmation of the remaining source questions in §5.2.2. Values stay labeled `not stated`, `ambiguous`, or categorical until confirmed.
+
 ---
 
 ## 6. Phase 3 — Read-only API
@@ -298,20 +315,20 @@ Expose canonical data with provenance, units, quality flags, and citations throu
 
 ### 6.2 Workstreams
 
-- [ ] Scaffold FastAPI with Pydantic v2 and OpenAPI.
-- [ ] Implement `GET /api/v1/health`.
-- [ ] Implement catalog and dataset endpoints.
-- [ ] Implement field and limitation endpoints.
-- [ ] Implement gas-flame test query and detail endpoints.
-- [ ] Implement telemetry run/series endpoints with time range and channel allowlist.
-- [ ] Implement smoke run/series endpoints.
-- [ ] Implement curated comparison endpoints.
-- [ ] Implement provenance and citation endpoints.
+- [x] Scaffold FastAPI with Pydantic v2 and OpenAPI.
+- [x] Implement `GET /api/v1/health`.
+- [x] Implement catalog and dataset endpoints.
+- [ ] Implement field and limitation endpoints. (Target contract; not in the Phase 2 API.)
+- [x] Implement gas-flame test query and detail endpoints.
+- [x] Implement telemetry run/series endpoints with time range and channel allowlist.
+- [x] Implement smoke run/series endpoints.
+- [x] Implement curated comparison endpoints.
+- [x] Implement provenance endpoints. (Citation records remain a target-contract gap.)
 - [ ] Implement assistant tool endpoints (internal or public, with auth).
-- [ ] Add pagination, filtering, and stable error codes.
+- [x] Add pagination, filtering, and stable error codes.
 - [ ] Add ETag/cache headers.
-- [ ] Add OpenAPI examples.
-- [ ] Add contract tests.
+- [ ] Add OpenAPI examples. (The schema is published; request/response examples are not yet embedded.)
+- [x] Add contract tests.
 
 ### 6.3 Acceptance criteria
 
@@ -334,6 +351,27 @@ Expose canonical data with provenance, units, quality flags, and citations throu
 - Blocked-dataset tests.
 - Provenance resolution tests.
 - Cache-header tests.
+
+### 6.5 Phase 3 partial completion record (2026-11-09)
+
+Implemented in the Phase 2 backend:
+
+- FastAPI app with 23 paths under `/api/v1`.
+- Health, meta, investigations, datasets, dataset quality, measurements, gas-flame, material, droplet, telemetry, smoke, comparability, compare, and provenance.
+- One success envelope and one error envelope.
+- Strict query allowlisting; unknown and repeated parameters rejected.
+- Pagination, series caps, `413 range_too_large`, and stable error codes.
+- Request IDs, environment-driven CORS, OpenAPI schema, and contract tests.
+
+Still open before Phase 3 can be called complete:
+
+- Field, limitation, file, publication, citation, and facet endpoints.
+- ETag/cache headers and rate limiting.
+- Embedded OpenAPI examples.
+- Assistant endpoints.
+- The rate-limited contract test in §6.3 item 8.
+
+The implemented route `/material/tests` should be reconciled with the target `/materials/tests` before frontend integration.
 
 ---
 

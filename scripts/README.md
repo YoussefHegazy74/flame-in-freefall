@@ -1,6 +1,6 @@
 # Scripts
 
-**Status:** Phase 1 complete (2026-11-09). The scripts cover metadata collection, the curated acquisition manifest, the checksum-verifying downloader, exact experimental-table schemas, authentic fixtures, and the parse/build/validate/report pipeline.
+**Status:** Phase 1 complete and Phase 2 registries added (2026-11-09). The scripts cover metadata collection, the curated acquisition manifest, the checksum-verifying downloader, exact experimental-table schemas, authentic fixtures, the parse/build/validate/report pipeline, and the comparability/serving registry generator.
 
 The metadata and manifest generators use the Python 3 standard library. Parquet, Excel, and test work requires the pinned dependencies in `requirements.txt`.
 
@@ -221,6 +221,32 @@ python3 scripts/build_mvp_catalog.py --check
 ```
 
 `--check` exits 1 if the committed catalog differs from a freshly generated one.
+
+---
+
+## `build_phase2_registries.py`
+
+Builds or checks the committed Phase 2 comparability and serving registries.
+
+### What it does
+
+1. Reads the authoritative measurement, comparison-rule, dataset, and serving definitions from `src/analytics/catalog.py`.
+2. Reads the canonical dataset version from `data/processed/dataset_manifest.json`.
+3. Copies source checksums, URLs, and retrieval times from `data/registry/download_manifest.json`.
+4. Writes `data/metadata/comparability_registry.json` and `data/metadata/serving_registry.json`.
+
+It never reads raw NASA files, never invents a measurement or comparison, and never changes a canonical value, unit, or quality flag.
+
+### Usage
+
+```bash
+.venv/bin/python scripts/build_phase2_registries.py
+.venv/bin/python scripts/build_phase2_registries.py --check
+```
+
+`--check` is read-only and exits 1 if either committed registry differs from the generated output. It also fails when the canonical dataset manifest or download manifest is missing.
+
+The committed result is 93 measurements, 60 comparison rules, 9 curated datasets, and 93 measurement states. See `docs/comparability.md`, `docs/serving-states.md`, and `docs/query-contract.md`.
 
 ---
 
