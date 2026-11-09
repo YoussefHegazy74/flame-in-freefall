@@ -32,16 +32,30 @@ class InvalidQueryError(AnalyticsError):
 
 
 class LimitExceededError(AnalyticsError):
-    """A caller requested more rows than the contract permits."""
+    """A caller requested more rows or points than the contract permits."""
 
-    code = "limit_exceeded"
-    http_status = 400
+    code = "range_too_large"
+    http_status = 413
 
 
 class QueryTimeoutError(AnalyticsError):
     """A bounded query exceeded its configured time budget."""
 
     code = "query_timeout"
+    http_status = 503
+
+
+class QueryError(AnalyticsError):
+    """A bounded read-only query failed for an unexpected reason."""
+
+    code = "query_error"
+    http_status = 500
+
+
+class DatasetUnavailableError(AnalyticsError):
+    """A required canonical table is absent from the local dataset."""
+
+    code = "service_unavailable"
     http_status = 503
 
 
