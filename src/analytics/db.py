@@ -760,6 +760,50 @@ class AnalyticsDatabase:
         )
         return page
 
+    def gas_flame_facet_rows(self, accession: str | None = None) -> list[dict[str, Any]]:
+        """Return the bounded gas-flame columns needed to compute facets.
+
+        The gas-flame table has only 660 real rows. Reading the facet columns
+        without pagination is therefore safe and keeps facet counts consistent
+        with the list endpoint. Qualification filtering is applied by the
+        caller so excluded-row counts can be reported.
+        """
+
+        self._require_table("gas_flame_test")
+        if accession is not None:
+            _validate_accession(accession, GAS_FLAME_ACCESSIONS)
+        columns = [
+            "accession",
+            "flame_type",
+            "fuel",
+            "oxygen_mole_fraction",
+            "oxygen_mole_fraction_initial",
+            "oxygen_mole_fraction_before",
+            "pressure_initial_atm",
+            "pressure_approx_bar",
+            "hot_ignition",
+            "extinction_mode",
+            "tfp_flag",
+            "quality_flags",
+        ]
+        selected = ", ".join(f'"{column}"' for column in columns)
+        if accession:
+            rows = self._rows(
+                f"SELECT {selected} FROM gas_flame_test WHERE accession = ? "
+                "ORDER BY source_row, observation_id",
+                [accession],
+            )
+        else:
+            rows = self._rows(
+                f"SELECT {selected} FROM gas_flame_test "
+                f"WHERE accession IN ({_placeholders(len(GAS_FLAME_ACCESSIONS))}) "
+                "ORDER BY accession, source_row, observation_id",
+                list(GAS_FLAME_ACCESSIONS),
+            )
+        for row in rows:
+            row["quality_flags"] = _json_list(row.get("quality_flags"))
+        return rows
+
     def get_gas_flame_test(self, observation_id: str) -> dict[str, Any]:
         self._require_table("gas_flame_test")
         columns = ", ".join(f'"{column}"' for column in GAS_FLAME_COLUMNS)

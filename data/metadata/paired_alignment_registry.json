@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "registry_version": "phase4-2026-11-09",
+  "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+  "purpose": "Explicit, verified record-level alignment methods for paired comparison values. An empty methods list means no chart-ready paired series may be produced.",
+  "requirements": {
+    "alignment": "Every method must name the exact source table, alignment keys, value fields, units, and exclusions. Row-number pairing, interpolation, silent normalization, and ambiguous unit conversion are forbidden.",
+    "verification": "A method is usable only when verified is true and verification_reference points to a committed scientific decision record.",
+    "conditions": "The authoritative comparability decision must be comparable after conditions are evaluated. A conditionally_comparable or hard-status decision cannot produce paired values.",
+    "value_kind": "Measured and computed values may be paired only when the comparability rule explicitly distinguishes them.",
+    "units": "The method must use identical units or an explicitly documented conversion approved by the rule."
+  },
+  "methods": []
+}

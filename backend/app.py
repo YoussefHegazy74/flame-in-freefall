@@ -9,19 +9,28 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import secrets
+import time
 from typing import Annotated, Any
 
 from fastapi import APIRouter, FastAPI, Path, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.routing import APIRoute
 from pydantic import TypeAdapter, ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.models import Envelope, ErrorEnvelope
+from backend.operations import (
+    CacheSettings,
+    RateLimiter,
+    RateLimitSettings,
+    etag_for_body,
+    if_none_match_matches,
+)
 from src.analytics.db import (
     DEFAULT_PAGE_SIZE,
     DEFAULT_SERIES_POINTS,
@@ -114,8 +123,14 @@ def create_app(
     service: AnalyticsService | None = None,
     *,
     cors_origins: list[str] | None = None,
+    cache_settings: CacheSettings | None = None,
+    rate_limit_settings: RateLimitSettings | None = None,
 ) -> FastAPI:
     """Build the API. Passing a service is useful for isolated contract tests."""
+
+    cache_settings = cache_settings or CacheSettings.from_env()
+    rate_limit_settings = rate_limit_settings or RateLimitSettings.from_env()
+    limiter = RateLimiter(rate_limit_settings)
 
     application = FastAPI(
         title="Flame in Freefall API",
@@ -142,13 +157,113 @@ def create_app(
             max_age=600,
         )
 
+    application.state.rate_limiter = limiter
+    application.state.cache_settings = cache_settings
+
     @application.middleware("http")
-    async def request_id_middleware(request: Request, call_next):
+    async def operations_middleware(request: Request, call_next):
         request.state.request_id = request.headers.get("X-Request-ID") or (
             "req_" + secrets.token_hex(12)
         )
+        started = time.perf_counter()
+        client_host = request.client.host if request.client else "unknown"
+        if rate_limit_settings.trust_proxy:
+            forwarded = request.headers.get("X-Forwarded-For")
+            if forwarded:
+                client_host = forwarded.split(",", 1)[0].strip() or client_host
+        rate = limiter.check(client_host)
+        rate_headers = {
+            "X-RateLimit-Limit": str(rate["limit"]),
+            "X-RateLimit-Remaining": str(rate["remaining"]),
+            "X-RateLimit-Reset": str(int(math.ceil(rate["reset_after"]))),
+        }
+        if not rate["allowed"]:
+            retry_after = max(1, int(math.ceil(rate["reset_after"])))
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "error": {
+                        "code": "rate_limited",
+                        "message": "request rate limit exceeded",
+                        "details": {
+                            "limit": rate["limit"],
+                            "window_seconds": rate_limit_settings.window_seconds,
+                            "retry_after_seconds": retry_after,
+                        },
+                        "request_id": request.state.request_id,
+                    }
+                },
+                headers={
+                    **rate_headers,
+                    "Retry-After": str(retry_after),
+                    "X-Request-ID": request.state.request_id,
+                    "Cache-Control": "no-store",
+                },
+            )
+            return response
+
         response = await call_next(request)
-        response.headers["X-Request-ID"] = request.state.request_id
+
+        cache_control = (
+            cache_settings.header_value() if cache_settings.enabled else "no-store"
+        )
+        if request.url.path in {f"{API_PREFIX}/health"}:
+            cache_control = "no-store"
+
+        if (
+            cache_settings.enabled
+            and request.method == "GET"
+            and request.url.path not in {f"{API_PREFIX}/health"}
+            and response.status_code == 200
+            and "application/json" in response.headers.get("content-type", "")
+            and hasattr(response, "body_iterator")
+        ):
+            body = b"".join([chunk async for chunk in response.body_iterator])
+            etag = etag_for_body(body)
+            headers = {
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() not in {"content-length", "content-type", "etag", "cache-control"}
+            }
+            headers.update(
+                {
+                    **rate_headers,
+                    "X-Request-ID": request.state.request_id,
+                    "ETag": etag,
+                    "Cache-Control": cache_control,
+                }
+            )
+            if if_none_match_matches(request.headers.get("If-None-Match"), etag):
+                return Response(status_code=304, headers=headers)
+            response = Response(
+                content=body,
+                status_code=response.status_code,
+                headers=headers,
+                media_type=response.media_type or "application/json",
+            )
+        else:
+            for key, value in rate_headers.items():
+                response.headers[key] = value
+            if request.method == "GET" and "application/json" in response.headers.get(
+                "content-type", ""
+            ):
+                response.headers.setdefault(
+                    "Cache-Control",
+                    "no-store" if response.status_code >= 400 else cache_control,
+                )
+            response.headers["X-Request-ID"] = request.state.request_id
+
+        duration_ms = round((time.perf_counter() - started) * 1000, 3)
+        LOGGER.info(
+            "request",
+            extra={
+                "request_id": request.state.request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
         return response
 
     @application.exception_handler(AnalyticsError)
@@ -302,6 +417,130 @@ def create_app(
             dataset_id, request_id=_request_id(request)
         )
 
+    @router.get("/datasets/{dataset_id}/files", response_model=Envelope, tags=["catalog"])
+    def list_dataset_files(
+        request: Request,
+        dataset_id: str,
+        kind: str | None = Query(default=None, description="Curated file kind."),
+        availability: str | None = Query(
+            default=None, description="available or unavailable."
+        ),
+        limit: Limit = DEFAULT_PAGE_SIZE,
+        offset: Offset = 0,
+    ) -> dict[str, Any]:
+        return svc(request).list_dataset_files(
+            dataset_id,
+            kind=kind,
+            availability=availability,
+            limit=limit,
+            offset=offset,
+            request_id=_request_id(request),
+        )
+
+    @router.get("/datasets/{dataset_id}/fields", response_model=Envelope, tags=["catalog"])
+    def list_dataset_fields(
+        request: Request,
+        dataset_id: str,
+        value_kind: str | None = Query(default=None),
+        physical_quantity: str | None = Query(default=None),
+        comparison_status: str | None = Query(default=None),
+        limit: Limit = DEFAULT_PAGE_SIZE,
+        offset: Offset = 0,
+    ) -> dict[str, Any]:
+        return svc(request).list_dataset_fields(
+            dataset_id,
+            value_kind=value_kind,
+            physical_quantity=physical_quantity,
+            comparison_status=comparison_status,
+            limit=limit,
+            offset=offset,
+            request_id=_request_id(request),
+        )
+
+    @router.get(
+        "/datasets/{dataset_id}/limitations",
+        response_model=Envelope,
+        tags=["catalog"],
+    )
+    def list_dataset_limitations(
+        request: Request,
+        dataset_id: str,
+        scope: str | None = Query(default=None),
+        category: str | None = Query(default=None),
+        severity: str | None = Query(default=None),
+        status: str | None = Query(default=None),
+        limit: Limit = DEFAULT_PAGE_SIZE,
+        offset: Offset = 0,
+    ) -> dict[str, Any]:
+        return svc(request).list_dataset_limitations(
+            dataset_id,
+            scope=scope,
+            category=category,
+            severity=severity,
+            status=status,
+            limit=limit,
+            offset=offset,
+            request_id=_request_id(request),
+        )
+
+    @router.get("/citations", response_model=Envelope, tags=["citations"])
+    def list_citations(
+        request: Request,
+        accession: str | None = Query(default=None),
+        dataset_id: str | None = Query(default=None),
+        kind: str | None = Query(default=None),
+        verification_status: str | None = Query(default=None),
+        availability: str | None = Query(default=None),
+        limit: Limit = DEFAULT_PAGE_SIZE,
+        offset: Offset = 0,
+    ) -> dict[str, Any]:
+        return svc(request).list_citations(
+            accession=accession,
+            dataset_id=dataset_id,
+            kind=kind,
+            verification_status=verification_status,
+            availability=availability,
+            limit=limit,
+            offset=offset,
+            request_id=_request_id(request),
+        )
+
+    @router.get("/citations/{citation_id}", response_model=Envelope, tags=["citations"])
+    def get_citation(request: Request, citation_id: str) -> dict[str, Any]:
+        return svc(request).get_citation(
+            citation_id, request_id=_request_id(request)
+        )
+
+    @router.get("/publications", response_model=Envelope, tags=["publications"])
+    def list_publications(
+        request: Request,
+        accession: str | None = Query(default=None),
+        dataset_id: str | None = Query(default=None),
+        q: str | None = Query(default=None),
+        year: int | None = Query(default=None, description="Not available in the source registry."),
+        status: str | None = Query(default=None),
+        limit: Limit = DEFAULT_PAGE_SIZE,
+        offset: Offset = 0,
+    ) -> dict[str, Any]:
+        return svc(request).list_publications(
+            accession=accession,
+            dataset_id=dataset_id,
+            query=q,
+            year=year,
+            status=status,
+            limit=limit,
+            offset=offset,
+            request_id=_request_id(request),
+        )
+
+    @router.get(
+        "/publications/{publication_id}", response_model=Envelope, tags=["publications"]
+    )
+    def get_publication(request: Request, publication_id: str) -> dict[str, Any]:
+        return svc(request).get_publication(
+            publication_id, request_id=_request_id(request)
+        )
+
     @router.get("/measurements", response_model=Envelope, tags=["measurements"])
     def list_measurements(
         request: Request,
@@ -334,6 +573,18 @@ def create_app(
     ) -> dict[str, Any]:
         return svc(request).get_measurement(
             measurement_id, use=use, request_id=_request_id(request)
+        )
+
+    @router.get("/gas-flame/facets", response_model=Envelope, tags=["gas-flame"])
+    def gas_flame_facets(
+        request: Request,
+        accession: str | None = Query(default=None),
+        include_qualified: bool = Query(default=False),
+    ) -> dict[str, Any]:
+        return svc(request).gas_flame_facets(
+            accession=accession,
+            include_qualified=include_qualified,
+            request_id=_request_id(request),
         )
 
     @router.get("/gas-flame/tests", response_model=Envelope, tags=["gas-flame"])

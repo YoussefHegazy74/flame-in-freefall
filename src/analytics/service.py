@@ -15,9 +15,21 @@ import secrets
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping, Sequence
 
+from src.analytics.citations import (
+    CitationRegistry,
+    attach_file_citation_ids,
+    decode_row_citation_id,
+    load_citation_registry,
+    row_citation_id,
+)
 from src.analytics.comparability import ComparabilityEngine
+from src.analytics.dataset_metadata import DatasetMetadata
 from src.analytics.db import AnalyticsDatabase, PageResult
 from src.analytics.errors import InvalidQueryError, NotFoundError
+from src.analytics.facets import build_gas_flame_facets
+from src.analytics.integrity import MeasurementIntegrity
+from src.analytics.paired import PairedComparisonRegistry, evaluate_paired_values
+from src.analytics.publications import PublicationRegistry
 from src.analytics.registry import RegistryBundle, load_registries
 from src.analytics.serving import ServingEngine
 
@@ -81,6 +93,20 @@ class AnalyticsService:
         self.bundle = bundle or load_registries()
         self.comparability = ComparabilityEngine(self.bundle)
         self.serving = ServingEngine(self.bundle)
+        self.citations = load_citation_registry(self.bundle)
+        self.integrity = MeasurementIntegrity(self.db, self.bundle)
+        try:
+            quality_report = self.db.quality_report()
+        except Exception:
+            quality_report = None
+        self.metadata = DatasetMetadata(
+            self.bundle,
+            self.citations,
+            quality_report=quality_report,
+            integrity=self.integrity,
+        )
+        self.publications = PublicationRegistry()
+        self.paired = PairedComparisonRegistry()
 
     # ------------------------------------------------------------------
     # Envelope helpers
@@ -204,8 +230,36 @@ class AnalyticsService:
         result = []
         for entry in groups.values():
             entry["rows"].sort()
+            citation = self.citations.for_file(
+                str(entry.get("accession")), str(entry.get("file"))
+            )
+            if citation is not None:
+                entry["citation_id"] = citation["citation_id"]
+                entry["row_citation_ids"] = [
+                    row_citation_id(
+                        str(entry.get("accession")),
+                        str(entry.get("file")),
+                        entry.get("sheet"),
+                        int(row),
+                    )
+                    for row in entry["rows"]
+                ]
             result.append(entry)
         return sorted(result, key=lambda item: (str(item.get("accession")), str(item.get("file"))))
+
+    def _attach_row_citations(self, rows: Iterable[dict[str, Any]]) -> None:
+        for row in rows:
+            accession = row.get("accession")
+            source_file = row.get("source_file")
+            source_row = row.get("source_row")
+            if not accession or not source_file or source_row is None:
+                continue
+            row["citation_id"] = row_citation_id(
+                str(accession),
+                str(source_file),
+                row.get("source_sheet"),
+                int(source_row),
+            )
 
     def _run_provenance(
         self,
@@ -224,6 +278,11 @@ class AnalyticsService:
         }
         if row_range and len(row_range) == 2 and all(value is not None for value in row_range):
             entry["row_range"] = [int(row_range[0]), int(row_range[1])]
+        citation = self.citations.for_file(
+            str(entry.get("accession")), str(entry.get("file"))
+        )
+        if citation is not None:
+            entry["citation_id"] = citation["citation_id"]
         return [entry]
 
     def _registry_provenance(self, references: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -665,14 +724,500 @@ class AnalyticsService:
         decision = self.comparability.evaluate(left, right, conditions)
         status = COMPARABILITY_TO_QUALITY[decision.status]
         flags = [reason["code"] for reason in decision.reasons]
+        warnings = list(decision.warnings)
+        integrity = self.integrity.check_decision(decision)
+        paired_values = evaluate_paired_values(
+            decision, registry=self.paired, conditions=conditions
+        )
+        if integrity["status"] == "failed":
+            status = "blocked"
+            flags.append("measurement_unavailable")
+            warnings.extend(integrity["messages"])
+            if decision.status == "comparable":
+                paired_values = {
+                    **paired_values,
+                    "available": False,
+                    "status": "unavailable",
+                    "reason": {
+                        "code": "measurement_unavailable",
+                        "message": (
+                            "The registry approves this comparison, but at least one "
+                            "requested measurement has no values in the canonical "
+                            "data. No paired values are returned."
+                        ),
+                        "decision_status": decision.status,
+                        "failures": integrity["failures"],
+                    },
+                }
+        data = {
+            **decision.to_dict(),
+            "integrity": integrity,
+            "paired_values": paired_values,
+        }
         return self._envelope(
-            decision.to_dict(),
+            data,
             request_id=request_id,
             provenance=decision.source_references,
             quality_status=status,
+            flags=_dedupe(flags),
+            warnings=_dedupe(warnings),
+            meta={
+                "left": left,
+                "right": right,
+                "paired_values_available": paired_values["available"],
+                "integrity_status": integrity["status"],
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Citations
+    # ------------------------------------------------------------------
+    def list_citations(
+        self,
+        *,
+        accession: str | None = None,
+        dataset_id: str | None = None,
+        kind: str | None = None,
+        verification_status: str | None = None,
+        availability: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        if dataset_id:
+            self.serving.get_dataset(dataset_id)
+        citations = self.citations.list(
+            accession=accession,
+            dataset_id=dataset_id,
+            kind=kind,
+            verification_status=verification_status,
+            availability=availability,
+        )
+        total = len(citations)
+        page_items = citations[offset : offset + limit]
+        flags = []
+        warnings = []
+        for citation in page_items:
+            if citation["verification"]["status"] != "verified":
+                flags.append("citation_" + citation["verification"]["status"])
+            if citation["availability"]["status"] == "unavailable":
+                warnings.append(citation["availability"].get("reason") or "Source unavailable.")
+        return self._envelope(
+            page_items,
+            request_id=request_id,
+            page={
+                "limit": limit,
+                "offset": offset,
+                "total": total,
+                "has_more": offset + len(page_items) < total,
+            },
+            provenance=[
+                {
+                    "kind": "citation_registry",
+                    "path": "data/registry/download_manifest.json",
+                    "section": "files",
+                }
+            ],
+            quality_status="partial" if flags else "verified",
             flags=flags,
-            warnings=decision.warnings,
-            meta={"left": left, "right": right},
+            warnings=warnings,
+        )
+
+    def _row_citation(self, citation_id: str) -> dict[str, Any]:
+        locator = decode_row_citation_id(citation_id)
+        record = self.db.resolve_provenance(
+            locator["accession"],
+            locator["file"],
+            sheet=locator["sheet"],
+            row=locator["row"],
+        )
+        file_citation = self.citations.for_file(locator["accession"], locator["file"])
+        verification_status = "verified"
+        checks = ["canonical_row_located"]
+        if record.get("row_verified") is not True:
+            verification_status = "unverified"
+            checks.append("row_not_found_in_canonical_tables")
+        if file_citation is None:
+            verification_status = "partial" if verification_status == "verified" else verification_status
+            checks.append("file_not_in_curated_manifest")
+        elif file_citation["verification"]["status"] != "verified":
+            if verification_status == "verified":
+                verification_status = "partial"
+            checks.append("file_checksum_not_verified")
+        if record.get("warnings"):
+            checks.extend(record["warnings"])
+            if verification_status == "verified":
+                verification_status = "partial"
+        source = (
+            file_citation["source"]
+            if file_citation is not None
+            else {
+                "kind": "nasa_psi_file",
+                "accession": record["accession"],
+                "file_name": record["file"],
+                "sha256": record.get("sha256"),
+                "source_url": record.get("source_url"),
+            }
+        )
+        retrieval = (
+            file_citation["retrieval"]
+            if file_citation is not None
+            else {
+                "retrieved_at": record.get("retrieved_at"),
+                "http_status": None,
+                "download_status": "not_in_manifest",
+                "bytes": record.get("bytes"),
+                "expected_bytes": None,
+                "checksum_expected": None,
+                "checksum_actual": record.get("sha256"),
+                "checksum_match": None,
+            }
+        )
+        return {
+            "citation_id": citation_id,
+            "kind": "row",
+            "accession": record["accession"],
+            "dataset_ids": file_citation.get("dataset_ids", []) if file_citation else [],
+            "file": (
+                file_citation["file"]
+                if file_citation is not None
+                else {
+                    "name": record["file"],
+                    "kind": None,
+                    "manifest_dataset": None,
+                    "priority": None,
+                    "purpose": None,
+                    "in_added": None,
+                }
+            ),
+            "locator": {
+                "type": "row",
+                "sheet": record.get("sheet"),
+                "row": record.get("row"),
+                "row_range": [record["row"], record["row"]],
+            },
+            "source": source,
+            "retrieval": retrieval,
+            "verification": {"status": verification_status, "checks": checks},
+            "availability": (
+                file_citation["availability"]
+                if file_citation is not None
+                else {
+                    "status": "available",
+                    "downloadable": False,
+                    "reason": "Row provenance is available, but the file is not in the curated manifest.",
+                }
+            ),
+            "row_verification": {
+                "row_verified": record.get("row_verified"),
+                "row_tables": record.get("row_tables", []),
+                "warnings": record.get("warnings", []),
+            },
+            "provenance": [
+                {
+                    "kind": "nasa_psi_file",
+                    "accession": record["accession"],
+                    "file": record["file"],
+                    "sheet": record.get("sheet"),
+                    "rows": [record["row"]],
+                    "sha256": record.get("sha256"),
+                    "retrieved_at": record.get("retrieved_at"),
+                    "source_url": record.get("source_url"),
+                }
+            ],
+        }
+
+    def get_citation(
+        self, citation_id: str, request_id: str | None = None
+    ) -> dict[str, Any]:
+        if citation_id.startswith("cit_r_"):
+            citation = self._row_citation(citation_id)
+        elif citation_id.startswith("cit_f_"):
+            citation = self.citations.get(citation_id)
+        else:
+            raise NotFoundError(
+                "citation identifier is not recognized",
+                details={"citation_id": citation_id},
+            )
+        status = citation["verification"]["status"]
+        quality_status = "verified" if status == "verified" else "partial"
+        if citation["availability"]["status"] == "unavailable":
+            quality_status = "blocked"
+        return self._envelope(
+            citation,
+            request_id=request_id,
+            provenance=citation.get("provenance", []),
+            quality_status=quality_status,
+            flags=[] if status == "verified" else ["citation_" + status],
+            warnings=(
+                [citation["availability"]["reason"]]
+                if citation["availability"].get("reason")
+                else []
+            ),
+        )
+
+    # ------------------------------------------------------------------
+    # Dataset files, fields, and limitations
+    # ------------------------------------------------------------------
+    def list_dataset_files(
+        self,
+        dataset_id: str,
+        *,
+        kind: str | None = None,
+        availability: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        data = self.metadata.list_files(
+            dataset_id,
+            kind=kind,
+            availability=availability,
+            limit=limit,
+            offset=offset,
+        )
+        flags = []
+        warnings = []
+        if data["summary"]["unavailable_files"]:
+            flags.append("source_file_unavailable")
+            warnings.append(
+                "At least one curated source file is unavailable; it is not downloadable."
+            )
+        if any(
+            item["download"]["status"] == "known_unavailable"
+            for item in data["files"]
+        ):
+            flags.append("known_unavailable_http_404")
+        return self._envelope(
+            data,
+            request_id=request_id,
+            provenance=[
+                {
+                    "kind": "download_manifest",
+                    "path": "data/registry/download_manifest.json",
+                    "section": "files",
+                },
+                {
+                    "kind": "acquisition_report",
+                    "path": "data/reports/acquisition_report.json",
+                    "section": "results",
+                },
+            ],
+            quality_status="partial" if flags else "verified",
+            flags=flags,
+            warnings=warnings,
+        )
+
+    def list_dataset_fields(
+        self,
+        dataset_id: str,
+        *,
+        value_kind: str | None = None,
+        physical_quantity: str | None = None,
+        comparison_status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        data = self.metadata.list_fields(
+            dataset_id,
+            value_kind=value_kind,
+            physical_quantity=physical_quantity,
+            comparison_status=comparison_status,
+            limit=limit,
+            offset=offset,
+        )
+        flags = [
+            restriction
+            for field in data["fields"]
+            for restriction in field["flags"]
+        ]
+        return self._envelope(
+            data,
+            request_id=request_id,
+            provenance=[
+                {
+                    "kind": "comparability_registry",
+                    "path": "data/metadata/comparability_registry.json",
+                    "section": "measurements",
+                },
+                {
+                    "kind": "serving_registry",
+                    "path": "data/metadata/serving_registry.json",
+                    "section": "measurement_states",
+                },
+            ],
+            quality_status="partial" if flags else "verified",
+            flags=flags,
+        )
+
+    def list_dataset_limitations(
+        self,
+        dataset_id: str,
+        *,
+        scope: str | None = None,
+        category: str | None = None,
+        severity: str | None = None,
+        status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        data = self.metadata.list_limitations(
+            dataset_id,
+            scope=scope,
+            category=category,
+            severity=severity,
+            status=status,
+            limit=limit,
+            offset=offset,
+        )
+        flags = [item["code"] for item in data["limitations"]]
+        warnings = [
+            item["explanation"]
+            for item in data["limitations"]
+            if item["severity"] == "error"
+        ]
+        return self._envelope(
+            data,
+            request_id=request_id,
+            provenance=[
+                {
+                    "kind": "serving_registry",
+                    "path": "data/metadata/serving_registry.json",
+                    "section": "datasets, measurement_states",
+                },
+                {
+                    "kind": "quality_report",
+                    "path": "data/reports/dataset_quality_report.json",
+                    "section": "issues",
+                },
+            ],
+            quality_status="blocked" if warnings else "partial",
+            flags=flags,
+            warnings=warnings,
+        )
+
+    # ------------------------------------------------------------------
+    # Publications
+    # ------------------------------------------------------------------
+    def list_publications(
+        self,
+        *,
+        accession: str | None = None,
+        dataset_id: str | None = None,
+        query: str | None = None,
+        year: int | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        if dataset_id:
+            dataset = self.serving.get_dataset(dataset_id)
+            dataset_accession = dataset["accession"]
+            if accession and accession != dataset_accession:
+                raise InvalidQueryError(
+                    "accession and dataset_id refer to different investigations",
+                    details={
+                        "accession": accession,
+                        "dataset_id": dataset_id,
+                        "dataset_accession": dataset_accession,
+                    },
+                )
+            accession = dataset_accession
+        data = self.publications.list(
+            accession=accession,
+            query=query,
+            year=year,
+            status=status,
+            limit=limit,
+            offset=offset,
+        )
+        return self._envelope(
+            data,
+            request_id=request_id,
+            page=data["page"],
+            provenance=[
+                {
+                    "kind": "psi_investigation_registry",
+                    "path": "data/registry/psi_combustion_investigations.json",
+                    "section": "investigations[].publications",
+                }
+            ],
+            quality_status="partial",
+            flags=["year_not_available", "venue_not_available"],
+            warnings=[
+                "Publication year and venue are not present in the NASA PSI registry and are returned as unavailable."
+            ],
+            meta={"accession": accession, "dataset_id": dataset_id},
+        )
+
+    def get_publication(
+        self, publication_id: str, request_id: str | None = None
+    ) -> dict[str, Any]:
+        publication = self.publications.get(publication_id)
+        return self._envelope(
+            publication,
+            request_id=request_id,
+            provenance=publication["source_references"],
+            quality_status="partial",
+            flags=["year_not_available", "venue_not_available"],
+            warnings=[
+                "Publication year and venue are not present in the NASA PSI registry and are returned as unavailable."
+            ],
+        )
+
+    # ------------------------------------------------------------------
+    # Gas-flame facets
+    # ------------------------------------------------------------------
+    def gas_flame_facets(
+        self,
+        *,
+        accession: str | None = None,
+        include_qualified: bool = False,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        rows = self.db.gas_flame_facet_rows(accession)
+        data = build_gas_flame_facets(rows, include_qualified=include_qualified)
+        accessions = [item["accession"] for item in data["accessions"]]
+        status = "verified"
+        flags: list[str] = []
+        warnings = list(data["notes"])
+        for row_accession in accessions:
+            dataset_id = next(
+                (
+                    dataset["dataset_id"]
+                    for dataset in self.serving.datasets.values()
+                    if dataset["accession"] == row_accession
+                ),
+                None,
+            )
+            if dataset_id is None:
+                continue
+            dataset_status, dataset_flags, dataset_warnings = self._serving_quality(
+                dataset_id, "exploration"
+            )
+            if dataset_status == "blocked":
+                status = "blocked"
+            elif dataset_status != "verified" and status == "verified":
+                status = "partial"
+            flags.extend(dataset_flags)
+            warnings.extend(dataset_warnings)
+        return self._envelope(
+            data,
+            request_id=request_id,
+            provenance=[
+                {
+                    "kind": "canonical_table",
+                    "table": "gas_flame_test",
+                    "dataset_version": self.bundle.dataset_version,
+                }
+            ],
+            quality_status=status,
+            flags=flags,
+            warnings=warnings,
+            meta={"accession": accession, "include_qualified": include_qualified},
         )
 
     # ------------------------------------------------------------------
@@ -715,6 +1260,7 @@ class AnalyticsService:
             limit=limit,
             offset=offset,
         )
+        self._attach_row_citations(page.items)
         flags: list[str] = []
         warnings: list[str] = []
         for row in page.items:
@@ -758,6 +1304,7 @@ class AnalyticsService:
 
     def get_gas_flame_test(self, observation_id: str, request_id: str | None = None) -> dict[str, Any]:
         row = self.db.get_gas_flame_test(observation_id)
+        self._attach_row_citations([row])
         dataset_id = next(
             (
                 dataset["dataset_id"]
@@ -812,6 +1359,7 @@ class AnalyticsService:
             limit=limit,
             offset=offset,
         )
+        self._attach_row_citations(page.items)
         flags: list[str] = []
         warnings = [
             "No flame-spread rate is available in these test matrices.",
@@ -876,6 +1424,7 @@ class AnalyticsService:
             limit=limit,
             offset=offset,
         )
+        self._attach_row_citations(page.items)
         flags: list[str] = []
         warnings = [
             "The 'Burning rate; mm' column is labeled mm, not mm/s, and is not a validated rate.",
@@ -1085,21 +1634,32 @@ class AnalyticsService:
         record = self.db.resolve_provenance(
             accession, file_name, sheet=sheet, row=row
         )
+        if row is not None:
+            record["citation_id"] = row_citation_id(accession, file_name, sheet, row)
+        else:
+            citation = self.citations.for_file(accession, file_name)
+            if citation is not None:
+                record["citation_id"] = citation["citation_id"]
         flags = list(record.get("warnings", []))
+        file_citation = self.citations.for_file(accession, file_name)
+        provenance_entry = {
+            "accession": record["accession"],
+            "file": record["file"],
+            "sheet": record.get("sheet"),
+            "rows": [row] if row is not None else [],
+            "sha256": record.get("sha256"),
+            "retrieved_at": record.get("retrieved_at"),
+            "source_url": record.get("source_url"),
+            "citation_id": record.get("citation_id"),
+        }
+        if file_citation is not None:
+            provenance_entry["file_citation_id"] = file_citation["citation_id"]
+        if row is not None:
+            provenance_entry["row_citation_ids"] = [record["citation_id"]]
         return self._envelope(
             record,
             request_id=request_id,
-            provenance=[
-                {
-                    "accession": record["accession"],
-                    "file": record["file"],
-                    "sheet": record.get("sheet"),
-                    "rows": [row] if row is not None else [],
-                    "sha256": record.get("sha256"),
-                    "retrieved_at": record.get("retrieved_at"),
-                    "source_url": record.get("source_url"),
-                }
-            ],
+            provenance=[provenance_entry],
             quality_status="partial" if flags else "verified",
             flags=flags,
             retrieved_at=record.get("retrieved_at"),
