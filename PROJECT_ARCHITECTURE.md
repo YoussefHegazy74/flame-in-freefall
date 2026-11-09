@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, and a read-only FastAPI service. It does not yet contain a frontend, an assistant, or a production data store.
+**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service, and a Next.js frontend. It does not yet contain an assistant or a production data store.
 
 This document describes the target system and the boundaries between what exists now and what must be built next. It is intentionally explicit about provenance, missingness, and scientific limits, because those are product requirements, not implementation details.
 
@@ -76,6 +76,8 @@ This document describes the target system and the boundaries between what exists
 - `data/metadata/comparability_registry.json`: 93 measurements and 60 pair-specific comparison rules.
 - `data/metadata/serving_registry.json`: 9 curated dataset states and 93 measurement states across four uses.
 - `backend/`: read-only FastAPI application with 23 paths, strict query validation, shared envelopes, request IDs, CORS, and OpenAPI.
+- `frontend/`: Next.js 16 App Router application with 14 routes, a centralized typed API client, TanStack Query hooks, lazy-loaded Recharts time-series panels, responsive navigation, and scientific state components.
+- `frontend/tests/` and `frontend/e2e/`: 41 Vitest/React Testing Library tests, 17 real-backend Playwright flows, and 4 axe WCAG scans.
 - `scripts/build_phase2_registries.py`: deterministic registry generator with `--check`.
 - `docs/comparability.md`, `docs/serving-states.md`, `docs/query-contract.md`, `docs/api-implementation.md`, `docs/frontend-readiness.md`, `docs/known-limitations.md`: Phase 2 contracts, limitations, and frontend handoff.
 - `DATA_SOURCES.md`: verified source inventory, per-record cards, comparability matrix, access limitations, verification log.
@@ -84,9 +86,9 @@ This document describes the target system and the boundaries between what exists
 
 ### 3.2 Not implemented yet
 
-- Next.js frontend and visual exploration.
 - Grounded assistant and evaluation harness.
 - Citation, file-listing, field, publication, and facet endpoints from the broader target contract.
+- Citation drawer, file/publication browsing, and paired comparison values, which depend on those endpoints.
 - ETag/cache headers, rate limiting, and authentication.
 - CI/CD, deployment, observability, and production operations.
 
@@ -372,45 +374,69 @@ The implemented service uses:
 
 ### 9.1 Stack
 
-- Next.js with the App Router and TypeScript.
-- Tailwind CSS for layout and design tokens.
-- TanStack Query for server state.
-- uPlot or Plotly for time series; Recharts for simple categorical/aggregate charts. Choose one primary charting library and document the choice.
-- A small component library with accessible primitives; no decorative chartjunk.
+Implemented in `frontend/`:
+
+- Next.js 16.4.5 with the App Router and TypeScript 5.9.3.
+- React 19.3.1 and Tailwind CSS 4.3.5 for layout and design tokens.
+- TanStack Query 5.107.1 for server state.
+- Recharts 3.10.1 for bounded time-series panels. It is the single charting library; the app does not add a second renderer.
+- Lucide React for icons and a small accessible component library. No decorative chartjunk.
+- Vitest, React Testing Library, Playwright, and axe-core for tests.
+
+The `dev` and `build` scripts use the webpack builder explicitly.
 
 ### 9.2 Pages
 
 | Page | Purpose |
 |---|---|
-| `/` | Project overview, verified dataset summary, status, limitations. |
-| `/datasets` | Catalog of 24 records with role, access status, file count, and registered size. |
-| `/datasets/[accession]` | Record detail: metadata, DOI, files, tables, publications, limitations, provenance. |
-| `/tests` | Gas-flame test explorer for PSI-10 and PSI-159 with filters for fuel, flame type, oxygen, pressure, and ignition outcome. |
-| `/telemetry` | SAFFIRE-III time-series explorer with channel selection and time range. |
-| `/smoke` | SAME-R run explorer with detector and aerosol channels. |
-| `/compare` | Curated comparisons only; fields must pass the comparability matrix. |
-| `/methods` | Data sources, dictionary, missingness, units, limitations, and citation policy. |
-| `/assistant` | Grounded question answering with visible citations and evidence status. |
+| `/` | Overview: live registry counts, serving-state distribution, quality summary, limitations, quick links. |
+| `/investigations` | Searchable, filterable, paginated investigation catalog. |
+| `/investigations/[accession]` | Investigation detail with curated datasets, measurements, warnings, and source references. |
+| `/datasets` | Curated dataset catalog with role, access, serving state, and quality. |
+| `/datasets/[datasetId]` | Dataset detail: measurements, units, calibration, serving decisions, provenance. |
+| `/experiments/gas-flame` | Gas-flame test explorer for PSI-10 and PSI-159 with accession-bound filters. |
+| `/experiments/materials` | PSI-25 and PSI-26 material matrices with oxygen-ambiguity warnings. |
+| `/experiments/droplets` | PSI-69 droplet summary with the source-labeled burning-rate unit. |
+| `/telemetry` | SAFFIRE-III run and bounded time-series explorer. |
+| `/smoke` | SAME-R run and bounded time-series explorer. |
+| `/compare` | Backend-authoritative measurement comparison studio. |
+| `/quality` | Registry-wide and per-dataset quality, serving, and limitation center. |
+| `/provenance` | Exact source-file and row resolution. |
+| `/about` | Data sources, processing, comparability, quality, limitations, and citation policy. |
+| `/assistant` | Planned Phase 5; not implemented. |
 
 ### 9.3 UI rules
 
-1. Every chart has a title, x-axis unit, y-axis unit, source accession, and a provenance link.
+1. Every chart has a title, x-axis unit, y-axis unit, source accession, and a provenance or source link.
 2. Missingness is visible. Do not interpolate across gaps without a labeled method.
 3. No dual y-axes. If two units must be compared, use two stacked panels or a normalized view with an explicit explanation.
 4. No smoothing, binning, or aggregation without a visible method note.
 5. No color-only encoding. Use labels and patterns where possible.
 6. No "risk score" badge unless a documented, validated metric exists.
 7. Records with no `added` archive but a public experimental table show the verified table and an `experimental_table_only` badge; records with no public artifact show "No public files". Neither shows an empty chart that looks like zero data.
-8. The assistant panel shows `measured`, `computed`, `derived`, or `not available` for each claim.
-9. The citation drawer lists the accession, file, field, row/range, checksum, and retrieval date.
-10. The interface is keyboard accessible and meets WCAG 2.1 AA contrast and focus requirements.
+8. The assistant panel, when built, shows `measured`, `computed`, `derived`, or `not available` for each claim.
+9. The citation drawer, when built, lists the accession, file, field, row/range, checksum, and retrieval date. It is blocked until the API exposes citations.
+10. The interface is keyboard accessible and meets WCAG 2.1 AA contrast and focus requirements. Four axe scans currently report no serious or critical violations.
 
 ### 9.4 State boundaries
 
 - The frontend never computes scientific aggregates that the API does not expose, except trivial display formatting.
 - The frontend never fills missing values.
 - The frontend never labels a value with a unit that the API does not provide.
+- The frontend never converts units, concatenates runs, downsamples series, or retries a `413` silently.
 - The frontend never caches an assistant answer without its citations and dataset version.
+
+### 9.5 API client boundary
+
+`frontend/src/lib/api/client.ts` owns the base URL, timeout, cancellation, query serialization, error normalization, and envelope handling. `endpoints.ts` defines typed endpoint functions; `hooks.ts` wraps them in TanStack Query. Components never call `fetch` directly. The OpenAPI schema is generic (`data: Any`), so domain types in `types.ts` are maintained against observed responses and contract tests rather than generated.
+
+### 9.6 Known frontend limits
+
+- No citation drawer, file list, publication list, field dictionary endpoint, or facet endpoint.
+- `/compare` returns a decision and reasons, not paired values, so no comparison chart is drawn.
+- No ETag, cache-control, or rate-limiting contract.
+- Visual regression and automated responsive-viewport tests remain open.
+- Turbopack is not used in the checked-in scripts; webpack is the supported build path for the current dependency layout.
 
 ---
 
@@ -781,4 +807,4 @@ Verified Phase 2 result:
 - 270 tests pass: 239 unit, 31 integration.
 - No canonical value, unit, or quality flag changed.
 
-The next milestone is Phase 3: frontend exploration against the read-only API, followed by the remaining target-contract endpoints and the grounded insight layer.
+The frontend exploration layer is implemented against this API. Remaining work is the target-contract endpoint set (citations, files, fields, publications, facets), the citation drawer and paired comparison values that depend on it, and then the grounded insight layer.

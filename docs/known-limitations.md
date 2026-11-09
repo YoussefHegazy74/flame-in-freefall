@@ -77,19 +77,19 @@ For registry-level `unit` and `unit_status`, use `/api/v1/measurements` or `/api
 
 ---
 
-## 6. API limitations in Phase 2
+## 6. API limitations after Phase 3
 
 Not implemented yet:
 
 - citation records and `/citations/{citation_id}`;
 - dataset file, field, limitation, and publication endpoints;
 - gas-flame facets;
+- paired comparison values (the comparison endpoint returns a decision and reasons only);
 - ETag/cache headers, rate limiting, and authentication;
 - embedded OpenAPI request/response examples;
-- assistant endpoints and any LLM/RAG layer;
-- frontend assets.
+- assistant endpoints and any LLM/RAG layer.
 
-The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
+The frontend is implemented, but it deliberately omits the citation drawer, file/publication lists, and comparison chart because their API contracts do not exist. The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
 
 ---
 

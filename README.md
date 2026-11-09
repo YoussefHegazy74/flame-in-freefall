@@ -7,7 +7,9 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository is currently at **Phase 2: scientific comparability, serving states, a bounded DuckDB query layer, and a read-only FastAPI service**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two committed scientific registries, and **270 passing tests**. It does **not** yet contain a frontend or an assistant, and it does not claim results that have not been computed from source data.
+This repository now includes **Phase 3: a working scientific frontend over the Phase 2 service**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two committed scientific registries, a read-only FastAPI service, and a Next.js exploration interface. The backend suite has **270 passing tests**; the frontend has **41 unit/component tests and 17 real-backend Playwright tests**. It does **not** yet contain the grounded assistant, and it does not claim results that have not been computed from source data.
+
+> Phase numbering note: the delivery brief calls the frontend work Phase 3. The internal development roadmap tracks the same frontend work as Phase 4, after its Phase 3 read-only API. Both refer to the interface described in `frontend/README.md`.
 
 ---
 
@@ -104,6 +106,34 @@ The API is read-only, uses one success and one error envelope, rejects unknown o
 
 ---
 
+## Phase 3 frontend results (2026-11-09)
+
+The frontend is a read-only Next.js App Router application. It renders backend decisions and never reimplements comparability, serving, calibration, or quality logic.
+
+| Frontend artifact | Result |
+|---|---|
+| Framework | Next.js 16.4.5, React 19.3.1, TypeScript 5.9.3, Tailwind CSS 4.3.5 |
+| Data layer | TanStack Query 5.107.1 with one centralized, typed API client |
+| Charts | Recharts 3.10.1, lazy-loaded, time-series panels only |
+| Routes | 14 required pages, including investigation/dataset detail and four experiment explorers |
+| Unit and component tests | 41 passing (Vitest + React Testing Library) |
+| End-to-end tests | 17 passing (Playwright against the real backend and canonical data) |
+| Accessibility | 4 axe WCAG 2.1 A/AA scans, 0 serious or critical violations |
+| Production build | `npm run build` succeeds with explicit webpack builder |
+
+The interface keeps these scientific constraints visible:
+
+- Missing values are never rendered as zero; raw and calibrated channels are grouped and labeled separately.
+- Telemetry and smoke runs remain separate, preserve backend time units, and respect the 20,000-point and 8-channel caps. `413 range_too_large` responses show the actual point count and suggested span without silent retry.
+- Gas-flame pressure filters and material oxygen filters require an explicit accession because the units and fields differ across PSI-10/PSI-159 and PSI-25/PSI-26.
+- PSI-26 oxygen ambiguity, PSI-69 `Burning rate; mm`, uncalibrated PSI-100 channels, and SAME-R `-999` sentinels are surfaced on the relevant pages.
+- Comparison status comes from `/compare`; blocked comparisons render reasons and no chart, and conditional comparisons require explicit condition checkboxes.
+- No browser-side aggregation, interpolation, downsampling, unit conversion, risk score, or material ranking is performed.
+
+Frontend setup, architecture, and test commands are in `frontend/README.md`. The interface deliberately does not invent capabilities the API lacks: there is no citation drawer, file/publication browser, paired comparison chart, or assistant.
+
+---
+
 ## Dataset roles
 
 The MVP is deliberately small. The selection is recorded in `docs/decisions/0001-mvp-dataset-selection.md` and mirrored in `data/registry/mvp_dataset_catalog.json`.
@@ -177,6 +207,7 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── api-implementation.md         Running service, routes, envelopes, errors
 │   ├── frontend-readiness.md         What the frontend may rely on and must not infer
 │   ├── known-limitations.md          Consolidated scientific and API limitations
+│   ├── screenshots/phase3/           Captured views of the running frontend
 │   └── research/
 │       └── source-verification-log.md
 ├── scripts/
@@ -213,6 +244,14 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 ├── backend/
 │   ├── app.py                        FastAPI app, routes, strict query validation, CORS
 │   └── models.py                     Pydantic envelopes and error models
+├── frontend/
+│   ├── src/app/                      Next.js App Router pages and route states
+│   ├── src/components/               Layout, scientific, chart, and UI components
+│   ├── src/lib/api/                  Centralized typed API client and TanStack hooks
+│   ├── tests/                        Vitest and React Testing Library suites
+│   ├── e2e/                          Playwright critical flows and axe scans
+│   ├── .env.example                  Public frontend environment placeholders
+│   └── README.md                     Frontend architecture, setup, and tests
 └── tests/
     ├── test_*.py                     Unit tests, including synthetic API/DB contracts
     ├── test_analytics_integration.py Real canonical Parquet checks
@@ -263,6 +302,13 @@ python -m pytest -m integration
 # Run the read-only API against the canonical data.
 uvicorn backend.app:app --host 127.0.0.1 --port 8000
 # OpenAPI: http://127.0.0.1:8000/api/v1/docs
+
+# In a second terminal, run the frontend against that API.
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+# Frontend: http://localhost:3000
 ```
 
 `download --all` selects exactly the 72 files in `data/registry/download_manifest.json` (56,238,344 bytes). The downloader refuses selections above 100 files or 100,000,000 bytes unless `--allow-large` is passed. It never downloads the full archive.
@@ -285,6 +331,7 @@ The metadata collector does **not** download experimental data files. The pipeli
 | When may a dataset be served? | `docs/serving-states.md` |
 | How does DuckDB query the canonical tables? | `docs/query-contract.md` |
 | What can the frontend rely on? | `docs/frontend-readiness.md` |
+| How does the frontend work, and how is it tested? | `frontend/README.md` |
 | What is known to be limited or unavailable? | `docs/known-limitations.md` |
 | Why were these datasets selected? | `docs/decisions/0001-mvp-dataset-selection.md` |
 | How was each source verified? | `docs/research/source-verification-log.md` |
@@ -336,10 +383,20 @@ These rules are binding for code, charts, prose, and assistant answers:
 - Added 120 tests for comparability, serving, DuckDB, API contracts, invalid inputs, blocked comparisons, and real canonical integration.
 - Documented comparability, serving states, the query contract, the API implementation, and frontend readiness.
 
-**Next (roadmap Phase 3 completion, then Phase 4 and later)**
+**Done in Phase 3 (frontend)**
 
-1. Finish the remaining Phase 3 API gaps: citation records, file/field/publication endpoints, facets, ETag/cache headers, and rate limiting.
-2. Build the Phase 4 frontend exploration experience against the read-only API and its explicit states.
+- Built a Next.js App Router frontend with a responsive scientific interface, accessible navigation, breadcrumbs, and consistent loading, empty, error, and warning states.
+- Implemented a centralized typed API client and TanStack Query hooks over the existing read-only API, preserving `data`, `meta`, `quality`, and `provenance` envelopes.
+- Delivered the overview, investigation catalog and detail, dataset catalog and detail, gas-flame, material, droplet, telemetry, smoke, comparison, quality, provenance, and methods pages.
+- Kept backend comparability and serving decisions authoritative; blocked comparisons render no chart, and conditional comparisons require explicit verified conditions.
+- Preserved run identity, time units, raw/calibrated status, sentinel handling, unit ambiguities, and series caps in every scientific view.
+- Added 41 unit/component tests, 17 real-backend Playwright flows, and 4 axe WCAG 2.1 A/AA scans.
+- Verified the production build and documented the frontend architecture and known backend gaps.
+
+**Next (remaining API gaps, then Phase 5 and later)**
+
+1. Finish the remaining API gaps: citation records, file/field/publication endpoints, facets, ETag/cache headers, and rate limiting.
+2. Add the citation drawer, file/publication browsing, and paired comparison values once those contracts exist.
 3. Add the Phase 5 grounded insight layer last, with citations and a golden-set evaluation.
 4. Add Phase 6 CI/CD, deployment, and observability.
 

@@ -96,7 +96,7 @@ scripts/                collectors, downloaders, builders, registry generators, 
 tests/                  unit tests and real-data integration tests
 ```
 
-`api/`, `web/`, and `insight/` do not exist. The Phase 2 backend lives in `backend/`, not `api/`. Create frontend or assistant directories only when the roadmap phase that owns them begins.
+`api/`, `web/`, and `insight/` do not exist. The backend lives in `backend/`, the frontend lives in `frontend/`, and the Phase 2 API path is `/api/v1`. Create the assistant directory only when the roadmap phase that owns it begins.
 
 ---
 
@@ -156,7 +156,24 @@ The integration marker requires local `data/processed` and `data/reports`. Synth
 
 `ruff` and `mypy` are not installed. When you add them, pin versions in `requirements.txt`.
 
-### 4.4 Git
+### 4.4 Frontend
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+
+npm run dev            # http://localhost:3000
+npm run typecheck
+npm run lint
+npm test               # Vitest and React Testing Library
+npm run test:e2e       # Playwright against the real backend
+npm run build
+```
+
+The Playwright configuration starts both the backend and frontend if they are not already running. Do not commit `.env.local`, `node_modules`, `.next`, `test-results`, or `playwright-report`.
+
+### 4.5 Git
 
 ```bash
 git status --short

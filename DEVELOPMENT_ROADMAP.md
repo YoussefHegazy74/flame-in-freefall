@@ -30,8 +30,8 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 | 0 | Scientific foundation and metadata registry | **Complete** (commit `b927bac`, pushed to `origin/main`) | Registry validates against live PSI; docs agree; initialization commit pushed |
 | 1 | Data acquisition and parser foundation | **Complete** (2026-11-09) | MVP files downloaded, checksummed, parsed, and tested on fixtures |
 | 2 | Scientific validation and canonical data | **Complete** (2026-11-09) | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
-| 3 | Read-only API | **In progress** (core implemented 2026-11-09) | OpenAPI contract, provenance, pagination, and contract tests pass |
-| 4 | Frontend exploration experience | Planned | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
+| 3 | Read-only API | **In progress** (core implemented 2026-11-09; contract gaps tracked in §6.5) | OpenAPI contract, provenance, pagination, and contract tests pass |
+| 4 | Frontend exploration experience | **In progress** (core delivered 2026-11-09; citation drawer and backend-dependent items open) | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
 | 5 | Grounded insight layer | Planned | Golden-set evaluation passes; numeric claims are 100% cited |
 | 6 | Hardening and deployment | Planned | CI/CD, observability, security, backups, and runbook verified |
 | 7 | Future extensions | Deferred | Separate decision record and validation plan |
@@ -381,22 +381,25 @@ The implemented route `/material/tests` should be reconciled with the target `/m
 
 Build an honest, accessible interface for exploring the verified data. Do not add decorative dashboards or unsupported rankings.
 
+**Delivery status (2026-11-09):** the core frontend is implemented in `frontend/` and runs against the real API and canonical data. The citation drawer remains blocked on the missing citation endpoint. Files, publications, and field metadata are likewise absent from the API, so those detail sections state their unavailability rather than inventing content.
+
 ### 7.2 Workstreams
 
-- [ ] Scaffold Next.js + TypeScript + Tailwind.
-- [ ] Implement the design system and accessibility tokens.
-- [ ] Build the home page with project status and limitations.
-- [ ] Build the dataset catalog with role and access badges.
-- [ ] Build the dataset detail page with files, tables, publications, and provenance.
-- [ ] Build the gas-flame test explorer with filters and a data table.
-- [ ] Build the telemetry explorer with channel selection and time range.
-- [ ] Build the smoke explorer.
-- [ ] Build curated comparison views only for compatible fields.
-- [ ] Build the methods/limitations page from `DATA_SOURCES.md` and `DATA_DICTIONARY.md`.
-- [ ] Build the citation drawer.
-- [ ] Add empty, loading, error, blocked, `experimental_table_only`, and `no_public_files` states.
-- [ ] Add keyboard navigation and screen-reader labels.
-- [ ] Add responsive layouts.
+- [x] Scaffold Next.js + TypeScript + Tailwind.
+- [x] Implement the design system and accessibility tokens.
+- [x] Build the home page with project status and limitations.
+- [x] Build the dataset catalog with role and access badges.
+- [x] Build the dataset detail page with tables, provenance, and serving states. File and publication lists are absent because the API does not expose them.
+- [x] Build the gas-flame test explorer with filters and a data table.
+- [x] Build the telemetry explorer with channel selection and time range.
+- [x] Build the smoke explorer.
+- [x] Build curated comparison views only for compatible fields.
+- [x] Build the methods/limitations page from `DATA_SOURCES.md` and `DATA_DICTIONARY.md`.
+- [ ] Build the citation drawer. Blocked: no citation endpoint and no paired comparison values.
+- [x] Add empty, loading, error, blocked, `experimental_table_only`, and `no_public_files` states.
+- [x] Add keyboard navigation and screen-reader labels.
+- [x] Add responsive layouts.
+- [x] Add 41 unit/component tests, 17 real-backend Playwright flows, and 4 axe WCAG 2.1 A/AA scans.
 
 ### 7.3 Acceptance criteria
 
@@ -410,14 +413,16 @@ Build an honest, accessible interface for exploring the verified data. Do not ad
 8. The app works without the assistant.
 9. The app does not compute scientific aggregates that the API does not expose.
 
+**Delivery check:** criteria 1–5 and 7–9 are implemented and covered by the Playwright suite. Criterion 6 remains open because the API exposes no citation, file, or publication endpoints.
+
 ### 7.4 Tests
 
-- Component tests for charts, badges, and citation drawer.
-- End-to-end tests for catalog → dataset → chart → citation.
-- Accessibility tests with axe or equivalent.
-- Visual regression tests for key screens.
-- Responsive tests for mobile and desktop.
-- Error-state tests for blocked, `experimental_table_only`, and `no_public_files` datasets.
+- [x] Component tests for charts, badges, and scientific state panels.
+- [x] End-to-end tests for catalog → dataset → chart → quality/provenance.
+- [x] Accessibility tests with axe.
+- [ ] Visual regression tests for key screens.
+- [ ] Responsive tests for mobile and desktop. Responsive layouts exist and were manually checked; automated viewport tests remain open.
+- [x] Error-state tests for blocked, `experimental_table_only`, and `no_public_files` datasets.
 
 ---
 

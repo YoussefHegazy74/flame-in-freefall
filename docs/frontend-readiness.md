@@ -2,10 +2,10 @@
 
 **Project:** Flame in Freefall
 **Team:** AFAQ
-**Status:** Backend contract ready for Phase 3 frontend work. No frontend has been built.
+**Status:** Implemented in Phase 3. The frontend described here exists in `frontend/`; this document remains the backend contract and state-handling reference.
 **API:** `v1`, read-only, FastAPI
 
-This document tells the frontend team what the API guarantees, which states must be visible, and what must not be inferred in the browser.
+This document tells the frontend team what the API guarantees, which states must be visible, and what must not be inferred in the browser. See `frontend/README.md` for the implemented architecture, routes, and test commands.
 
 ---
 
@@ -153,26 +153,28 @@ Override with a comma-separated `FLAME_CORS_ORIGINS`. Credentials are disabled. 
 
 ---
 
-## 8. Proposed page and component structure
+## 8. Implemented page and component structure
 
-This is a handoff proposal, not an implemented frontend. It assumes Next.js App Router or an equivalent component framework. Do not begin visual implementation until the remaining Phase 3 API gaps are accepted.
+This section started as a handoff proposal. It is retained for contract context; the implemented app uses the route names below and the components listed in `frontend/README.md`.
 
 ### 8.1 Pages
 
 | Route | Purpose | Primary API calls |
 |---|---|---|
-| `/` | Overview: nine curated datasets, state summary, quality counts. | `/datasets`, `/datasets/quality` |
+| `/` | Overview: nine curated datasets, state summary, quality counts. | `/meta`, `/datasets`, `/datasets/quality`, `/measurements` |
 | `/investigations` | NASA PSI catalog with role and text search. | `/investigations` |
 | `/investigations/[accession]` | Investigation detail and curated datasets. | `/investigations/{accession}` |
+| `/datasets` | Curated dataset catalog with role and access badges. | `/datasets` |
 | `/datasets/[dataset_id]` | Four use-specific states, limitations, measurements. | `/datasets/{dataset_id}` |
-| `/explore/gas-flame` | PSI-10/PSI-159 row explorer with filters. | `/gas-flame/tests` |
-| `/explore/material` | PSI-25/PSI-26 matrices with unit warnings. | `/material/tests` |
-| `/explore/droplet` | PSI-69 droplet summary. | `/droplet/tests` |
-| `/explore/telemetry` | PSI-100 run and bounded series explorer. | `/telemetry/runs`, `/telemetry/runs/{run_id}/series` |
-| `/explore/smoke` | PSI-101 run and bounded series explorer. | `/smoke/runs`, `/smoke/runs/{run_id}/series` |
-| `/compare` | Measurement picker, conditions, decision panel. | `/measurements`, `/compare` |
+| `/experiments/gas-flame` | PSI-10/PSI-159 row explorer with filters. | `/gas-flame/tests` |
+| `/experiments/materials` | PSI-25/PSI-26 matrices with unit warnings. | `/material/tests` |
+| `/experiments/droplets` | PSI-69 droplet summary. | `/droplet/tests` |
+| `/telemetry` | PSI-100 run and bounded series explorer. | `/telemetry/runs`, `/telemetry/runs/{run_id}/series` |
+| `/smoke` | PSI-101 run and bounded series explorer. | `/smoke/runs`, `/smoke/runs/{run_id}/series` |
+| `/compare` | Measurement picker, conditions, decision panel. | `/measurements`, `/comparability`, `/compare` |
 | `/quality` | Data-quality center across datasets. | `/datasets/quality`, `/datasets/{dataset_id}/quality` |
-| `/methods` | Comparability, serving, limitations, sources. | Static docs |
+| `/provenance` | Exact source-file and row resolution. | `/provenance` |
+| `/about` | Comparability, serving, limitations, sources. | Static docs plus registry metadata |
 
 ### 8.2 Components
 
@@ -202,12 +204,14 @@ This is a handoff proposal, not an implemented frontend. It assumes Next.js App 
 
 ## 9. Verification checklist for frontend integration
 
-- [ ] The app reads `quality.status` and `data.status` instead of inventing badges.
-- [ ] Blocked datasets show a reason, not an empty chart.
-- [ ] Metadata-only datasets show no numeric series.
-- [ ] Series requests use bounded ranges and handle `413`.
-- [ ] Charts show units and provenance.
-- [ ] No browser-side scientific aggregation or unit conversion.
-- [ ] No flame-spread chart for BASS/BASS-II, SAME/SAME-R, or telemetry.
-- [ ] CORS origin is configured for the deployed frontend.
-- [ ] Request IDs appear in client error reports.
+- [x] The app reads `quality.status` and `data.status` instead of inventing badges.
+- [x] Blocked datasets show a reason, not an empty chart.
+- [x] Metadata-only datasets show no numeric series.
+- [x] Series requests use bounded ranges and handle `413`.
+- [x] Charts show units and provenance.
+- [x] No browser-side scientific aggregation or unit conversion.
+- [x] No flame-spread chart for BASS/BASS-II, SAME/SAME-R, or telemetry.
+- [ ] CORS origin is configured for the deployed frontend. (Local development is configured; no deployment exists yet.)
+- [x] Request IDs appear in client error reports.
+
+The Playwright suite exercises the scientific-state checklist against the real backend. See `frontend/e2e/app.spec.ts` and `frontend/e2e/accessibility.spec.ts`.
