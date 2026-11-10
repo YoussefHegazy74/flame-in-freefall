@@ -1,0 +1,70 @@
+name: Full-data validation
+
+# This workflow is deliberately manual. It requires a self-hosted runner with
+# the gitignored canonical Parquet data under data/processed, the built interim
+# and raw data needed by integration tests, and a current retrieval index under
+# data/assistant. Hosted CI must not pretend that these checks ran.
+#
+# Runner label: self-hosted, linux, full-data
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  full-data:
+    name: Integration, retrieval, evaluation, Playwright, and axe
+    runs-on: [self-hosted, linux, full-data]
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Full backend suite
+        run: python -m pytest -q
+
+      - name: Reproducibility including canonical data and index
+        run: bash scripts/verify_reproducibility.sh --with-data
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright and axe suite
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: npm run test:e2e
+
+      - name: Report live-model evaluation status
+        run: |
+          echo "A live model is evaluated only when FLAME_LLM_PROVIDER=openai_compatible"
+          echo "and credentials are configured on the runner. Otherwise it remains pending."

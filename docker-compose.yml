@@ -1,0 +1,103 @@
+# Production-oriented local topology for Flame in Freefall.
+#
+# Prerequisites:
+#   - data/processed contains the canonical Parquet tables and manifest
+#   - data/assistant contains a current retrieval index (or the backend can
+#     rebuild one in memory from the committed documentation)
+#
+# The backend receives canonical data and the generated index as read-only
+# mounts. Raw NASA files are never mounted or copied into an image.
+#
+# Usage:
+#   docker compose up --build -d
+#   docker compose ps
+#   curl http://127.0.0.1:8000/api/v1/ready
+#   open http://127.0.0.1:3000
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: flame-in-freefall-backend:phase6
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${FLAME_BACKEND_PORT:-8000}:8000"
+    environment:
+      FLAME_LOG_LEVEL: "${FLAME_LOG_LEVEL:-INFO}"
+      FLAME_CORS_ORIGINS: "${FLAME_CORS_ORIGINS:-http://localhost:3000}"
+      FLAME_CACHE_ENABLED: "${FLAME_CACHE_ENABLED:-true}"
+      FLAME_CACHE_MAX_AGE: "${FLAME_CACHE_MAX_AGE:-60}"
+      FLAME_RATE_LIMIT_ENABLED: "${FLAME_RATE_LIMIT_ENABLED:-true}"
+      FLAME_RATE_LIMIT_REQUESTS: "${FLAME_RATE_LIMIT_REQUESTS:-600}"
+      FLAME_RATE_LIMIT_WINDOW_SECONDS: "${FLAME_RATE_LIMIT_WINDOW_SECONDS:-60}"
+      FLAME_TRUST_PROXY: "${FLAME_TRUST_PROXY:-false}"
+      FLAME_MAX_REQUEST_BYTES: "${FLAME_MAX_REQUEST_BYTES:-1048576}"
+      FLAME_METRICS_ENABLED: "${FLAME_METRICS_ENABLED:-true}"
+      FLAME_READINESS_REQUIRE_FULL_DATASET: "${FLAME_READINESS_REQUIRE_FULL_DATASET:-true}"
+      FLAME_READINESS_REQUIRE_ASSISTANT_INDEX: "${FLAME_READINESS_REQUIRE_ASSISTANT_INDEX:-true}"
+      FLAME_ASSISTANT_ENABLED: "${FLAME_ASSISTANT_ENABLED:-true}"
+      FLAME_RETRIEVAL_ENABLED: "${FLAME_RETRIEVAL_ENABLED:-true}"
+      FLAME_LLM_PROVIDER: "${FLAME_LLM_PROVIDER:-deterministic}"
+      FLAME_LLM_MODEL: "${FLAME_LLM_MODEL:-}"
+      FLAME_LLM_BASE_URL: "${FLAME_LLM_BASE_URL:-}"
+      FLAME_LLM_API_KEY: "${FLAME_LLM_API_KEY:-}"
+      FLAME_ASSISTANT_MAX_TOOL_CALLS: "${FLAME_ASSISTANT_MAX_TOOL_CALLS:-6}"
+      FLAME_ASSISTANT_TIMEOUT_SECONDS: "${FLAME_ASSISTANT_TIMEOUT_SECONDS:-20}"
+    volumes:
+      - "./data/processed:/app/data/processed:ro"
+      - "./data/assistant:/app/data/assistant:ro"
+    security_opt:
+      - "no-new-privileges:true"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 8s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}"
+    image: flame-in-freefall-frontend:phase6
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${FLAME_FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - "no-new-privileges:true"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 8s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

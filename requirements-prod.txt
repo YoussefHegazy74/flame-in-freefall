@@ -1,0 +1,11 @@
+# Production runtime dependencies for the FastAPI service.
+# Keep versions aligned with requirements.txt. Test-only packages (pytest)
+# are intentionally excluded from the runtime image.
+duckdb==2.0.0
+fastapi==0.162.2
+httpx==0.28.1
+openpyxl==3.1.5
+pyarrow==26.0.1
+pydantic==2.14.3
+uvicorn==0.54.0
+xlrd==2.0.2

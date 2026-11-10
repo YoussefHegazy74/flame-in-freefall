@@ -1,0 +1,227 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-11-10T20:31:51.512740+00:00",
+  "environment": {
+    "python": "3.14.4",
+    "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+    "processor": "not reported"
+  },
+  "api_base_url": "http://127.0.0.1:8000/api/v1",
+  "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+  "registry_version": "1.0.0",
+  "iterations_per_scenario": 30,
+  "concurrency": 8,
+  "server_process": {
+    "before": {
+      "pid": 1007960,
+      "available": true,
+      "rss_kb": 144008,
+      "threads": 3
+    },
+    "after": {
+      "pid": 1007960,
+      "available": true,
+      "rss_kb": 203876,
+      "threads": 10
+    }
+  },
+  "scenarios": [
+    {
+      "name": "health",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/health",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 91.239,
+        "p50_ms": 86.55,
+        "p95_ms": 112.942,
+        "max_ms": 125.886
+      }
+    },
+    {
+      "name": "investigations",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/investigations?limit=10",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 170.431,
+        "p50_ms": 173.966,
+        "p95_ms": 190.304,
+        "max_ms": 208.839
+      }
+    },
+    {
+      "name": "datasets",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/datasets?limit=10",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 16.607,
+        "p50_ms": 16.494,
+        "p95_ms": 23.54,
+        "max_ms": 23.671
+      }
+    },
+    {
+      "name": "dataset_metadata",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/datasets/psi-10-gas-flame",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 13.667,
+        "p50_ms": 13.652,
+        "p95_ms": 16.919,
+        "max_ms": 17.604
+      }
+    },
+    {
+      "name": "gas_flame_tests",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/gas-flame/tests?accession=PSI-10&limit=20",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 268.682,
+        "p50_ms": 273.568,
+        "p95_ms": 306.333,
+        "max_ms": 313.842
+      }
+    },
+    {
+      "name": "assistant_status",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/assistant/status?include_index=true",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 11.047,
+        "p50_ms": 10.677,
+        "p95_ms": 16.469,
+        "max_ms": 17.589
+      }
+    },
+    {
+      "name": "telemetry_series",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/telemetry/runs/PSI-100%3A%3APSI-100_Raw%20Data_Raw%20telemetry%20file/series?channels=acceleration_x_m_s2&start_ms=0.0&end_ms=60000.0&max_points=1000",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 500.615,
+        "p50_ms": 513.297,
+        "p95_ms": 547.148,
+        "max_ms": 562.84
+      }
+    },
+    {
+      "name": "citation_resolution",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/citations/cit_f_21df4ec92db1eca0",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 10.649,
+        "p50_ms": 10.556,
+        "p95_ms": 15.137,
+        "max_ms": 18.455
+      }
+    },
+    {
+      "name": "provenance",
+      "method": "GET",
+      "path": "http://127.0.0.1:8000/api/v1/provenance?accession=PSI-10&file=PSI-10_Experimental%20table_Flame%20Design_Inverse%20Flame.csv",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 90.008,
+        "p50_ms": 91.767,
+        "p95_ms": 110.144,
+        "max_ms": 111.822
+      }
+    },
+    {
+      "name": "assistant_query_deterministic",
+      "method": "POST",
+      "path": "http://127.0.0.1:8000/api/v1/assistant/query",
+      "requests": 30,
+      "concurrency": 8,
+      "status_counts": {
+        "200": 30
+      },
+      "error_count": 0,
+      "error_rate": 0.0,
+      "errors": [],
+      "latency_ms": {
+        "mean_ms": 242.296,
+        "p50_ms": 244.853,
+        "p95_ms": 274.062,
+        "max_ms": 328.572
+      }
+    }
+  ],
+  "skipped": {},
+  "notes": [
+    "Local indicative baseline, not a service-level objective.",
+    "The benchmark uses bounded concurrency and existing API caps.",
+    "No scientific query semantics were changed for the benchmark.",
+    "No raw NASA archive was downloaded or loaded."
+  ]
+}

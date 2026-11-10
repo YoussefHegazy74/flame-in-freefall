@@ -533,6 +533,8 @@ def test_openapi_lists_every_required_endpoint(client):
     paths = schema["paths"]
     required = {
         "/health",
+        "/ready",
+        "/metrics",
         "/meta",
         "/investigations",
         "/investigations/{accession}",

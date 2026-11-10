@@ -26,8 +26,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.models import Envelope, ErrorEnvelope
 from backend.operations import (
     CacheSettings,
+    MetricsRegistry,
+    MetricsSettings,
     RateLimiter,
     RateLimitSettings,
+    ReadinessSettings,
+    RequestLimitSettings,
     etag_for_body,
     if_none_match_matches,
 )
@@ -116,6 +120,22 @@ def _assistant_quality_status(answer: Any) -> str:
     return ASSISTANT_QUALITY_STATUS.get(str(status), "partial")
 
 
+def _apply_security_headers(response: Response) -> Response:
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+    )
+    return response
+
+
+def _route_template(request: Request) -> str:
+    route = request.scope.get("route")
+    path = getattr(route, "path", None)
+    return str(path) if path else "unmatched"
+
+
 def _cors_origins() -> list[str]:
     raw = os.environ.get("FLAME_CORS_ORIGINS")
     if raw is None:
@@ -143,12 +163,19 @@ def create_app(
     cors_origins: list[str] | None = None,
     cache_settings: CacheSettings | None = None,
     rate_limit_settings: RateLimitSettings | None = None,
+    request_limit_settings: RequestLimitSettings | None = None,
+    readiness_settings: ReadinessSettings | None = None,
+    metrics_settings: MetricsSettings | None = None,
 ) -> FastAPI:
     """Build the API. Passing a service is useful for isolated contract tests."""
 
     cache_settings = cache_settings or CacheSettings.from_env()
     rate_limit_settings = rate_limit_settings or RateLimitSettings.from_env()
+    request_limit_settings = request_limit_settings or RequestLimitSettings.from_env()
+    readiness_settings = readiness_settings or ReadinessSettings.from_env()
+    metrics_settings = metrics_settings or MetricsSettings.from_env()
     limiter = RateLimiter(rate_limit_settings)
+    metrics = MetricsRegistry(metrics_settings)
 
     application = FastAPI(
         title="Flame in Freefall API",
@@ -187,6 +214,15 @@ def create_app(
 
     application.state.rate_limiter = limiter
     application.state.cache_settings = cache_settings
+    application.state.request_limit_settings = request_limit_settings
+    application.state.readiness_settings = readiness_settings
+    application.state.metrics = metrics
+
+    no_store_paths = {
+        f"{API_PREFIX}/health",
+        f"{API_PREFIX}/ready",
+        f"{API_PREFIX}/metrics",
+    }
 
     @application.middleware("http")
     async def operations_middleware(request: Request, call_next):
@@ -194,6 +230,60 @@ def create_app(
             "req_" + secrets.token_hex(12)
         )
         started = time.perf_counter()
+
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                declared_length = int(content_length)
+            except ValueError:
+                declared_length = -1
+            if declared_length < 0:
+                response = JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": {
+                            "code": "invalid_query",
+                            "message": "Content-Length must be a non-negative integer",
+                            "details": {},
+                            "request_id": request.state.request_id,
+                        }
+                    },
+                )
+                response.headers["Cache-Control"] = "no-store"
+                response.headers["X-Request-ID"] = request.state.request_id
+                _apply_security_headers(response)
+                metrics.record_request(
+                    method=request.method,
+                    route=_route_template(request),
+                    status_code=400,
+                    duration_ms=(time.perf_counter() - started) * 1000,
+                )
+                return response
+            if declared_length > request_limit_settings.max_body_bytes:
+                response = JSONResponse(
+                    status_code=413,
+                    content={
+                        "error": {
+                            "code": "request_too_large",
+                            "message": "request body exceeds the configured limit",
+                            "details": {
+                                "max_body_bytes": request_limit_settings.max_body_bytes
+                            },
+                            "request_id": request.state.request_id,
+                        }
+                    },
+                )
+                response.headers["Cache-Control"] = "no-store"
+                response.headers["X-Request-ID"] = request.state.request_id
+                _apply_security_headers(response)
+                metrics.record_request(
+                    method=request.method,
+                    route=_route_template(request),
+                    status_code=413,
+                    duration_ms=(time.perf_counter() - started) * 1000,
+                )
+                return response
+
         client_host = request.client.host if request.client else "unknown"
         if rate_limit_settings.trust_proxy:
             forwarded = request.headers.get("X-Forwarded-For")
@@ -228,6 +318,14 @@ def create_app(
                     "Cache-Control": "no-store",
                 },
             )
+            _apply_security_headers(response)
+            metrics.record_rate_limit()
+            metrics.record_request(
+                method=request.method,
+                route=_route_template(request),
+                status_code=429,
+                duration_ms=(time.perf_counter() - started) * 1000,
+            )
             return response
 
         response = await call_next(request)
@@ -235,13 +333,13 @@ def create_app(
         cache_control = (
             cache_settings.header_value() if cache_settings.enabled else "no-store"
         )
-        if request.url.path in {f"{API_PREFIX}/health"}:
+        if request.url.path in no_store_paths:
             cache_control = "no-store"
 
         if (
             cache_settings.enabled
             and request.method == "GET"
-            and request.url.path not in {f"{API_PREFIX}/health"}
+            and request.url.path not in no_store_paths
             and response.status_code == 200
             and "application/json" in response.headers.get("content-type", "")
             and hasattr(response, "body_iterator")
@@ -285,7 +383,14 @@ def create_app(
                 )
             response.headers["X-Request-ID"] = request.state.request_id
 
+        _apply_security_headers(response)
         duration_ms = round((time.perf_counter() - started) * 1000, 3)
+        metrics.record_request(
+            method=request.method,
+            route=_route_template(request),
+            status_code=response.status_code,
+            duration_ms=duration_ms,
+        )
         LOGGER.info(
             "request",
             extra={
@@ -407,6 +512,98 @@ def create_app(
         data["assistant_fallback_mode"] = status.fallback_mode
         data["assistant_contract_version"] = CONTRACT_VERSION
         return envelope
+
+    @router.get("/ready", tags=["health"])
+    def ready(request: Request):
+        service = svc(request)
+        health = service.db.health()
+        if readiness_settings.require_full_dataset:
+            dataset_ready = health["database"] == "ok"
+        else:
+            dataset_ready = health["database"] != "unavailable"
+        dataset_ready = dataset_ready and bool(
+            health.get("dataset_version") or service.bundle.dataset_version
+        )
+
+        assistant_status = assistant_svc(request).status(load_index=True)
+        index_required = (
+            readiness_settings.require_assistant_index
+            and assistant_status.enabled
+            and assistant_status.retrieval_enabled
+        )
+        index_ready = (not index_required) or bool(
+            assistant_status.index_version
+        )
+        is_ready = dataset_ready and index_ready
+        flags: list[str] = []
+        if not dataset_ready:
+            flags.append("dataset_not_ready")
+        if not index_ready:
+            flags.append("assistant_index_not_ready")
+        data = {
+            "status": "ready" if is_ready else "not_ready",
+            "checks": {
+                "dataset": {
+                    "ready": dataset_ready,
+                    "database": health["database"],
+                    "dataset_version": health.get("dataset_version")
+                    or service.bundle.dataset_version,
+                    "available_tables": health["available_tables"],
+                    "missing_tables": health["missing_tables"],
+                },
+                "assistant": {
+                    "ready": index_ready,
+                    "enabled": assistant_status.enabled,
+                    "retrieval_enabled": assistant_status.retrieval_enabled,
+                    "index_required": index_required,
+                    "index_ready": index_ready,
+                    "index_version": assistant_status.index_version,
+                    "mode": assistant_status.mode,
+                },
+            },
+        }
+        envelope = service._envelope(
+            data,
+            request_id=_request_id(request),
+            quality_status="verified" if is_ready else "blocked",
+            flags=flags,
+        )
+        return JSONResponse(
+            status_code=200 if is_ready else 503,
+            content=envelope,
+            headers={
+                "Cache-Control": "no-store",
+                "X-Request-ID": _request_id(request),
+            },
+        )
+
+    @router.get("/metrics", tags=["operations"])
+    def metrics_snapshot(request: Request) -> dict[str, Any]:
+        service = svc(request)
+        snapshot = metrics.snapshot()
+        if not metrics_settings.enabled:
+            snapshot["note"] = "Operational metrics are disabled by configuration."
+        snapshot["dataset_version"] = service.bundle.dataset_version
+        snapshot["registry_version"] = service.bundle.registry_version
+        assistant_status = assistant_svc(request).status(load_index=False)
+        snapshot["assistant"] = {
+            **snapshot["assistant"],
+            "mode": assistant_status.mode,
+            "provider": assistant_status.provider,
+            "retrieval_enabled": assistant_status.retrieval_enabled,
+        }
+        return service._envelope(
+            snapshot,
+            request_id=_request_id(request),
+            quality_status="partial"
+            if not metrics_settings.enabled
+            else "verified",
+            warnings=(
+                ["Operational metrics are disabled by configuration."]
+                if not metrics_settings.enabled
+                else []
+            ),
+        )
 
     @router.get("/meta", response_model=Envelope, tags=["health"])
     def meta(request: Request) -> dict[str, Any]:
@@ -893,8 +1090,31 @@ def create_app(
         request: Request,
         query: AssistantQuery,
     ) -> dict[str, Any]:
-        answer = assistant_svc(request).answer(
+        orchestrator = assistant_svc(request)
+        answer = orchestrator.answer(
             query, request_id=_request_id(request)
+        )
+        usage = getattr(answer, "provider_usage", None)
+        usage_payload = (
+            usage.model_dump(mode="json")
+            if hasattr(usage, "model_dump")
+            else usage
+        )
+        settings = getattr(orchestrator, "settings", None)
+        if bool(getattr(settings, "llm_configured", False)) and answer.fallback_mode:
+            metrics.record_provider_error()
+        metrics.record_assistant(
+            provider=answer.provider,
+            fallback=answer.fallback_mode,
+            evidence_status=answer.evidence_status.value,
+            answer_type=answer.answer_type.value,
+            validation_passed=answer.validation.passed,
+            tools=[
+                (tool.tool, tool.status.value)
+                for tool in answer.tools_used
+            ],
+            usage=usage_payload if isinstance(usage_payload, dict) else None,
+            disabled=not bool(getattr(settings, "enabled", True)),
         )
         return assistant_envelope(request, answer)
 
