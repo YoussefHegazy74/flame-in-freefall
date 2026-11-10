@@ -164,7 +164,7 @@ repaired.
 | Missing-value imputation | `tests/assistant/test_orchestrator.py`, golden `dq-028` |
 | Unauthorized unit conversion | `tests/assistant/test_orchestrator.py`, golden `dq-029` |
 | Fabricated publication | golden `dq-030` |
-| Fire-risk score / ranking | golden `dq-031` |
+| Fire-risk score / ranking / safety ranking | golden `dq-031`, `tests/assistant/test_adversarial.py` |
 | Untrusted retrieved text | golden `dq-033` |
 | Citation validation failure withholds draft | `tests/assistant/test_orchestrator.py` |
 

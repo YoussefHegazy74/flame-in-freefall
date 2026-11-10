@@ -257,7 +257,74 @@ Recovery order:
 
 ---
 
-## 9. Deployment limitations
+## 9. Staging deployment recipe (prepared, not executed)
+
+A hosted staging deployment was prepared but not executed because no hosting
+account, DNS name, or provider credentials were available.
+
+### 9.1 Prerequisites
+
+- A Docker-capable Linux host with a TLS-terminating reverse proxy.
+- DNS for the frontend and API hostnames.
+- A copy of `data/processed` and `data/assistant` on the host.
+- A secret store for optional provider credentials.
+- The frontend origin added to `FLAME_CORS_ORIGINS`.
+
+### 9.2 Build and start
+
+```bash
+export NEXT_PUBLIC_API_BASE_URL=https://api.staging.example.org/api/v1
+export FLAME_CORS_ORIGINS=https://staging.example.org
+export FLAME_TRUST_PROXY=true
+export FLAME_READINESS_REQUIRE_FULL_DATASET=true
+export FLAME_READINESS_REQUIRE_ASSISTANT_INDEX=true
+# Optional provider only; keep secrets out of shell history in production.
+export FLAME_LLM_PROVIDER=deterministic
+
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+### 9.3 Reverse proxy
+
+Terminate TLS at the proxy and forward:
+
+| Public URL | Upstream |
+|---|---|
+| `https://staging.example.org` | `http://127.0.0.1:3000` |
+| `https://api.staging.example.org` | `http://127.0.0.1:8000` |
+
+Forward `X-Forwarded-For` only from the trusted proxy, and keep
+`FLAME_TRUST_PROXY=true` limited to that topology. Enforce a request-body limit
+at the proxy as a defense-in-depth measure.
+
+### 9.4 Smoke tests
+
+```bash
+curl -fsS https://api.staging.example.org/api/v1/health
+curl -fsS https://api.staging.example.org/api/v1/ready
+curl -fsS https://api.staging.example.org/api/v1/metrics
+curl -fsS https://api.staging.example.org/api/v1/citations/cit_f_21df4ec92db1eca0
+```
+
+Open the frontend dashboard and `/assistant`, ask the deterministic record-count
+question, confirm citation resolution, and confirm the refusal question returns
+`insufficient_evidence`.
+
+### 9.5 Rollback
+
+1. Keep the previous image tags and data mounts.
+2. Stop the new containers.
+3. Restore the previous image tags and mounts.
+4. Verify `/api/v1/ready` and the golden evaluation before reopening traffic.
+
+Do not claim staging success until the smoke tests and accessibility checks have
+run on the hosted environment.
+
+---
+
+## 10. Deployment limitations
 
 1. The Docker image build was not executed because the local Docker daemon was
    inaccessible. Native production startup was verified instead.

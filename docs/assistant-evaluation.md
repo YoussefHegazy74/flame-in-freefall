@@ -142,8 +142,8 @@ The committed deterministic run reports:
 | Scope coverage rate | 1.0 |
 | Failure categories | none |
 
-Latency in the committed run: mean `187.269 ms`, p50 `127.048 ms`,
-p95 `559.370 ms`, maximum `1457.140 ms`. Latency depends on the machine, warm
+Latency in the committed run: mean `114.326 ms`, p50 `87.818 ms`,
+p95 `349.319 ms`, maximum `766.896 ms`. Latency depends on the machine, warm
 caches, and the
 first index build, so treat it as an indicative measurement rather than a
 service-level guarantee.

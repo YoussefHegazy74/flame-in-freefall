@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Status date:** 2026-11-10
 **Dataset version:** `2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb`
-**Retrieval index:** `assistant-index-v1-be81f78826a2`
+**Retrieval index:** `assistant-index-v1-796b45cda220`
 **Report:** `data/reports/phase6_performance.json`
 
 This is a local indicative baseline, not a production service-level objective.

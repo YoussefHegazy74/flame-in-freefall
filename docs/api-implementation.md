@@ -28,7 +28,7 @@ uvicorn backend.app:app --host 127.0.0.1 --port 8000
 | `http://127.0.0.1:8000/api/v1/docs` | Swagger UI |
 | `http://127.0.0.1:8000/api/v1/openapi.json` | OpenAPI schema |
 
-The app reads canonical Parquet from `data/processed`, the quality report from `data/reports`, the download manifest from `data/registry`, and the scientific registries from `data/metadata`. Override with `FLAME_PROCESSED_DIR`, `FLAME_REPORTS_DIR`, `FLAME_REGISTRY_DIR`, and `FLAME_METADATA_DIR`.
+The app reads canonical Parquet from `data/processed`, the quality report from `data/reports`, the download manifest from `data/registry`, and the scientific registries from `data/metadata`. Override the canonical path with `FLAME_PROCESSED_DIR`, the reports path with `FLAME_REPORTS_DIR`, and the metadata registry path with `FLAME_REGISTRY_DIR` (which points to `data/metadata`, not the source metadata folder `data/registry`).
 
 ---
 

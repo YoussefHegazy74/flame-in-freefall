@@ -7,7 +7,7 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository now includes **Phase 6: production readiness and operational hardening** on top of the grounded Phase 5 assistant. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, a Next.js exploration interface with `/assistant`, production Docker/Compose configuration, CI quality gates, readiness and metrics endpoints, and bounded provider retries with token/cost reporting. The backend suite has **493 passing tests**; the frontend has **68 unit/component tests and 27 real-backend Playwright tests**, including seven axe scans. The assistant is deterministic by default and completes **36 / 36 golden questions** with 100% citation validity and 100% numerical/unit consistency; retrieval MRR improved from `0.761905` to `1.0` after a measured source-aware ranking change. A real language model remains **pending** because no provider credentials were available; the optional provider is exercised only through deterministic and mock-transport boundary checks. The platform does not claim results that have not been computed from source data.
+This repository now includes **Phase 7: final release and competition readiness** on top of the completed Phase 1–6 platform. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, a Next.js exploration interface with `/assistant`, production Docker/Compose configuration, CI quality gates, readiness and metrics endpoints, and bounded provider retries with token/cost reporting. The backend suite has **496 passing tests**; the frontend has **68 unit/component tests and 27 real-backend Playwright tests**, including seven axe scans. The assistant is deterministic by default and completes **36 / 36 golden questions** with 100% citation validity and 100% numerical/unit consistency; retrieval MRR is `1.0` after a measured source-aware ranking change. Phase 7 completed a successful isolated restore drill, a scientific integrity audit, a clean full `npm audit`, and the competition demo package. A real language model remains **pending** because no provider credentials were available, and Docker image verification remains pending because the local daemon was inaccessible. The platform does not claim results that have not been computed from source data.
 
 > Phase numbering note: the delivery brief calls the frontend work Phase 3. The internal development roadmap tracks the same frontend work as Phase 4, after its Phase 3 read-only API. Both refer to the interface described in `frontend/README.md`.
 
@@ -218,12 +218,36 @@ Phase 6 adds production deployment, CI gates, operational visibility, provider h
 | Metrics | `/api/v1/metrics` exposes bounded request, latency, rate-limit, assistant, tool, and token counters |
 | Provider hardening | Bounded retries, `Retry-After`, request IDs, token usage, optional cost estimation, safe logs, deterministic fallback |
 | Real-model evaluation | **Pending**: no provider credentials were available |
-| Retrieval | MRR `1.0` (up from `0.761905`), precision@5 `0.602381`, recall@5 `1.0`, index `assistant-index-v1-be81f78826a2` |
+| Retrieval | MRR `1.0` (up from `0.761905`), precision@5 `0.602381`, recall@5 `1.0`, index `assistant-index-v1-796b45cda220` |
 | Performance | 10 scenarios, 30 requests each, concurrency 8, 0 errors; telemetry p95 `604.966 ms`, deterministic assistant p95 `273.357 ms` |
-| Security audit | Python runtime and frontend production dependencies have no known vulnerabilities; full dev-only npm audit has documented follow-ups |
+| Security audit | Python runtime and frontend dependencies have no known vulnerabilities; full `npm audit` is clean after the Phase 7 Vitest upgrade and tested minimatch override |
 | Reproduction | Committed artifacts, canonical validation, retrieval index, and deterministic assistant evaluation all pass |
 
 The Phase 6 documents are `docs/phase6-deployment.md`, `docs/phase6-ci-cd.md`, `docs/phase6-operations.md`, `docs/phase6-security-review.md`, `docs/phase6-performance.md`, and `docs/phase6-real-model-evaluation.md`.
+
+---
+
+## Phase 7 results (2026-11-10)
+
+Phase 7 closes release and competition gaps without changing the scientific model.
+
+| Phase 7 artifact | Verified result |
+|---|---|
+| Dependency security | Vitest `4.1.12`, tested `minimatch@11.0.1` override; full `npm audit` reports 0 vulnerabilities |
+| Restore drill | Isolated rebuild: 310 s total pipeline, exact dataset version, readiness, citation, deterministic assistant, and fallback verified |
+| Scientific integrity | Pass with documented limits; explicit safety-ranking refusal added and tested |
+| Docker | Image build and scan remain pending; Docker daemon inaccessible |
+| Staging | Deployment recipe prepared; no hosted environment or credentials available |
+| Real model | Pending credentials; no live-model result claimed |
+| Backend tests | 496 passed |
+| Frontend tests | 68 passed |
+| Playwright / axe | 27 passed / 7 scans passed |
+| Competition package | Demo script, checklist, FAQ, technical overview, integrity audit, restore record, release checklist |
+
+Phase 7 documents: `docs/competition-technical-overview.md`,
+`docs/competition-demo-script.md`, `docs/competition-demo-checklist.md`,
+`docs/competition-faq.md`, `docs/scientific-integrity-audit.md`,
+`docs/phase7-restore-drill.md`, and `docs/final-release-checklist.md`.
 
 ---
 
@@ -323,6 +347,13 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── phase6-security-review.md     Security findings and residual risks
 │   ├── phase6-performance.md         Benchmark methodology and baseline
 │   ├── phase6-real-model-evaluation.md  Provider status and pending live evaluation
+│   ├── competition-technical-overview.md  Problem, data, architecture, limits, evaluation
+│   ├── competition-demo-script.md    End-to-end competition demonstration
+│   ├── competition-demo-checklist.md Pre-demo verification checklist
+│   ├── competition-faq.md            Judge and reviewer questions
+│   ├── scientific-integrity-audit.md Phase 7 scientific claim audit
+│   ├── phase7-restore-drill.md       Isolated recovery commands and results
+│   ├── final-release-checklist.md    Release status and pending external items
 │   ├── screenshots/phase3/           Captured views of the running frontend
 │   └── research/
 │       └── source-verification-log.md
@@ -507,6 +538,13 @@ The metadata collector does **not** download experimental data files. The pipeli
 | What did the security review find? | `docs/phase6-security-review.md` |
 | What is the performance baseline? | `docs/phase6-performance.md` |
 | Was a real model evaluated? | `docs/phase6-real-model-evaluation.md` |
+| What is the competition technical overview? | `docs/competition-technical-overview.md` |
+| How do I run the demo? | `docs/competition-demo-script.md` |
+| What should I check before the demo? | `docs/competition-demo-checklist.md` |
+| What are likely judge questions? | `docs/competition-faq.md` |
+| What did the scientific integrity audit find? | `docs/scientific-integrity-audit.md` |
+| Did the restore drill succeed? | `docs/phase7-restore-drill.md` |
+| Is the release complete? | `docs/final-release-checklist.md` |
 | What can the frontend rely on? | `docs/frontend-readiness.md` |
 | How does the frontend work, and how is it tested? | `frontend/README.md` |
 | What is known to be limited or unavailable? | `docs/known-limitations.md` |
@@ -601,12 +639,22 @@ These rules are binding for code, charts, prose, and assistant answers:
 - Recorded a 10-scenario performance baseline with 0 errors; 493 backend tests, 68 frontend tests, 27 Playwright tests, and 7 axe scans pass.
 - Documented deployment, CI/CD, operations, security review, performance, backup/recovery, and the pending real-model evaluation.
 
-**Next (Phase 7 and later)**
+**Done in Phase 7 (final release and competition readiness)**
 
-1. Run a live-model evaluation when provider credentials are available.
-2. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
-3. Build and scan the Docker images on a Docker-capable host.
-4. Upgrade the frontend test/lint toolchain to clear the documented development-only audit findings.
+- Audited the repository at `be777e7` and preserved the Phase 1–6 implementation.
+- Upgraded Vitest to `4.1.12` and applied a tested `minimatch@11.0.1` override; full `npm audit` is clean.
+- Completed an isolated restore drill: 310 s pipeline, exact dataset version, readiness, citation, deterministic assistant, and fallback verified.
+- Completed the scientific integrity audit and added explicit safety-ranking refusals.
+- Prepared the staging recipe, competition technical overview, demo script, checklist, FAQ, integrity audit, restore record, and final release checklist.
+- Verified 496 backend tests, 68 frontend tests, 27 Playwright tests, 7 axe scans, canonical validation, retrieval index, and 36/36 golden questions.
+- Docker image build/scan and hosted staging remain pending external environments; live-model evaluation remains pending credentials.
+
+**Next (Phase 8 and later)**
+
+1. Build and scan the Docker images on a Docker-capable host and run the Compose smoke test.
+2. Deploy the prepared staging topology and verify HTTPS, CORS, readiness, and logging.
+3. Record a live-model evaluation when provider credentials are available.
+4. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
 5. Revisit authentication only if private data or write operations are added.
 
 The full sequence and exit gates are in `DEVELOPMENT_ROADMAP.md`.

@@ -34,7 +34,8 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 | 4 | Frontend exploration experience | **Complete** (2026-11-10) | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
 | 5 | Grounded insight layer | **Complete** (2026-11-10) | Golden-set evaluation passes; numeric claims are 100% cited |
 | 6 | Hardening and deployment | **Complete** (2026-11-10) | Deployment, CI/CD, monitoring, security review, performance baseline, backups, and runbook verified; live-model evaluation pending credentials |
-| 7 | Future extensions | Deferred | Separate decision record and validation plan |
+| 7 | Final release and competition readiness | **Complete** (2026-11-10) | Release verification, scientific audit, demo package, and competition docs complete; Docker image and hosted staging remain pending external environment |
+| 8 | Future extensions | Deferred | Separate decision record and validation plan |
 
 ---
 
@@ -577,7 +578,7 @@ Make the platform operable, observable, secure, and reproducible in a public dep
 - Retrieval: MRR improved from `0.761905` to `1.0`; recall stayed `1.0`; precision@5 `0.602381`.
 - Operations: `/ready`, `/metrics`, bounded counters, request limits, security headers, structured logs, and runbook.
 - Performance: 10 scenarios, 30 requests each, concurrency 8, 0 errors; telemetry p95 `604.966 ms`, assistant p95 `273.357 ms`.
-- Security: Python runtime and frontend production dependency audits clean; full dev-only npm audit has documented follow-ups.
+- Security: Python runtime and full frontend dependency audits are clean after the Phase 7 Vitest upgrade and tested minimatch override.
 - Backup/recovery and deployment procedures documented; no production restore drill was possible.
 
 ### 9.5 Phase 6 tests
@@ -593,7 +594,92 @@ Make the platform operable, observable, secure, and reproducible in a public dep
 
 ---
 
-## 10. Phase 7 — Future extensions (deferred)
+## 10. Phase 7 — Final release and competition readiness
+
+### 10.1 Goal
+
+Close the remaining release and competition gaps without rebuilding the
+application or weakening scientific safeguards.
+
+### 10.2 Workstreams
+
+- [x] Audit the repository, CI, containers, security reports, evaluation, and
+      screenshots.
+- [x] Investigate and remove the critical development dependency findings.
+- [x] Prepare a reproducible staging deployment recipe. Hosted staging was not
+      executed because no host or credentials were available.
+- [x] Preserve the real-model evaluation as pending; no credentials were
+      available and no result was fabricated.
+- [x] Perform an isolated restore drill.
+- [x] Complete a scientific integrity audit and close the safety-ranking
+      refusal gap.
+- [x] Prepare the demo script, checklist, FAQ, technical overview, and release
+      checklist.
+- [x] Run the full regression suite.
+- [x] Commit and push the release.
+
+### 10.3 Acceptance criteria
+
+1. The repository is clean at the expected starting SHA.
+2. Docker build limitations are documented honestly if the daemon is unavailable.
+3. The critical dependency findings are resolved or explicitly justified.
+4. Staging instructions are deployment-ready but not claimed as executed.
+5. Real-provider results are separate and pending if no credentials exist.
+6. The restore drill is reproducible and does not overwrite the original data.
+7. The scientific integrity audit has no unresolved unsupported claim.
+8. The demo package tells a coherent, evidence-backed story.
+9. Competition documentation distinguishes implemented capabilities from future
+   research.
+10. Full backend, frontend, Playwright, axe, build, canonical, index, and
+    assistant checks pass.
+11. The local and remote SHAs match and the working tree is clean.
+
+### 10.4 Verified Phase 7 result
+
+- Starting SHA: `be777e7ae8ce01af7630ff145231b08ab6ac1f15`.
+- Docker daemon was inaccessible; image build and scan remain pending. Native
+  production startup remains verified from Phase 6.
+- Frontend dependencies: Vitest upgraded from `3.2.7` to `4.1.12`; a tested
+  `minimatch@11.0.1` override cleared the remaining lint-tool advisories.
+  Full `npm audit` reports 0 vulnerabilities.
+- Restore drill: parse 292 s, canonical build 12 s, validation 3 s, reports 3 s;
+  total pipeline 310 s. Dataset version matched exactly. Readiness, citation
+  resolution, deterministic assistant answer, and fallback were verified.
+- Scientific integrity audit: pass with documented limitations; explicit
+  safety-ranking refusal added for "safer than", "safest material", and related
+  phrasing.
+- Backend tests: **496 passed**.
+- Frontend tests: **68 passed**.
+- Playwright: **27 passed**; axe: **7 scans passed**.
+- Assistant golden evaluation: 36/36, 117/117 citations, 59/59 claims, 30/30
+  numerical, 30/30 unit, 35/35 tool selection, 12/12 refusals.
+- Retrieval: precision@5 `0.602381`, recall@5 `1.0`, MRR `1.0`.
+- Data-free clean checkout: 362 passed in the CI gate.
+- Competition package: demo script, checklist, FAQ, technical overview, final
+  release checklist, scientific integrity audit, and restore drill record.
+
+### 10.5 Pending external items
+
+- Docker image build, vulnerability scan, and Compose smoke test on a
+  Docker-capable host.
+- Hosted staging deployment and HTTPS verification.
+- Live-model evaluation with real provider credentials.
+- External alert delivery and automated secret scanning.
+
+### 10.6 Phase 7 tests
+
+- Full backend unit and integration suite.
+- Frontend unit/component, lint, typecheck, and production build.
+- Playwright and axe.
+- Canonical validation, registry checks, retrieval-index freshness, and golden
+  assistant evaluation.
+- Restore drill.
+- Scientific integrity checks for missingness, units, PSI-98 availability,
+  paired-value withholding, BASS spread-rate absence, and safety-ranking refusal.
+
+---
+
+## 11. Phase 8 — Future extensions (deferred)
 
 These are scientifically interesting but out of MVP scope. Each requires a separate decision record, data audit, and validation plan.
 
@@ -613,7 +699,7 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 ---
 
-## 11. Cross-cutting workstreams
+## 12. Cross-cutting workstreams
 
 ### 11.1 Documentation
 
@@ -660,7 +746,7 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 ---
 
-## 12. Milestone acceptance checklist
+## 13. Milestone acceptance checklist
 
 ### Milestone 0 — Foundation
 
@@ -727,9 +813,24 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 - [ ] Hosted staging deployment and external alert delivery.
 - [ ] Live-model evaluation with real credentials.
 
+### Milestone 7 — Final release and competition readiness
+
+- [x] Repository audit at the expected SHA.
+- [x] Dependency security review; critical findings removed; full npm audit clean.
+- [x] Staging recipe prepared; hosted deployment not claimed.
+- [x] Real-model evaluation preserved as pending credentials.
+- [x] Isolated restore drill passed; original data untouched.
+- [x] Scientific integrity audit passed; safety-ranking refusal added.
+- [x] Demo script, checklist, FAQ, technical overview, and release checklist.
+- [x] Full regression: 496 backend, 68 frontend, 27 Playwright, 7 axe.
+- [x] Canonical, registry, index, and assistant golden checks pass.
+- [x] Release committed and pushed.
+- [ ] Docker image build and scan on a Docker-capable host.
+- [ ] Hosted staging and live provider evaluation.
+
 ---
 
-## 13. Risk register
+## 14. Risk register
 
 This register is qualitative. It does not assign arbitrary numeric risk scores.
 
@@ -750,14 +851,14 @@ This register is qualitative. It does not assign arbitrary numeric risk scores.
 | Provider outage or rate limit | Medium | Medium | Bounded retries, timeout, deterministic fallback, metrics | Operations lead |
 | Stale retrieval index after docs change | Medium | Medium | Source-hash validation, `--check`, readiness warning, rebuild instructions | Insight lead |
 | Container build untested locally | Medium | Medium | Build and scan on a Docker-capable host before release | Operations lead |
-| Development dependency vulnerabilities | Medium | Low | Production audit clean; upgrade test/lint toolchain in a dedicated change | Frontend lead |
+| Development dependency vulnerabilities | Low | Low | Full frontend audit clean after the Vitest upgrade and tested minimatch override | Frontend lead |
 | Multi-replica rate-limit/metrics split | Low | Medium | Keep single process or add shared stores before scaling | Operations lead |
 
 Owners are generic roles because the public team roster is not available. Assign named owners in the repository's private project tracker, not by inventing names here.
 
 ---
 
-## 14. Definition of done
+## 15. Definition of done
 
 A feature is done when:
 
@@ -774,13 +875,13 @@ A feature is done when:
 
 ---
 
-## 15. Immediate next actions
+## 16. Immediate next actions
 
-1. Record a real-model evaluation when provider credentials are available; report it separately from deterministic and mock-provider checks, with model, provider, date, cost, and configuration.
-2. Build and scan the Docker images on a Docker-capable host, then run the Compose smoke test.
-3. Treat the paired-comparison executor as a separate scientific milestone with its own committed alignment method, exact keys, value fields, units, and validation.
-4. Re-run the golden evaluation and rebuild the retrieval index whenever the canonical dataset version or assistant documentation changes.
-5. Upgrade the frontend test/lint toolchain to clear the documented development-only audit findings.
+1. Build and scan the Docker images on a Docker-capable host, then run the Compose smoke test.
+2. Deploy the prepared staging topology, verify HTTPS/CORS/readiness, and record the result.
+3. Record a real-model evaluation when provider credentials are available; report it separately from deterministic and mock-provider checks, with model, provider, date, cost, and configuration.
+4. Treat the paired-comparison executor as a separate scientific milestone with its own committed alignment method, exact keys, value fields, units, and validation.
+5. Re-run the golden evaluation and rebuild the retrieval index whenever the canonical dataset version or assistant documentation changes.
 6. Revisit authentication only if private data or write operations are added; the public API remains read-only and rate limiting is not authentication.
 
 The order matters: the gas-flame tables establish the test-level schema; the telemetry and smoke tables establish the time-series schema; the material matrices establish the context schema. The interface and assistant are built only after these contracts exist, so the data never has to be forced into the UI or the answer.
