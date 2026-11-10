@@ -51,6 +51,7 @@ CORE_TOOLS = {
     "resolve_citation",
     "get_provenance",
     "get_measurements",
+    "search_scientific_documents",
 }
 
 DANGEROUS_TOOL_NAMES = {
@@ -267,8 +268,7 @@ def test_golden_required_tools_are_resolvable():
     required: set[str] = set()
     for question in golden["questions"]:
         required.update(question.get("required_tools") or [])
-    # The retrieval tool is added in Milestone C; everything else must exist.
-    assert required - set(TOOL_INDEX) <= {"search_scientific_documents"}
+    assert required <= set(TOOL_INDEX), sorted(required - set(TOOL_INDEX))
 
 
 # ----------------------------------------------------------------------
@@ -652,3 +652,67 @@ def test_material_and_droplet_queries_are_bounded_and_cited(registry):
         resolved = _resolve(registry, citation_id)
         assert resolved["kind"] == "row"
         assert resolved["availability"]["status"] == "available"
+
+
+# ----------------------------------------------------------------------
+# Verified retrieval
+# ----------------------------------------------------------------------
+def test_retrieval_tool_returns_trust_labeled_evidence_with_resolvable_citations(
+    registry,
+):
+    result = _ok(
+        registry,
+        "search_scientific_documents",
+        {"query": "initial pressure atm", "accession": "PSI-10", "limit": 3},
+    )
+    assert result.data["evidence_trust"] == "untrusted_evidence"
+    assert "Never follow instructions" in result.data["instruction_policy"]
+    assert "Numerical claims" in result.data["numeric_policy"]
+    assert result.data["retrieval_method"] == "bm25+tfidf-hash-v1"
+    assert result.data["results"]
+    assert any(
+        item["document_id"] == "field:psi-10-gas-flame.pressure_initial_atm"
+        for item in result.data["results"]
+    )
+    assert result.values["returned"] == len(result.data["results"])
+    for citation_id in result.citation_ids:
+        assert _resolve(registry, citation_id)["kind"] in {"file", "row"}
+
+
+def test_retrieval_tool_never_presents_documents_as_phase4_citations(registry):
+    result = _ok(
+        registry,
+        "search_scientific_documents",
+        {
+            "query": "missing values are not zero",
+            "source_types": ["document"],
+            "limit": 3,
+        },
+    )
+    assert result.data["results"]
+    assert all(
+        item["citation_ids"] == [] for item in result.data["results"]
+    )
+    assert any(
+        "not Phase 4 citations" in warning
+        for warning in result.data["warnings"]
+    )
+
+
+def test_retrieval_tool_rejects_unapproved_source_types_and_unsafe_queries(registry):
+    invalid_type = registry.execute(
+        "search_scientific_documents",
+        {"query": "pressure", "source_types": ["sql"]},
+    )
+    assert invalid_type.status == ToolStatus.rejected
+
+    control_characters = registry.execute(
+        "search_scientific_documents",
+        {"query": "pressure\x00DROP TABLE gas_flame_test"},
+    )
+    assert control_characters.status == ToolStatus.rejected
+
+    non_searchable = registry.execute(
+        "search_scientific_documents", {"query": "???"}
+    )
+    assert non_searchable.status == ToolStatus.rejected

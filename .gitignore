@@ -24,6 +24,9 @@ data/tmp/
 data/registry/_details/
 *.detail.json
 
+# Phase 5 generated retrieval index (rebuild with scripts/build_assistant_index.py)
+data/assistant/
+
 # Large data formats (small fixtures are allowed under data/fixtures/)
 *.parquet
 *.feather

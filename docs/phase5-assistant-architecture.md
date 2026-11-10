@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Contract version:** 1.0.0
-**Status:** Milestone A (contracts and golden set)
+**Status:** Milestone C (verified retrieval)
 
 This document defines the Phase 5 architecture before any model provider is
 selected. The assistant is a controlled layer over the verified Phase 1–4
@@ -124,6 +124,25 @@ required lexical baseline. A deterministic TF-IDF vector score provides a
 hybrid ranking without an external embedding dependency. Every chunk keeps
 its document ID, source reference, accession, dataset ID, citation ID when
 available, section, content hash, and index version.
+
+The index covers committed documentation plus dataset, investigation,
+publication, limitation, field, and curated-file cards generated from the
+Phase 1-4 registries. Metadata cards omit count-bearing prose so retrieval
+cannot become a numerical source; numbers come from deterministic tools.
+Retrieved text is labeled untrusted evidence, never instructions.
+
+The manifest records the index schema, chunking and embedding configuration,
+retrieval weights, source SHA-256 values, dataset and registry versions,
+chunk digest, build timestamp, and build/validation commands. The generated
+artifact is gitignored. Build and check it with:
+
+```bash
+.venv/bin/python scripts/build_assistant_index.py
+.venv/bin/python scripts/build_assistant_index.py --check
+```
+
+A missing, stale, or version-mismatched index is rebuilt in memory from the
+same verified sources, so retrieval never blocks the assistant.
 
 ### 4.6 Orchestration (`src/assistant/orchestrator.py`, Milestone D)
 
