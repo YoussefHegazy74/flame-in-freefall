@@ -49,7 +49,7 @@ synthetic data.
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript without emit |
 | `npm test` | Vitest and React Testing Library |
-| `npm audit --omit=dev --audit-level=high` | Production dependency audit |
+| `npm audit --audit-level=high` | Full dependency audit (currently clean) |
 | `npm run build` | Next.js production build with standalone output |
 
 Verified locally: 68 unit/component tests, clean typecheck and lint, and a

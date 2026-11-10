@@ -20,7 +20,7 @@ provider-usage transparency.
 | Server state | TanStack Query | 5.107.1 |
 | Charts | Recharts | 3.10.1 |
 | Icons | Lucide React | 1.70.0 |
-| Unit/component tests | Vitest + React Testing Library | 3.2.7 |
+| Unit/component tests | Vitest + React Testing Library | 4.1.12 |
 | End-to-end tests | Playwright + axe-core | 1.65.0 / 4.14.0 |
 
 All versions are pinned in `package.json`. `npm run dev` and `npm run build`
@@ -306,9 +306,8 @@ These are documented, not worked around with fabricated data:
   evidence is not a numerical source.
 - The Docker image build was not executed locally because the Docker daemon was
   inaccessible. Native standalone startup was verified.
-- Full `npm audit` includes development-only findings in the test/lint toolchain.
-  Production dependency audit is clean; a toolchain upgrade is a documented
-  follow-up.
+- The frontend dependency audit is clean after the Phase 7 Vitest upgrade and a
+  tested `minimatch` override. No `npm audit fix --force` was used.
 - Rate limiting and metrics are process-local and have no shared store.
 - The API is public and read-only with no authentication.
 - `/material/tests` is the implemented route; the broader target contract names

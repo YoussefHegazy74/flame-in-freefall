@@ -37,7 +37,7 @@ application, and it does not weaken any Phase 1–5 scientific safeguard.
 | Frontend env | Only `NEXT_PUBLIC_*` values are exposed | Kept; documented that provider credentials must never use `NEXT_PUBLIC_*` |
 | Assistant tools | Closed allowlist already existed | Kept; no SQL, path, URL, shell, or code-execution tool added |
 | Prompt injection | Retrieved text was already untrusted evidence | Kept; no provider access to retrieved instructions |
-| Dependencies | Python and frontend production dependencies were untested in CI | Added `pip-audit` and `npm audit --omit=dev` CI steps |
+| Dependencies | Python and frontend dependencies were untested in CI | Added `pip-audit` and full `npm audit` CI steps; Phase 7 removed the remaining dev-only findings with a tested Vitest upgrade and `minimatch` override |
 | Authentication | Public read-only experience needs no account | No authentication added; rate limiting is not authorization |
 | Docker | Root user by default in a naive image | Added non-root users, `init`, health checks, and `no-new-privileges` |
 
@@ -52,20 +52,15 @@ Run on 2026-11-10:
 # No known vulnerabilities found
 
 cd frontend
-npm audit --omit=dev --audit-level=high
+npm audit --audit-level=high
 # found 0 vulnerabilities
 ```
 
-Full `npm audit` (including development tooling) reported 11 vulnerabilities:
-9 moderate and 2 critical. The critical reports are in the Vitest worker
-dependency chain (`tinypool`), and the moderate reports are in
-`typescript-eslint` packages pulled by the lint toolchain. These are development
-tools, not production runtime dependencies. `npm audit fix --force` would
-upgrade Vitest across a breaking major version; that is not applied silently.
-
-Recommended follow-up: upgrade the frontend test/lint toolchain in a dedicated
-change with a full test run. Until then, the production dependency audit gate is
-clean and the development-only risk is documented.
+Phase 7 upgraded Vitest from `3.2.7` to `4.1.12` after verifying the test suite,
+lint, typecheck, and production build. This removed the critical Tinypool and
+Vitest mocker advisories. A tested `minimatch@11.0.1` override cleared the
+remaining transitive lint-tool advisories. The full audit now reports zero
+vulnerabilities. No `npm audit fix --force` was used.
 
 ---
 
@@ -116,8 +111,8 @@ inaccessible. This is a verification gap, not evidence that the image works.
    without that header is not bounded by the middleware. The JSON schemas and
    question-length limits provide an additional bound, but a robust edge proxy
    should enforce a body limit.
-4. **Development dependency vulnerabilities.** The full npm audit is not clean
-   because of test/lint tooling. Production dependencies are clean.
+4. **Development dependency vulnerabilities.** The full npm audit is clean after
+   the Phase 7 Vitest upgrade and tested minimatch override.
 5. **No live provider test.** The provider boundary is tested with deterministic
    stubs and mock transports; a real credential and provider were unavailable.
 6. **No external secret manager.** Deployment secrets are supplied through the
@@ -139,7 +134,7 @@ inaccessible. This is a verification gap, not evidence that the image works.
 - [x] Assistant tools remain allowlisted.
 - [x] Citation and claim validation remain mandatory.
 - [x] Python runtime dependencies have no known vulnerabilities.
-- [x] Production frontend dependencies have no known vulnerabilities.
-- [ ] Full development dependency audit is clean (documented follow-up).
+- [x] Frontend dependencies have no known vulnerabilities.
+- [x] Full development dependency audit is clean.
 - [ ] Docker image build and scan on a Docker-capable host.
 - [ ] Live-provider security review with real credentials.

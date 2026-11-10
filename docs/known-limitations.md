@@ -114,7 +114,7 @@ Still not implemented or deliberately limited:
 - the Docker image build was not executed because the local Docker daemon was inaccessible; native production startup was verified instead;
 - no hosted staging/production deployment, external alert delivery, or automated secret scanning is configured;
 - the production restore procedure is documented, but no destructive restore drill was performed;
-- full development `npm audit` reports development-only findings in the test/lint toolchain; production dependencies are clean;
+- full `npm audit` is clean after the Phase 7 Vitest upgrade and tested minimatch override;
 - no PostgreSQL/object-storage deployment; canonical Parquet and committed metadata are mounted read-only.
 
 The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
