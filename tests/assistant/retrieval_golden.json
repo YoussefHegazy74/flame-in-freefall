@@ -1,0 +1,80 @@
+{
+  "retrieval_version": "1.0.0",
+  "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+  "created_at": "2026-11-10",
+  "default_k": 5,
+  "notes": [
+    "Labels are minimal and deliberately conservative, not exhaustive relevance judgments.",
+    "A relevant document is a verified index card or repository document that directly answers the query or states the limitation.",
+    "Labels were checked against the built index on 2026-11-10 at the pinned dataset version.",
+    "Retrieval is lexical (BM25 plus hashed TF-IDF); these cases test source-aware ranking and filters, not neural semantics."
+  ],
+  "cases": [
+    {
+      "case_id": "rt-001",
+      "query": "pressure_initial_atm PSI-159 pressure values",
+      "dataset_id": "psi-159-gas-flame",
+      "relevant_document_ids": [
+        "field:psi-159-gas-flame.pressure_initial_atm",
+        "doc:docs/known-limitations.md"
+      ]
+    },
+    {
+      "case_id": "rt-002",
+      "query": "PSI-98 unavailable telemetry files HTTP 404",
+      "dataset_id": "psi-98-metadata",
+      "relevant_document_ids": [
+        "dataset:psi-98-metadata",
+        "limitation:lim_d_psi_98_metadata_telemetry_404",
+        "doc:docs/phase4-contracts.md"
+      ]
+    },
+    {
+      "case_id": "rt-003",
+      "query": "comparison integrity paired values alignment",
+      "relevant_document_ids": [
+        "doc:docs/phase4-contracts.md",
+        "doc:docs/comparison-alignment.md",
+        "doc:DATA_DICTIONARY.md"
+      ]
+    },
+    {
+      "case_id": "rt-004",
+      "query": "oxygen_mole_fraction PSI-10 gas flame oxygen conditions",
+      "dataset_id": "psi-10-gas-flame",
+      "relevant_document_ids": [
+        "field:psi-10-gas-flame.oxygen_mole_fraction",
+        "doc:docs/phase4-contracts.md"
+      ]
+    },
+    {
+      "case_id": "rt-005",
+      "query": "smoke detector raw voltage calibration SAME-R",
+      "dataset_id": "psi-101-smoke",
+      "relevant_document_ids": [
+        "field:psi-101-smoke.dusttrak_a_analog_v",
+        "field:psi-101-smoke.dusttrak_b_analog_v",
+        "doc:DATA_DICTIONARY.md"
+      ]
+    },
+    {
+      "case_id": "rt-006",
+      "query": "telemetry runs are separate SAFFIRE-III",
+      "dataset_id": "psi-100-telemetry",
+      "relevant_document_ids": [
+        "dataset:psi-100-telemetry",
+        "limitation:lim_d_psi_100_telemetry_separate_runs",
+        "doc:DATA_SOURCES.md"
+      ]
+    },
+    {
+      "case_id": "rt-007",
+      "query": "publication DOI missing year venue",
+      "relevant_document_ids": [
+        "doc:API_DOCUMENTATION.md",
+        "publication:pub_e7173f46e8f838e4",
+        "publication:pub_42b2fe0663b6999f"
+      ]
+    }
+  ]
+}

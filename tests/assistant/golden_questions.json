@@ -1,5 +1,5 @@
 {
-  "golden_version": "1.0.0",
+  "golden_version": "1.0.1",
   "contract_version": "1.0.0",
   "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
   "created_at": "2026-11-10",
@@ -7,7 +7,8 @@
     "Every numerical expectation below was read from the canonical Phase 2-4 artifacts or from a deterministic service call on 2026-11-10.",
     "The golden set is versioned with the dataset version it was written against. It must be reviewed when the canonical dataset changes.",
     "No expected value is inferred from a publication, a title, or an LLM output.",
-    "The set covers dataset discovery, experimental understanding, numerical questions, limitations, comparisons, provenance, refusal, and prompt injection."
+    "The set covers dataset discovery, experimental understanding, numerical questions, limitations, comparisons, provenance, refusal, and prompt injection.",
+    "1.0.1 adds explicit dq-029 count expectations after correcting the unit-conversion composer to select PSI-159 statistics by dataset id."
   ],
   "questions": [
     {
@@ -547,6 +548,10 @@
       "required_tools": ["evaluate_comparison", "dataset_field_statistics"],
       "required_citation_types": ["file"],
       "expected_scope": {"accession": "PSI-159", "dataset_id": "psi-159-gas-flame"},
+      "expected_numeric": [
+        {"label": "psi159_pressure_approx_bar_non_null", "field": "pressure_approx_bar.non_null_count", "value": 333, "unit": "values", "tolerance": 0},
+        {"label": "psi10_pressure_initial_atm_non_null", "field": "pressure_initial_atm.non_null_count", "value": 256, "unit": "values", "tolerance": 0}
+      ],
       "forbidden_claims": [
         "1 bar equals 1 atm",
         "converted atm values are available",

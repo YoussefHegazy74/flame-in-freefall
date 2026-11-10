@@ -1198,26 +1198,38 @@ class Composer:
         ]
         self._support_field(stats, "pressure_approx_bar", dataset_id="psi-159-gas-flame", accession="PSI-159")
         self._support_field(stats, "pressure_initial_atm", dataset_id="psi-159-gas-flame", accession="PSI-159")
-        for field, key, label in (
-            ("pressure_approx_bar", "non_null_count", "non-null bar values"),
-            ("pressure_approx_bar", "min", "minimum bar pressure"),
-            ("pressure_approx_bar", "max", "maximum bar pressure"),
-            ("pressure_approx_bar", "mean", "mean bar pressure"),
-            ("pressure_initial_atm", "non_null_count", "non-null atm values"),
+        for field, payload in (
+            ("pressure_approx_bar", bar),
+            ("pressure_initial_atm", atm),
         ):
-            payload = self._field(stats, field) or {}
-            value = payload.get(key)
-            if isinstance(value, (int, float)) and not isinstance(value, bool):
-                unit = payload.get("unit")
+            count = payload.get("non_null_count")
+            if isinstance(count, int) and not isinstance(count, bool):
                 self._numeric_claim(
-                    f"PSI-159 {field} {label} is {_fmt(value, unit)}.",
-                    value,
-                    unit,
-                    _value_kind(payload.get("value_kind")),
+                    f"PSI-159 {field} has {count} non-null values.",
+                    count,
+                    "values",
+                    ValueKind.derived,
                     stats,
                     dataset_id="psi-159-gas-flame",
                     accession="PSI-159",
                 )
+            for key, label in (
+                ("min", "minimum"),
+                ("max", "maximum"),
+                ("mean", "mean"),
+            ):
+                value = payload.get(key)
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    unit = payload.get("unit")
+                    self._numeric_claim(
+                        f"PSI-159 {field} {label} is {_fmt(value, unit)}.",
+                        value,
+                        unit,
+                        _value_kind(payload.get("value_kind")),
+                        stats,
+                        dataset_id="psi-159-gas-flame",
+                        accession="PSI-159",
+                    )
         if limitations and self._usable(limitations):
             self._add_limitations_from_tool(
                 limitations,
@@ -1273,11 +1285,18 @@ class Composer:
             ("oxygen_mole_fraction", final),
             ("oxygen_mole_fraction_initial", initial),
         ):
-            for key, label in (
-                ("non_null_count", "non-null values"),
-                ("min", "minimum"),
-                ("max", "maximum"),
-            ):
+            count = payload.get("non_null_count")
+            if isinstance(count, int) and not isinstance(count, bool):
+                self._numeric_claim(
+                    f"PSI-10 {field} has {count} non-null values.",
+                    count,
+                    "values",
+                    ValueKind.derived,
+                    stats,
+                    dataset_id="psi-10-gas-flame",
+                    accession="PSI-10",
+                )
+            for key, label in (("min", "minimum"), ("max", "maximum")):
                 value = payload.get(key)
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
                     self._numeric_claim(
@@ -1650,8 +1669,11 @@ class Composer:
     def _compose_unit_conversion_refusal(
         self, plan: Plan, results: list[ToolResult]
     ) -> DraftAnswer:
-        stats159 = self._last(results, "dataset_field_statistics")
         all_stats = self._all(results, "dataset_field_statistics")
+        stats159 = next(
+            (item for item in all_stats if item.dataset_id == "psi-159-gas-flame"),
+            None,
+        )
         stats10 = next(
             (item for item in all_stats if item.dataset_id == "psi-10-gas-flame"), None
         )

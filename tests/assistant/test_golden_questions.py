@@ -41,7 +41,7 @@ def golden() -> dict:
 
 
 def test_golden_set_is_versioned_and_matches_the_dataset(golden):
-    assert golden["golden_version"] == "1.0.0"
+    assert golden["golden_version"] == "1.0.1"
     assert golden["contract_version"] == "1.0.0"
     assert golden["dataset_version"] == load_registries().dataset_version
 

@@ -166,6 +166,17 @@ def test_unauthorized_unit_conversion_is_refused(service, settings):
     assert answer.validation.passed is True
     assert "no approved conversion rule" in lowered
     assert "converted values are produced" in lowered
+    assert "psi-159 pressure_approx_bar is expressed in bar and has 333" in lowered
+    assert "psi-10 pressure_initial_atm is expressed in atm and has 256" in lowered
+    support = {
+        (item.accession, item.label): item for item in answer.supporting_data
+    }
+    assert support[("PSI-159", "pressure_approx_bar summary")].values[
+        "non_null_count"
+    ] == 333
+    assert support[("PSI-10", "pressure_initial_atm summary")].values[
+        "non_null_count"
+    ] == 256
     assert any(
         limitation.code == "conversion_not_authorized"
         for limitation in answer.limitations
