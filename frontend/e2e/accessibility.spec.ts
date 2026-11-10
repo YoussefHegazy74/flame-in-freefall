@@ -9,6 +9,8 @@ const PAGES = [
     path: "/compare?left=psi-10-gas-flame.oxygen_mole_fraction&right=psi-159-gas-flame.oxygen_mole_fraction",
     name: "comparison studio",
   },
+  { path: "/datasets/psi-98-metadata", name: "dataset metadata" },
+  { path: "/publications", name: "publications" },
 ];
 
 for (const target of PAGES) {

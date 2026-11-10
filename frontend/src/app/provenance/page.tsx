@@ -24,6 +24,7 @@ import { buttonStyles } from "@/components/ui/button";
 import { ErrorState, InlineAlert, LoadingState } from "@/components/ui/states";
 import { TextFilter } from "@/components/ui/filter";
 import { QualityBanner } from "@/components/scientific/quality-banner";
+import { CitationButton, CitationDrawer } from "@/components/scientific/citation-drawer";
 
 interface ProvenanceForm {
   accession: string;
@@ -54,6 +55,7 @@ function ProvenanceContent() {
   } | null>(null);
   const form = draftState?.key === appliedKey ? draftState.value : applied;
   const [formError, setFormError] = useState<string | null>(null);
+  const [citationId, setCitationId] = useState<string | null>(null);
 
   const accession = applied.accession.trim();
   const file = applied.file.trim();
@@ -398,6 +400,27 @@ function ProvenanceContent() {
                 ) : null}
               </dl>
 
+              {result.citation_id || (result.row_citation_ids?.length ?? 0) > 0 ? (
+                <div className="flex flex-wrap items-center gap-4 rounded-lg border border-navy-700/60 bg-navy-950/35 p-3">
+                  <span className="text-[10px] uppercase tracking-[0.08em] text-ink-500">
+                    Citation records
+                  </span>
+                  <CitationButton
+                    citationId={result.citation_id}
+                    onClick={setCitationId}
+                    label="File citation"
+                  />
+                  {(result.row_citation_ids ?? []).map((id, index) => (
+                    <CitationButton
+                      key={id}
+                      citationId={id}
+                      onClick={setCitationId}
+                      label={`Row citation ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              ) : null}
+
               {result.warnings.length > 0 ? (
                 <div>
                   <h3 className="text-xs font-semibold text-ink-100">Lookup warnings</h3>
@@ -529,6 +552,8 @@ function ProvenanceContent() {
           </li>
         </ul>
       </section>
+
+      <CitationDrawer citationId={citationId} onClose={() => setCitationId(null)} />
     </div>
   );
 }

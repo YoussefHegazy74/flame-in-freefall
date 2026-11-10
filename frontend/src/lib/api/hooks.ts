@@ -7,25 +7,36 @@ import {
 } from "@tanstack/react-query";
 import { api } from "./endpoints";
 import type {
+  CitationParams,
+  DatasetFieldParams,
+  DatasetFileParams,
+  DatasetLimitationParams,
   DatasetParams,
   DropletParams,
+  GasFlameFacetParams,
   GasFlameParams,
   InvestigationParams,
   MaterialParams,
   MeasurementParams,
   PageParams,
+  PublicationParams,
   SmokeSeriesParams,
   TelemetrySeriesParams,
 } from "./endpoints";
 import { queryKeys } from "./query-keys";
 import type {
+  Citation,
   ComparabilitySummary,
   ComparisonDecision,
   DatasetDetail,
+  DatasetFieldsResponse,
+  DatasetFilesResponse,
+  DatasetLimitationsResponse,
   DatasetQuality,
   DatasetSummary,
   DropletRow,
   Envelope,
+  GasFlameFacets,
   GasFlameRow,
   HealthData,
   Investigation,
@@ -34,6 +45,8 @@ import type {
   Measurement,
   MetaData,
   ProvenanceResponse,
+  Publication,
+  PublicationsResponse,
   SmokeRunDetail,
   SmokeRunSummary,
   SmokeSeries,
@@ -142,6 +155,48 @@ export function useDatasetQuality(
   });
 }
 
+export function useDatasetFiles(
+  datasetId: string,
+  params: DatasetFileParams = {},
+  options?: QueryOptions<DatasetFilesResponse>,
+) {
+  return useQuery({
+    queryKey: queryKeys.datasetFiles(datasetId, params),
+    queryFn: ({ signal }) => api.getDatasetFiles(datasetId, params, signal),
+    enabled: Boolean(datasetId),
+    ...listOptions<DatasetFilesResponse>(),
+    ...options,
+  });
+}
+
+export function useDatasetFields(
+  datasetId: string,
+  params: DatasetFieldParams = {},
+  options?: QueryOptions<DatasetFieldsResponse>,
+) {
+  return useQuery({
+    queryKey: queryKeys.datasetFields(datasetId, params),
+    queryFn: ({ signal }) => api.getDatasetFields(datasetId, params, signal),
+    enabled: Boolean(datasetId),
+    ...listOptions<DatasetFieldsResponse>(),
+    ...options,
+  });
+}
+
+export function useDatasetLimitations(
+  datasetId: string,
+  params: DatasetLimitationParams = {},
+  options?: QueryOptions<DatasetLimitationsResponse>,
+) {
+  return useQuery({
+    queryKey: queryKeys.datasetLimitations(datasetId, params),
+    queryFn: ({ signal }) => api.getDatasetLimitations(datasetId, params, signal),
+    enabled: Boolean(datasetId),
+    ...listOptions<DatasetLimitationsResponse>(),
+    ...options,
+  });
+}
+
 export function useMeasurements(
   params: MeasurementParams = {},
   options?: QueryOptions<Measurement[]>,
@@ -175,6 +230,18 @@ export function useGasFlameTests(
     queryKey: queryKeys.gasFlame(params),
     queryFn: ({ signal }) => api.getGasFlameTests(params, signal),
     ...listOptions<GasFlameRow[]>(),
+    ...options,
+  });
+}
+
+export function useGasFlameFacets(
+  params: GasFlameFacetParams = {},
+  options?: QueryOptions<GasFlameFacets>,
+) {
+  return useQuery({
+    queryKey: queryKeys.gasFlameFacets(params),
+    queryFn: ({ signal }) => api.getGasFlameFacets(params, signal),
+    staleTime: 60_000,
     ...options,
   });
 }
@@ -282,6 +349,57 @@ export function useComparability(options?: QueryOptions<ComparabilitySummary>) {
   return useQuery({
     queryKey: queryKeys.comparability,
     queryFn: ({ signal }) => api.getComparability(signal),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useCitations(
+  params: CitationParams = {},
+  options?: QueryOptions<Citation[]>,
+) {
+  return useQuery({
+    queryKey: queryKeys.citations(params),
+    queryFn: ({ signal }) => api.getCitations(params, signal),
+    ...listOptions<Citation[]>(),
+    ...options,
+  });
+}
+
+export function useCitation(
+  citationId: string,
+  enabled = true,
+  options?: QueryOptions<Citation>,
+) {
+  return useQuery({
+    queryKey: queryKeys.citation(citationId),
+    queryFn: ({ signal }) => api.getCitation(citationId, signal),
+    enabled: Boolean(enabled && citationId),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function usePublications(
+  params: PublicationParams = {},
+  options?: QueryOptions<PublicationsResponse>,
+) {
+  return useQuery({
+    queryKey: queryKeys.publications(params),
+    queryFn: ({ signal }) => api.getPublications(params, signal),
+    ...listOptions<PublicationsResponse>(),
+    ...options,
+  });
+}
+
+export function usePublication(
+  publicationId: string,
+  options?: QueryOptions<Publication>,
+) {
+  return useQuery({
+    queryKey: queryKeys.publication(publicationId),
+    queryFn: ({ signal }) => api.getPublication(publicationId, signal),
+    enabled: Boolean(publicationId),
     staleTime: 60_000,
     ...options,
   });

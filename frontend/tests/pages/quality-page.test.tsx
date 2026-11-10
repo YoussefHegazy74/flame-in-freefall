@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { datasetQuality, envelope } from "../fixtures";
+import { datasetQuality, envelope, limitation } from "../fixtures";
 
 const nav = vi.hoisted(() => ({
   params: new URLSearchParams(),
@@ -36,10 +36,12 @@ vi.mock("next/link", async () => {
 
 const hooks = vi.hoisted(() => ({
   useDatasetsQuality: vi.fn(),
+  useDatasetLimitations: vi.fn(),
 }));
 
 vi.mock("@/lib/api/hooks", () => ({
   useDatasetsQuality: hooks.useDatasetsQuality,
+  useDatasetLimitations: hooks.useDatasetLimitations,
 }));
 
 import QualityPage from "@/app/quality/page";
@@ -90,11 +92,35 @@ function mockQuality() {
   });
 }
 
+function mockLimitations() {
+  hooks.useDatasetLimitations.mockReturnValue({
+    data: envelope({
+      dataset_id: "psi-10-gas-flame",
+      accession: "PSI-10",
+      display_name: "PSI-10 gas-flame tests",
+      limitations: [limitation()],
+      summary: {
+        total: 1,
+        by_scope: { dataset: 1 },
+        by_severity: { warning: 1 },
+        by_status: { open: 1 },
+      },
+      page: { limit: 200, offset: 0, total: 1, has_more: false },
+    }),
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    error: null,
+    refetch: vi.fn(),
+  });
+}
+
 describe("QualityPage", () => {
   beforeEach(() => {
     nav.params = new URLSearchParams();
     nav.replace.mockReset();
     mockQuality();
+    mockLimitations();
   });
 
   it("renders the registry-wide warning, quality flags, and per-dataset states", () => {

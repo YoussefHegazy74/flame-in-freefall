@@ -122,6 +122,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Reference",
     items: [
       {
+        label: "Publications",
+        href: "/publications",
+        icon: BookOpen,
+        description: "Registry-verified investigation publications",
+      },
+      {
         label: "Methods",
         href: "/about",
         icon: BookOpen,
@@ -145,5 +151,6 @@ export const ROUTE_LABELS: Record<string, string> = {
   compare: "Comparison Studio",
   quality: "Data Quality",
   provenance: "Provenance",
+  publications: "Publications",
   about: "Methods",
 };

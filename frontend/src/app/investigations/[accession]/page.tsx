@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { DatasetCard } from "@/components/scientific/dataset-card";
+import { InvestigationPublicationsPanel } from "@/components/scientific/publications-panel";
 
 export default function InvestigationDetailPage() {
   const params = useParams<{ accession: string }>();
@@ -184,6 +185,8 @@ export default function InvestigationDetailPage() {
           </div>
         </div>
       </section>
+
+      <InvestigationPublicationsPanel accession={record.accession} />
 
       <section aria-labelledby="curated-datasets">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">

@@ -1,9 +1,16 @@
 import type {
+  Citation,
   ComparisonDecision,
+  ComparisonIntegrity,
   ComparisonMeasurement,
+  DatasetField,
+  DatasetFile,
   DatasetQuality,
   Envelope,
   GasFlameRow,
+  Limitation,
+  PairedValues,
+  Publication,
   Quality,
   SeriesChannel,
   UseStates,
@@ -199,6 +206,263 @@ export function seriesChannel(
     unit: "degC",
     quality_flags: ["ok"],
     point_count: 10,
+    ...overrides,
+  };
+}
+
+export function citation(overrides: Partial<Citation> = {}): Citation {
+  return {
+    citation_id: "cit_f_test",
+    kind: "file",
+    accession: "PSI-10",
+    dataset_ids: ["psi-10-gas-flame"],
+    file: {
+      name: "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+      kind: "experimental_table",
+      manifest_dataset: "gas_flame_test",
+      priority: "primary",
+      purpose: "Public experimental summary table.",
+      in_added: true,
+    },
+    locator: { type: "file", sheet: null, row: null },
+    source: {
+      kind: "nasa_psi_file",
+      accession: "PSI-10",
+      file_name: "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+      sha256: "abc123",
+      source_url: "https://psi.nasa.gov/example",
+    },
+    retrieval: {
+      retrieved_at: "2026-11-08T22:14:49Z",
+      http_status: 200,
+      download_status: "downloaded",
+      bytes: 1024,
+      expected_bytes: 1024,
+      checksum_expected: "abc123",
+      checksum_actual: "abc123",
+      checksum_match: true,
+    },
+    verification: { status: "verified", checks: ["sha256_match"] },
+    availability: { status: "available", downloadable: true, reason: null },
+    provenance: [],
+    ...overrides,
+  };
+}
+
+export function datasetFile(overrides: Partial<DatasetFile> = {}): DatasetFile {
+  return {
+    file_id: "cit_f_test",
+    citation_id: "cit_f_test",
+    file_name: "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+    accession: "PSI-10",
+    dataset_ids: ["psi-10-gas-flame"],
+    kind: "experimental_table",
+    priority: "primary",
+    purpose: "Public experimental summary table.",
+    source_url: "https://psi.nasa.gov/example",
+    availability: "available",
+    downloadable: true,
+    availability_reason: null,
+    download: {
+      status: "downloaded",
+      http_status: 200,
+      bytes: 1024,
+      retrieved_at: "2026-11-08T22:14:49Z",
+      sha256: "abc123",
+      checksum_match: true,
+    },
+    verification: { status: "verified", checks: ["sha256_match"] },
+    provenance: [],
+    ...overrides,
+  };
+}
+
+export function datasetField(overrides: Partial<DatasetField> = {}): DatasetField {
+  return {
+    field_id: "psi-10-gas-flame.oxygen_mole_fraction",
+    measurement_id: "psi-10-gas-flame.oxygen_mole_fraction",
+    dataset_id: "psi-10-gas-flame",
+    accession: "PSI-10",
+    canonical_name: "oxygen_mole_fraction",
+    parameter: "oxygen_mole_fraction",
+    description: "Oxygen mole fraction reported by the source.",
+    physical_quantity: "oxygen_mole_fraction",
+    unit: "mole fraction",
+    unit_status: "stated",
+    value_kind: "measured",
+    measurement_method: "Source-reported field.",
+    calibration: { status: "not_applicable", note: null },
+    missingness: {
+      availability: "available",
+      restrictions: ["ramped_condition_rows"],
+      canonical_presence: {
+        measurement_id: "psi-10-gas-flame.oxygen_mole_fraction",
+        checked: true,
+        status: "available",
+        reason: null,
+        table: "gas_flame_test",
+        field: "oxygen_mole_fraction",
+        accession: "PSI-10",
+        total_rows: 327,
+        non_null_count: 327,
+        alternatives: [],
+      },
+      policy: "Missing values remain null and are never zero-filled.",
+    },
+    integrity: {
+      measurement_id: "psi-10-gas-flame.oxygen_mole_fraction",
+      checked: true,
+      status: "available",
+      reason: null,
+      table: "gas_flame_test",
+      field: "oxygen_mole_fraction",
+      accession: "PSI-10",
+      total_rows: 327,
+      non_null_count: 327,
+      alternatives: [],
+    },
+    alternatives: [],
+    flags: ["ramped_condition_rows"],
+    comparability: {
+      status: "conditionally_comparable",
+      compatible_datasets: ["psi-159-gas-flame"],
+      incompatible_datasets: [],
+      rules: [
+        {
+          rule_id: "gas-flame-oxygen",
+          status: "conditionally_comparable",
+          scientific_justification: "Both datasets report oxygen mole fraction.",
+        },
+      ],
+    },
+    source_columns: [
+      {
+        raw_column: "X_O2",
+        source_file: "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+        applies_to: "normal flame table",
+      },
+    ],
+    source_references: [],
+    serving_state: "available_with_warnings",
+    use_states: useStates,
+    ...overrides,
+  };
+}
+
+export function limitation(overrides: Partial<Limitation> = {}): Limitation {
+  return {
+    limitation_id: "lim_d_test",
+    scope: "dataset",
+    scope_id: "psi-10-gas-flame",
+    dataset_id: "psi-10-gas-flame",
+    accession: "PSI-10",
+    category: "value_kind",
+    severity: "warning",
+    code: "computed_tad_zst",
+    explanation: "Tad and Zst are computed by the source, not measured.",
+    affected_operations: ["quantitative_comparison"],
+    evidence: [{ kind: "document", path: "DATA_DICTIONARY.md" }],
+    resolution_status: "open",
+    resolution_note: "Preserved and labeled; not resolved by the platform.",
+    ...overrides,
+  };
+}
+
+export function publication(overrides: Partial<Publication> = {}): Publication {
+  return {
+    publication_id: "pub_test",
+    title: "A Mechanistic Study of Soret Diffusion",
+    title_variants: [],
+    authors: ["Yang Fan", "Law C.K."],
+    authors_raw: "Yang Fan, Law C.K.",
+    authors_raw_variants: [],
+    author_parse: "source_comma_or_and_delimited",
+    doi: "10.2514/6.2009-988",
+    doi_url: "https://doi.org/10.2514/6.2009-988",
+    year: null,
+    venue: null,
+    status: "published",
+    related_investigations: [
+      {
+        accession: "PSI-23",
+        title: "ACME s-Flame",
+        doi: "10.60555/k57n-p030",
+        acronym: "ACME s-Flame",
+      },
+    ],
+    source_references: [
+      {
+        kind: "psi_investigation_registry",
+        path: "data/registry/psi_combustion_investigations.json",
+        accession: "PSI-23",
+        field: "publications",
+      },
+    ],
+    verification: {
+      status: "registry_verified",
+      source: "data/registry/psi_combustion_investigations.json",
+      snapshot_date: "2026-11-08",
+      verified_fields: ["title", "authors", "doi", "status"],
+      unavailable_fields: ["year", "venue"],
+      conflicts: { title_variants: [], authors_raw_variants: [] },
+    },
+    field_status: {
+      title: "source_provided",
+      authors: "source_provided",
+      doi: "source_provided",
+      year: "not_available_in_registry",
+      venue: "not_available_in_registry",
+      status: "source_provided",
+    },
+    ...overrides,
+  };
+}
+
+export function comparisonIntegrity(
+  overrides: Partial<ComparisonIntegrity> = {},
+): ComparisonIntegrity {
+  const check = datasetField().integrity;
+  return {
+    status: "verified",
+    checks: [check],
+    failures: [],
+    not_checked: [],
+    messages: [],
+    ...overrides,
+  };
+}
+
+export function pairedValues(overrides: Partial<PairedValues> = {}): PairedValues {
+  return {
+    available: false,
+    status: "not_available",
+    alignment: {
+      method_id: null,
+      verified: false,
+      keys: [],
+      value_fields: {},
+      unit_policy: null,
+    },
+    conditions: {
+      supplied: {},
+      required: [
+        { key: "same_oxygen_basis", satisfied: false },
+      ],
+    },
+    observations: [],
+    series: [],
+    exclusions: [],
+    dataset_version: "dataset-version-test",
+    provenance: [],
+    reason: {
+      code: "no_verified_alignment",
+      message: "No verified record-level alignment method is registered.",
+      rule_id: "gas-flame-oxygen",
+      required_alignment: {
+        keys: ["test_code", "source_row"],
+        note: "A reviewed alignment method must be committed before values can be paired.",
+      },
+    },
     ...overrides,
   };
 }

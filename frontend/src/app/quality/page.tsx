@@ -27,6 +27,7 @@ import {
   ServingStateBadge,
 } from "@/components/scientific/state-badge";
 import { QualityBanner } from "@/components/scientific/quality-banner";
+import { DatasetLimitationsPanel } from "@/components/scientific/dataset-limitations-panel";
 
 const SEVERITIES = ["error", "warning", "info"];
 
@@ -554,6 +555,13 @@ function QualityContent() {
                 </Link>
               </div>
             </section>
+          ) : null}
+
+          {selectedDataset ? (
+            <DatasetLimitationsPanel
+              datasetId={selectedDataset.dataset_id}
+              compact
+            />
           ) : null}
 
           <section className="surface p-5" aria-labelledby="quality-reading">

@@ -15,6 +15,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { TD_CLASS, TH_CLASS, TableShell } from "@/components/ui/table-shell";
 import { RecordDrawer } from "@/components/scientific/record-drawer";
 import { RowQualityFlags, ProvenanceLink, FieldGrid, DetailSection } from "@/components/scientific/record-fields";
+import { CitationButton, CitationDrawer } from "@/components/scientific/citation-drawer";
 
 const PAGE_SIZE = 25;
 
@@ -39,6 +40,7 @@ function DropletsContent() {
   const [draftState, setDraftState] = useState<{ key: string; value: DropletForm } | null>(null);
   const form = draftState?.key === appliedKey ? draftState.value : applied;
   const [selectedRow, setSelectedRow] = useState<DropletRow | null>(null);
+  const [citationId, setCitationId] = useState<string | null>(null);
 
   const offset = Number(get("offset") ?? 0) || 0;
 
@@ -237,7 +239,7 @@ function DropletsContent() {
                       type="button"
                       onClick={() => setSelectedRow(row)}
                       className="whitespace-nowrap text-[11px] font-medium text-cyan-300 hover:text-cyan-200 focus-ring"
-                      aria-label={`Open droplet row ${row.flex_test_number ?? row.observation_id}`}
+                      aria-label={`Open record for droplet row ${row.flex_test_number ?? row.observation_id}`}
                     >
                       Open record
                     </button>
@@ -264,13 +266,29 @@ function DropletsContent() {
         subtitle={selectedRow ? `${selectedRow.fuel ?? "fuel not stated"} · ${selectedRow.test_date ?? "date not stated"}` : null}
         onClose={() => setSelectedRow(null)}
       >
-        {selectedRow ? <DropletRecord row={selectedRow} /> : null}
+        {selectedRow ? (
+          <DropletRecord
+            row={selectedRow}
+            onOpenCitation={(id) => {
+              setSelectedRow(null);
+              setCitationId(id);
+            }}
+          />
+        ) : null}
       </RecordDrawer>
+
+      <CitationDrawer citationId={citationId} onClose={() => setCitationId(null)} />
     </div>
   );
 }
 
-function DropletRecord({ row }: { row: DropletRow }) {
+function DropletRecord({
+  row,
+  onOpenCitation,
+}: {
+  row: DropletRow;
+  onOpenCitation: (citationId: string) => void;
+}) {
   return (
     <div className="space-y-4">
       <DetailSection
@@ -322,6 +340,9 @@ function DropletRecord({ row }: { row: DropletRow }) {
             file={row.source_file}
             row={row.source_row}
           />
+          <div className="mt-2">
+            <CitationButton citationId={row.citation_id} onClick={onOpenCitation} />
+          </div>
         </div>
       </DetailSection>
     </div>

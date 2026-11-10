@@ -302,6 +302,12 @@ test.describe("provenance explorer", () => {
         )
         .first(),
     ).toBeVisible();
+
+    await page.getByRole("button", { name: "File citation" }).click();
+    await expect(page.getByRole("dialog", { name: "Citation record" })).toBeVisible();
+    await expect(page.getByText("Source file", { exact: true })).toBeVisible();
+    await expect(page.getByText("Retrieval and checksum")).toBeVisible();
+    await expect(page.getByText(PROVENANCE_FILE).first()).toBeVisible();
   });
 
   test("reports an unknown file as a 404 instead of substituting a match", async ({
@@ -317,5 +323,102 @@ test.describe("provenance explorer", () => {
     ).toBeVisible();
     await expect(page.getByText("code: not_found")).toBeVisible();
     await expect(page.getByText("http: 404")).toBeVisible();
+  });
+});
+
+test.describe("Phase 4 scientific metadata", () => {
+  test("dataset detail exposes fields, files, limitations, and publications", async ({
+    page,
+  }) => {
+    await page.goto("/datasets/psi-98-metadata");
+
+    await expect(
+      page.getByRole("heading", { name: "PSI-98 SAFFIRE-I metadata and unavailable telemetry" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Field dictionary" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Curated source files" })).toBeVisible();
+    await expect(page.getByText(/3 curated/).first()).toBeVisible();
+    await expect(page.getByText(/2 known 404/).first()).toBeVisible();
+    await expect(page.getByText(/HTTP 404/).first()).toBeVisible();
+    await expect(page.getByText("Not downloadable").first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Download", exact: true })).toHaveCount(1);
+    await expect(
+      page.getByRole("heading", { name: "Limitations and restrictions" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Related publications" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Cite this source" }).first().click();
+    await expect(page.getByRole("dialog", { name: "Citation record" })).toBeVisible();
+    await expect(page.getByText("Source file", { exact: true })).toBeVisible();
+    await expect(page.getByText(/verified match/).first()).toBeVisible();
+  });
+
+  test("publication list and detail never invent year or venue", async ({ page }) => {
+    await page.goto("/publications");
+
+    await expect(page.getByRole("heading", { name: "Publications" })).toBeVisible();
+    await expect(
+      page.getByText(/A\s+Mechanistic Study of Soret Diffusion in Hydrogen-Air Flames/),
+    ).toBeVisible();
+    await expect(page.getByText(/year unavailable · venue unavailable/).first()).toBeVisible();
+
+    await page
+      .getByRole("link", {
+        name: /A\s+Mechanistic Study of Soret Diffusion in Hydrogen-Air Flames/,
+      })
+      .click();
+
+    await expect(
+      page.getByRole("heading", {
+        name: /A\s+Mechanistic Study of Soret Diffusion in Hydrogen-Air Flames/,
+      }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: /10\.2514\/6\.2009-988/ })).toBeVisible();
+    await expect(page.getByText(/year unavailable/).first()).toBeVisible();
+  });
+
+  test("gas-flame facets come from the API and preserve accession units", async ({
+    page,
+  }) => {
+    await page.goto("/experiments/gas-flame");
+
+    await expect(
+      page.getByRole("heading", { name: "Facet coverage from the API" }),
+    ).toBeVisible();
+    await expect(page.getByText(/pressure_initial_atm/).first()).toBeVisible();
+    await expect(page.getByText(/pressure_approx_bar/).first()).toBeVisible();
+    await page.getByText("Facet notes and exclusions").click();
+    await expect(page.getByText(/excluded by default/).first()).toBeVisible();
+
+    await page.getByLabel("Accession").selectOption("PSI-10");
+    await page.getByRole("button", { name: "Apply filters" }).click();
+
+    await expect(page).toHaveURL(/accession=PSI-10/);
+    await expect(page.getByText(/pressure_initial_atm/).first()).toBeVisible();
+  });
+
+  test("comparison studio withholds a paired chart without verified alignment", async ({
+    page,
+  }) => {
+    await page.goto(encodedPair(OXYGEN_LEFT, OXYGEN_RIGHT));
+
+    await expect(
+      page.getByRole("heading", { name: "Paired scientific values" }),
+    ).toBeVisible();
+    await expect(page.getByText("No chart is rendered for this comparison.")).toBeVisible();
+    await expect(page.getByText(/reason: conditions_not_verified/)).toBeVisible();
+    await expect(page.locator("figure")).toHaveCount(0);
+  });
+
+  test("dataset metadata remains readable at a mobile viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/datasets/psi-98-metadata");
+
+    await expect(page.getByRole("heading", { name: "Field dictionary" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Curated source files" })).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
   });
 });

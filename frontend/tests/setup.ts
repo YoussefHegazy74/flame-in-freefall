@@ -1,24 +1,36 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
 });
 
 // jsdom does not implement matchMedia; Recharts and responsive shells use it.
-Object.defineProperty(window, "matchMedia", {
-  writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
+// Use a plain function, not vi.fn: restoreMocks would wipe a mock implementation.
+function matchMediaStub(query: string): MediaQueryList {
+  return {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  } as MediaQueryList;
+}
+
+Object.defineProperty(window, "matchMedia", {
+  configurable: true,
+  writable: true,
+  value: matchMediaStub,
+});
+
+Object.defineProperty(globalThis, "matchMedia", {
+  configurable: true,
+  writable: true,
+  value: matchMediaStub,
 });
 
 // Recharts uses ResizeObserver in responsive containers.

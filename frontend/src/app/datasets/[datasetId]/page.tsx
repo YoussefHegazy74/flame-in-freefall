@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -24,6 +25,11 @@ import { MeasurementTable } from "@/components/scientific/measurement-table";
 import { ServingStateBadge } from "@/components/scientific/state-badge";
 import { SourceReferenceList } from "@/components/scientific/provenance";
 import { ProvenanceLink } from "@/components/scientific/record-fields";
+import { CitationDrawer } from "@/components/scientific/citation-drawer";
+import { DatasetFilesPanel } from "@/components/scientific/dataset-files-panel";
+import { DatasetFieldsPanel } from "@/components/scientific/dataset-fields-panel";
+import { DatasetLimitationsPanel } from "@/components/scientific/dataset-limitations-panel";
+import { DatasetPublicationsPanel } from "@/components/scientific/publications-panel";
 
 const USES: ServingUse[] = ["exploration", "quantitative_comparison", "time_series", "provenance"];
 
@@ -31,6 +37,7 @@ export default function DatasetDetailPage() {
   const params = useParams<{ datasetId: string }>();
   const datasetId = decodeURIComponent(params.datasetId ?? "");
   const dataset = useDataset(datasetId);
+  const [citationId, setCitationId] = useState<string | null>(null);
 
   if (dataset.isPending) {
     return <LoadingState label={`Loading dataset ${datasetId}…`} rows={5} />;
@@ -258,6 +265,14 @@ export default function DatasetDetailPage() {
         )}
       </section>
 
+      <DatasetFieldsPanel datasetId={record.dataset_id} />
+
+      <DatasetFilesPanel datasetId={record.dataset_id} onOpenCitation={setCitationId} />
+
+      <DatasetLimitationsPanel datasetId={record.dataset_id} />
+
+      <DatasetPublicationsPanel datasetId={record.dataset_id} />
+
       <section className="surface p-5" aria-labelledby="dataset-sources">
         <h2 id="dataset-sources" className="flex items-center gap-2 text-sm font-semibold text-ink-100">
           <FileSearch className="size-4 text-cyan-300" aria-hidden="true" />
@@ -298,6 +313,8 @@ export default function DatasetDetailPage() {
           </span>
         </div>
       </section>
+
+      <CitationDrawer citationId={citationId} onClose={() => setCitationId(null)} />
     </div>
   );
 }

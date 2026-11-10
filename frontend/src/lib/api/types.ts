@@ -72,6 +72,9 @@ export interface ProvenanceRecord {
   sha256?: string | null;
   retrieved_at?: string | null;
   source_url?: string | null;
+  citation_id?: string | null;
+  file_citation_id?: string | null;
+  row_citation_ids?: string[];
 }
 
 export interface Envelope<T> {
@@ -107,6 +110,7 @@ export interface SourceReference {
   source_url?: string;
   path?: string;
   section?: string;
+  field?: string;
 }
 
 export interface Investigation {
@@ -235,6 +239,7 @@ export interface ObservationBase {
   source_url: string;
   parser_version: string;
   quality_flags: QualityFlag[];
+  citation_id?: string;
 }
 
 export interface GasFlameRow extends ObservationBase {
@@ -449,6 +454,8 @@ export interface ComparisonDecision {
   source_references: SourceReference[];
   registry_version: string;
   dataset_version: string;
+  integrity?: ComparisonIntegrity;
+  paired_values?: PairedValues;
 }
 
 export interface RegistryMeasurement extends ComparisonMeasurement {
@@ -510,6 +517,8 @@ export interface ProvenanceResponse {
   row_verified: boolean | null;
   row_tables: string[];
   warnings: string[];
+  citation_id?: string | null;
+  row_citation_ids?: string[];
 }
 
 export interface HealthData {
@@ -545,4 +554,461 @@ export interface MetaData {
   measurement_count: number;
   comparison_rule_count: number;
   datasets: MetaDataset[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Phase 4: citations, dataset files/fields/limitations, publications  */
+/* ------------------------------------------------------------------ */
+
+export type CitationKind = "file" | "row";
+
+export interface CitationFileInfo {
+  name: string;
+  kind: string;
+  manifest_dataset: string | null;
+  priority: string | null;
+  purpose: string | null;
+  in_added: boolean;
+}
+
+export interface CitationLocator {
+  type: string;
+  sheet: string | null;
+  row: number | null;
+  row_range?: number[] | null;
+}
+
+export interface CitationSource {
+  kind: string;
+  accession: string;
+  file_name: string;
+  sha256: string | null;
+  source_url: string | null;
+}
+
+export interface CitationRetrieval {
+  retrieved_at: string | null;
+  http_status: number | null;
+  download_status: string | null;
+  bytes: number | null;
+  expected_bytes: number | null;
+  checksum_expected: string | null;
+  checksum_actual: string | null;
+  checksum_match: boolean | null;
+}
+
+export interface CitationVerification {
+  status: string;
+  checks: string[];
+}
+
+export interface CitationAvailability {
+  status: string;
+  downloadable: boolean;
+  reason: string | null;
+}
+
+export interface RowVerification {
+  row_verified: boolean;
+  row_tables: string[];
+  warnings: string[];
+}
+
+export type CitationProvenance = SourceReference | ProvenanceRecord;
+
+export interface Citation {
+  citation_id: string;
+  kind: CitationKind | string;
+  accession: string;
+  dataset_ids: string[];
+  file: CitationFileInfo;
+  locator: CitationLocator;
+  source: CitationSource;
+  retrieval: CitationRetrieval;
+  verification: CitationVerification;
+  availability: CitationAvailability;
+  provenance: CitationProvenance[];
+  row_verification?: RowVerification | null;
+}
+
+export interface DatasetFileDownload {
+  status: string;
+  http_status: number | null;
+  bytes: number | null;
+  retrieved_at: string | null;
+  sha256: string | null;
+  checksum_match: boolean | null;
+}
+
+export interface DatasetFile {
+  file_id: string;
+  citation_id: string;
+  file_name: string;
+  accession: string;
+  dataset_ids: string[];
+  kind: string;
+  priority: string | null;
+  purpose: string | null;
+  source_url: string | null;
+  availability: string;
+  downloadable: boolean;
+  availability_reason: string | null;
+  download: DatasetFileDownload;
+  verification: CitationVerification;
+  provenance: SourceReference[];
+}
+
+export interface DatasetFilesSummary {
+  curated_files: number;
+  available_files: number;
+  unavailable_files: number;
+  downloadable_files: number;
+  known_unavailable_files: number;
+  experimental_tables: number;
+}
+
+export interface DatasetFilesInventory {
+  public_inventory_file_count: number;
+  curated_file_count: number;
+  not_selected_file_count: number;
+  public_experimental_table_count: number;
+  archive_status: string;
+  note: string;
+}
+
+export interface DatasetFilesResponse {
+  dataset_id: string;
+  accession: string;
+  display_name: string;
+  files: DatasetFile[];
+  summary: DatasetFilesSummary;
+  inventory: DatasetFilesInventory;
+  page: PageMeta;
+}
+
+export interface FieldAlternative {
+  canonical_field: string;
+  unit: string;
+  description: string;
+  evidence: SourceReference;
+}
+
+export interface CanonicalPresence {
+  measurement_id: string;
+  checked: boolean;
+  status: string;
+  reason: string | null;
+  table: string | null;
+  field: string | null;
+  accession: string | null;
+  total_rows: number | null;
+  non_null_count: number | null;
+  alternatives: FieldAlternative[];
+}
+
+export interface FieldCalibration {
+  status: string;
+  note: string | null;
+}
+
+export interface FieldMissingness {
+  availability: string;
+  restrictions: string[];
+  canonical_presence: CanonicalPresence;
+  policy: string;
+}
+
+export interface FieldComparabilityRule {
+  rule_id: string;
+  status: ComparisonStatus;
+  scientific_justification: string;
+}
+
+export interface FieldComparability {
+  status: ComparisonStatus;
+  compatible_datasets: string[];
+  incompatible_datasets: string[];
+  rules: FieldComparabilityRule[];
+}
+
+export interface SourceColumnMapping {
+  raw_column: string;
+  source_file: string;
+  applies_to: string;
+}
+
+export interface DatasetField {
+  field_id: string;
+  measurement_id: string;
+  dataset_id: string;
+  accession: string;
+  canonical_name: string;
+  parameter: string;
+  description: string;
+  physical_quantity: string;
+  unit: string;
+  unit_status: UnitStatus;
+  value_kind: ValueKind;
+  measurement_method: string;
+  calibration: FieldCalibration;
+  missingness: FieldMissingness;
+  integrity: CanonicalPresence;
+  alternatives: FieldAlternative[];
+  flags: string[];
+  comparability: FieldComparability;
+  source_columns: SourceColumnMapping[];
+  source_references: SourceReference[];
+  serving_state: ServingState;
+  use_states: UseStates;
+}
+
+export interface DatasetFieldsSummary {
+  field_count: number;
+  with_verified_source_column: number;
+  with_canonical_values: number;
+  without_canonical_values: number;
+  presence_not_checked: number;
+  value_kinds: Partial<Record<ValueKind, number>>;
+  comparison_statuses: Partial<Record<ComparisonStatus, number>>;
+}
+
+export interface DatasetFieldsResponse {
+  dataset_id: string;
+  accession: string;
+  display_name: string;
+  fields: DatasetField[];
+  summary: DatasetFieldsSummary;
+  page: PageMeta;
+}
+
+export interface Limitation {
+  limitation_id: string;
+  scope: string;
+  scope_id: string;
+  dataset_id: string;
+  accession: string;
+  category: string;
+  severity: "error" | "warning" | "info" | string;
+  code: string;
+  explanation: string;
+  affected_operations: string[];
+  evidence: SourceReference[];
+  resolution_status: string;
+  resolution_note: string;
+}
+
+export interface DatasetLimitationsSummary {
+  total: number;
+  by_scope: Record<string, number>;
+  by_severity: Record<string, number>;
+  by_status: Record<string, number>;
+}
+
+export interface DatasetLimitationsResponse {
+  dataset_id: string;
+  accession: string;
+  display_name: string;
+  limitations: Limitation[];
+  summary: DatasetLimitationsSummary;
+  page: PageMeta;
+}
+
+export interface PublicationRelatedInvestigation {
+  accession: string;
+  title: string;
+  doi: string | null;
+  acronym: string;
+}
+
+export interface PublicationVerification {
+  status: string;
+  source: string;
+  snapshot_date: string;
+  verified_fields: string[];
+  unavailable_fields: string[];
+  conflicts: {
+    title_variants: string[];
+    authors_raw_variants: string[];
+  };
+}
+
+export interface Publication {
+  publication_id: string;
+  title: string;
+  title_variants: string[];
+  authors: string[];
+  authors_raw: string;
+  authors_raw_variants: string[];
+  author_parse: string;
+  doi: string | null;
+  doi_url: string | null;
+  year: number | null;
+  venue: string | null;
+  status: string;
+  related_investigations: PublicationRelatedInvestigation[];
+  source_references: SourceReference[];
+  verification: PublicationVerification;
+  field_status: Record<string, string>;
+}
+
+export interface PublicationsSummary {
+  publication_count: number;
+  with_doi: number;
+  without_doi: number;
+  year_available: boolean;
+  venue_available: boolean;
+  note: string;
+}
+
+export interface PublicationsResponse {
+  publications: Publication[];
+  page: PageMeta;
+  summary: PublicationsSummary;
+}
+
+export interface FacetValue {
+  value: string;
+  count: number;
+  by_accession: Record<string, number>;
+}
+
+export interface FacetHistogramBin {
+  min: number;
+  max: number;
+  count: number;
+}
+
+export interface FacetNumericGroup {
+  accession: string;
+  field: string;
+  unit: string;
+  count: number;
+  missing_count: number;
+  min: number | null;
+  max: number | null;
+  histogram: FacetHistogramBin[];
+}
+
+export interface FacetNumeric {
+  by_accession: FacetNumericGroup[];
+  note: string;
+}
+
+export interface FacetOxygen extends FacetNumeric {
+  field: string;
+  unit: string;
+}
+
+export interface GasFlameFacetAccession {
+  accession: string;
+  total_rows: number;
+  included_rows: number;
+  excluded_qualified_rows: number;
+}
+
+export interface GasFlameFacets {
+  accessions: GasFlameFacetAccession[];
+  flame_type: FacetValue[];
+  fuel: FacetValue[];
+  hot_ignition: FacetValue[];
+  extinction_mode: FacetValue[];
+  tfp: FacetValue[];
+  pressure: FacetNumeric;
+  oxygen: FacetOxygen;
+  oxygen_initial: FacetNumeric;
+  include_qualified: boolean;
+  excluded_qualified_rows: number;
+  notes: string[];
+}
+
+export type IntegrityCheck = CanonicalPresence;
+
+export interface ComparisonIntegrity {
+  status: string;
+  checks: IntegrityCheck[];
+  failures: IntegrityCheck[];
+  not_checked: IntegrityCheck[];
+  messages: string[];
+}
+
+export interface PairedAlignment {
+  method_id: string | null;
+  verified: boolean;
+  keys: string[];
+  value_fields: Record<string, string | null>;
+  unit_policy: string | null;
+}
+
+export interface PairedCondition {
+  key: string;
+  satisfied: boolean | null;
+}
+
+export interface PairedValuesReason {
+  code: string;
+  message: string;
+  rule_id?: string | null;
+  decision_status?: ComparisonStatus;
+  missing_conditions?: string[];
+  required_alignment?: {
+    keys: string[];
+    note: string;
+  };
+}
+
+/**
+ * The backend withholds observations until a reviewed alignment executor is
+ * registered. The optional nested shape keeps the frontend tolerant of an
+ * executor that returns either flat or per-side values, but the chart guard
+ * accepts only numeric pairs.
+ */
+export interface PairedObservation {
+  pair_id: string;
+  keys?: Record<string, string | number | null>;
+  left_value?: number;
+  right_value?: number;
+  left_unit?: string;
+  right_unit?: string;
+  left?: {
+    value?: number;
+    unit?: string;
+    source_row?: number | null;
+    citation_id?: string | null;
+  };
+  right?: {
+    value?: number;
+    unit?: string;
+    source_row?: number | null;
+    citation_id?: string | null;
+  };
+}
+
+export interface PairedSeriesPoint {
+  x: number;
+  y: number;
+  pair_id?: string;
+}
+
+export interface PairedSeries {
+  series_id: string;
+  label: string;
+  x_unit: string;
+  y_unit: string;
+  points: PairedSeriesPoint[];
+}
+
+export interface PairedValues {
+  available: boolean;
+  status: string;
+  alignment: PairedAlignment;
+  conditions: {
+    supplied: Record<string, boolean | null>;
+    required: PairedCondition[];
+  };
+  observations: PairedObservation[];
+  series: PairedSeries[];
+  exclusions: Array<Record<string, unknown>>;
+  dataset_version: string;
+  provenance: SourceReference[];
+  reason: PairedValuesReason | null;
 }

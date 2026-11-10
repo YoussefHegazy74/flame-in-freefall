@@ -1,11 +1,17 @@
 import type {
+  CitationParams,
+  DatasetFieldParams,
+  DatasetFileParams,
+  DatasetLimitationParams,
   DatasetParams,
   DropletParams,
+  GasFlameFacetParams,
   GasFlameParams,
   InvestigationParams,
   MaterialParams,
   MeasurementParams,
   PageParams,
+  PublicationParams,
   SmokeSeriesParams,
   TelemetrySeriesParams,
 } from "./endpoints";
@@ -17,12 +23,20 @@ export const queryKeys = {
   investigation: (accession: string) => ["investigation", accession] as const,
   datasets: (params: DatasetParams) => ["datasets", params] as const,
   dataset: (datasetId: string) => ["dataset", datasetId] as const,
+  datasetFiles: (datasetId: string, params: DatasetFileParams) =>
+    ["dataset-files", datasetId, params] as const,
+  datasetFields: (datasetId: string, params: DatasetFieldParams) =>
+    ["dataset-fields", datasetId, params] as const,
+  datasetLimitations: (datasetId: string, params: DatasetLimitationParams) =>
+    ["dataset-limitations", datasetId, params] as const,
   datasetsQuality: ["datasets-quality"] as const,
   datasetQuality: (datasetId: string) => ["dataset-quality", datasetId] as const,
   measurements: (params: MeasurementParams) => ["measurements", params] as const,
   measurement: (measurementId: string) => ["measurement", measurementId] as const,
   gasFlame: (params: GasFlameParams) => ["gas-flame", params] as const,
   gasFlameDetail: (observationId: string) => ["gas-flame-detail", observationId] as const,
+  gasFlameFacets: (params: GasFlameFacetParams) =>
+    ["gas-flame-facets", params] as const,
   material: (params: MaterialParams) => ["material", params] as const,
   droplet: (params: DropletParams) => ["droplet", params] as const,
   telemetryRuns: (params: PageParams & { accession?: string; export_kind?: string }) =>
@@ -35,6 +49,10 @@ export const queryKeys = {
   smokeSeries: (runId: string, params: SmokeSeriesParams | null) =>
     ["smoke-series", runId, params] as const,
   comparability: ["comparability"] as const,
+  citations: (params: CitationParams) => ["citations", params] as const,
+  citation: (citationId: string) => ["citation", citationId] as const,
+  publications: (params: PublicationParams) => ["publications", params] as const,
+  publication: (publicationId: string) => ["publication", publicationId] as const,
   comparison: (
     left: string,
     right: string,

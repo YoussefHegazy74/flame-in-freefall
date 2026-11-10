@@ -15,6 +15,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { TD_CLASS, TH_CLASS, TableShell } from "@/components/ui/table-shell";
 import { RecordDrawer } from "@/components/scientific/record-drawer";
 import { RowQualityFlags, ProvenanceLink, FieldGrid, DetailSection } from "@/components/scientific/record-fields";
+import { CitationButton, CitationDrawer } from "@/components/scientific/citation-drawer";
 
 const PAGE_SIZE = 25;
 
@@ -43,6 +44,7 @@ function MaterialsContent() {
   const [draftState, setDraftState] = useState<{ key: string; value: MaterialForm } | null>(null);
   const form = draftState?.key === appliedKey ? draftState.value : applied;
   const [selectedRow, setSelectedRow] = useState<MaterialRow | null>(null);
+  const [citationId, setCitationId] = useState<string | null>(null);
 
   const offset = Number(get("offset") ?? 0) || 0;
   const o2Enabled = Boolean(form.accession);
@@ -281,7 +283,7 @@ function MaterialsContent() {
                       type="button"
                       onClick={() => setSelectedRow(row)}
                       className="whitespace-nowrap text-[11px] font-medium text-cyan-300 hover:text-cyan-200 focus-ring"
-                      aria-label={`Open material row ${row.test_no ?? row.observation_id}`}
+                      aria-label={`Open record for material row ${row.test_no ?? row.observation_id}`}
                     >
                       Open record
                     </button>
@@ -308,13 +310,29 @@ function MaterialsContent() {
         subtitle={selectedRow ? `${selectedRow.accession} · ${selectedRow.material ?? "material not stated"}` : null}
         onClose={() => setSelectedRow(null)}
       >
-        {selectedRow ? <MaterialRecord row={selectedRow} /> : null}
+        {selectedRow ? (
+          <MaterialRecord
+            row={selectedRow}
+            onOpenCitation={(id) => {
+              setSelectedRow(null);
+              setCitationId(id);
+            }}
+          />
+        ) : null}
       </RecordDrawer>
+
+      <CitationDrawer citationId={citationId} onClose={() => setCitationId(null)} />
     </div>
   );
 }
 
-function MaterialRecord({ row }: { row: MaterialRow }) {
+function MaterialRecord({
+  row,
+  onOpenCitation,
+}: {
+  row: MaterialRow;
+  onOpenCitation: (citationId: string) => void;
+}) {
   return (
     <div className="space-y-4">
       <DetailSection
@@ -375,6 +393,9 @@ function MaterialRecord({ row }: { row: MaterialRow }) {
             sheet={row.source_sheet}
             row={row.source_row}
           />
+          <div className="mt-2">
+            <CitationButton citationId={row.citation_id} onClick={onOpenCitation} />
+          </div>
         </div>
       </DetailSection>
     </div>

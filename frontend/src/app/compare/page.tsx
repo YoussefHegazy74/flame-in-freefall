@@ -28,6 +28,7 @@ import { FilterBar, FilterActions, SelectFilter } from "@/components/ui/filter";
 import { TD_CLASS, TH_CLASS, TableShell } from "@/components/ui/table-shell";
 import { ComparisonStateBadge } from "@/components/scientific/state-badge";
 import { ComparisonDecisionPanel } from "@/components/scientific/comparison-decision-panel";
+import { ComparisonIntegrityPanel, PairedValuesPanel } from "@/components/scientific/paired-values-panel";
 import { QualityBanner } from "@/components/scientific/quality-banner";
 
 const STATUS_ORDER: ComparisonStatus[] = [
@@ -147,9 +148,10 @@ function CompareContent() {
               A comparison decision is not a paired dataset.
             </p>
             <p className="mt-1">
-              <span className="mono">/compare</span> returns the decision and measurement metadata,
-              not paired measurement values. No chart is fabricated here. Use the source explorers
-              to inspect individual rows with their units, flags, and provenance.
+              <span className="mono">/compare</span> returns the decision and a paired-values
+              contract. Paired observations are withheld unless a committed, verified alignment
+              method exists and the authoritative decision permits pairing. When pairing is not
+              verified, no chart is rendered.
             </p>
           </div>
         </div>
@@ -438,7 +440,7 @@ function CompareContent() {
         </h2>
         <ul className="mt-3 grid gap-2 text-xs leading-relaxed text-ink-300 md:grid-cols-2">
           <li className="rounded-lg border border-navy-700/60 bg-navy-950/35 p-2.5">
-            It does not pair individual rows or compute a shared statistic.
+            It does not pair records by row number, interpolation, or matching column names.
           </li>
           <li className="rounded-lg border border-navy-700/60 bg-navy-950/35 p-2.5">
             It does not convert units, normalize categorical labels, or resolve blends.
@@ -552,6 +554,36 @@ function ComparisonResult({
         onReevaluate={reevaluate}
         isReevaluating={comparison.isFetching}
       />
+      {decision.integrity ? (
+        <ComparisonIntegrityPanel integrity={decision.integrity} />
+      ) : (
+        <section className="surface p-5" aria-labelledby="integrity-unavailable">
+          <h2 id="integrity-unavailable" className="text-sm font-semibold text-ink-100">
+            Canonical measurement integrity
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-400">
+            This API response did not include an integrity contract. The frontend does not
+            substitute a local check or assume that canonical values exist.
+          </p>
+        </section>
+      )}
+      {decision.paired_values ? (
+        <PairedValuesPanel
+          paired={decision.paired_values}
+          leftLabel={`${decision.left.accession} · ${fieldLabel(decision.left.parameter)}`}
+          rightLabel={`${decision.right.accession} · ${fieldLabel(decision.right.parameter)}`}
+        />
+      ) : (
+        <section className="surface p-5" aria-labelledby="paired-values-unavailable">
+          <h2 id="paired-values-unavailable" className="text-sm font-semibold text-ink-100">
+            Paired scientific values
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-400">
+            This API response did not include a paired-values contract. No chart is rendered and no
+            local pairing is attempted.
+          </p>
+        </section>
+      )}
       {comparison.data ? (
         <QualityBanner
           quality={comparison.data.quality}

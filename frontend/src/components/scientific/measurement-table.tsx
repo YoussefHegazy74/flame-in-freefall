@@ -78,7 +78,7 @@ export function MeasurementTable({
               <Link
                 href={`/compare?left=${encodeURIComponent(measurement.measurement_id)}`}
                 className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-cyan-300 hover:text-cyan-200 focus-ring"
-                aria-label={`Use ${measurement.measurement_id} in Comparison Studio`}
+                aria-label={`Compare ${measurement.measurement_id} in Comparison Studio`}
               >
                 <GitCompare className="size-3" aria-hidden="true" />
                 Compare

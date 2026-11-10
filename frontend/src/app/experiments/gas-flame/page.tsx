@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { AlertTriangle, Flame, Info } from "lucide-react";
-import { useGasFlameTests } from "@/lib/api/hooks";
+import { useGasFlameFacets, useGasFlameTests } from "@/lib/api/hooks";
 import type { GasFlameRow } from "@/lib/api/types";
 import { useUrlState } from "@/lib/use-url-state";
 import { formatCount, formatNumber } from "@/lib/format";
@@ -17,23 +17,10 @@ import { TD_CLASS, TH_CLASS, TableShell } from "@/components/ui/table-shell";
 import { RecordDrawer } from "@/components/scientific/record-drawer";
 import { RowQualityFlags, ProvenanceLink, FieldGrid, DetailSection } from "@/components/scientific/record-fields";
 import { ValueKindBadge } from "@/components/scientific/unit-label";
+import { GasFlameFacetsPanel } from "@/components/scientific/gas-flame-facets-panel";
+import { CitationButton, CitationDrawer } from "@/components/scientific/citation-drawer";
 
 const PAGE_SIZE = 25;
-const FUEL_SUGGESTIONS = [
-  "C2H4",
-  "C3H8",
-  "ethane",
-  "propane",
-  "butane",
-  "30% butane",
-  "30% propane",
-  "30% ethane",
-  "50% butane",
-];
-const FLAME_TYPE_SUGGESTIONS = ["Normal", "Inverse", "inverse"];
-const IGNITION_SUGGESTIONS = ["Yes", "No", "yes", "no", "flash"];
-const EXTINCTION_SUGGESTIONS = ["SE", "FT"];
-const TFP_SUGGESTIONS = ["Yes", "No"];
 
 interface GasForm {
   accession: string;
@@ -76,9 +63,16 @@ function GasFlameContent() {
   const [draftState, setDraftState] = useState<{ key: string; value: GasForm } | null>(null);
   const form = draftState?.key === appliedKey ? draftState.value : applied;
   const [selectedRow, setSelectedRow] = useState<GasFlameRow | null>(null);
+  const [citationId, setCitationId] = useState<string | null>(null);
 
   const offset = Number(get("offset") ?? 0) || 0;
   const pressureEnabled = Boolean(form.accession);
+
+  const facets = useGasFlameFacets({
+    accession: applied.accession || undefined,
+    include_qualified: applied.include_qualified,
+  });
+  const facetData = facets.data?.data;
 
   const gas = useGasFlameTests({
     accession: applied.accession || undefined,
@@ -182,6 +176,15 @@ function GasFlameContent() {
           </p>
         </div>
       </section>
+
+      {facetData ? (
+        <GasFlameFacetsPanel facets={facetData} />
+      ) : facets.isError ? (
+        <p className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-[11px] text-amber-100">
+          Facet coverage could not be loaded. The row table below is unaffected; no facet values
+          are inferred locally.
+        </p>
+      ) : null}
 
       <FilterBar
         label="Gas-flame filters"
@@ -360,19 +363,29 @@ function GasFlameContent() {
       </FilterBar>
 
       <datalist id="gas-fuel-options">
-        {FUEL_SUGGESTIONS.map((value) => <option key={value} value={value} />)}
+        {(facetData?.fuel ?? []).map((facet) => (
+          <option key={facet.value} value={facet.value} label={`${facet.value} (${facet.count})`} />
+        ))}
       </datalist>
       <datalist id="gas-flame-options">
-        {FLAME_TYPE_SUGGESTIONS.map((value) => <option key={value} value={value} />)}
+        {(facetData?.flame_type ?? []).map((facet) => (
+          <option key={facet.value} value={facet.value} label={`${facet.value} (${facet.count})`} />
+        ))}
       </datalist>
       <datalist id="gas-ignition-options">
-        {IGNITION_SUGGESTIONS.map((value) => <option key={value} value={value} />)}
+        {(facetData?.hot_ignition ?? []).map((facet) => (
+          <option key={facet.value} value={facet.value} label={`${facet.value} (${facet.count})`} />
+        ))}
       </datalist>
       <datalist id="gas-extinction-options">
-        {EXTINCTION_SUGGESTIONS.map((value) => <option key={value} value={value} />)}
+        {(facetData?.extinction_mode ?? []).map((facet) => (
+          <option key={facet.value} value={facet.value} label={`${facet.value} (${facet.count})`} />
+        ))}
       </datalist>
       <datalist id="gas-tfp-options">
-        {TFP_SUGGESTIONS.map((value) => <option key={value} value={value} />)}
+        {(facetData?.tfp ?? []).map((facet) => (
+          <option key={facet.value} value={facet.value} label={`${facet.value} (${facet.count})`} />
+        ))}
       </datalist>
 
       {gas.isPending ? (
@@ -473,7 +486,7 @@ function GasFlameContent() {
                       type="button"
                       onClick={() => setSelectedRow(row)}
                       className="whitespace-nowrap text-[11px] font-medium text-cyan-300 hover:text-cyan-200 focus-ring"
-                      aria-label={`Open row ${row.test_code ?? row.observation_id}`}
+                      aria-label={`Open record for row ${row.test_code ?? row.observation_id}`}
                     >
                       Open record
                     </button>
@@ -507,13 +520,29 @@ function GasFlameContent() {
         }
         onClose={() => setSelectedRow(null)}
       >
-        {selectedRow ? <GasFlameRecord row={selectedRow} /> : null}
+        {selectedRow ? (
+          <GasFlameRecord
+            row={selectedRow}
+            onOpenCitation={(id) => {
+              setSelectedRow(null);
+              setCitationId(id);
+            }}
+          />
+        ) : null}
       </RecordDrawer>
+
+      <CitationDrawer citationId={citationId} onClose={() => setCitationId(null)} />
     </div>
   );
 }
 
-function GasFlameRecord({ row }: { row: GasFlameRow }) {
+function GasFlameRecord({
+  row,
+  onOpenCitation,
+}: {
+  row: GasFlameRow;
+  onOpenCitation: (citationId: string) => void;
+}) {
   const fields = [
     { key: "test_code", value: row.test_code },
     { key: "flame_type", value: row.flame_type },
@@ -598,6 +627,9 @@ function GasFlameRecord({ row }: { row: GasFlameRow }) {
             sheet={row.source_sheet}
             row={row.source_row}
           />
+          <div className="mt-2">
+            <CitationButton citationId={row.citation_id} onClick={onOpenCitation} />
+          </div>
         </div>
       </DetailSection>
     </div>

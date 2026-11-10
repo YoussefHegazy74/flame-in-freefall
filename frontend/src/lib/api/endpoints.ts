@@ -1,11 +1,16 @@
 import { apiRequest, type QueryParams } from "./client";
 import type {
+  Citation,
   ComparabilitySummary,
   ComparisonDecision,
   DatasetDetail,
+  DatasetFieldsResponse,
+  DatasetFilesResponse,
+  DatasetLimitationsResponse,
   DatasetQuality,
   DatasetSummary,
   DropletRow,
+  GasFlameFacets,
   GasFlameRow,
   HealthData,
   Investigation,
@@ -14,6 +19,8 @@ import type {
   Measurement,
   MetaData,
   ProvenanceResponse,
+  Publication,
+  PublicationsResponse,
   SmokeRunDetail,
   SmokeRunSummary,
   SmokeSeries,
@@ -93,6 +100,45 @@ export interface SmokeSeriesParams {
   max_points?: number;
 }
 
+export interface CitationParams extends PageParams {
+  accession?: string;
+  dataset_id?: string;
+  kind?: string;
+  verification_status?: string;
+  availability?: string;
+}
+
+export interface DatasetFileParams extends PageParams {
+  kind?: string;
+  availability?: string;
+}
+
+export interface DatasetFieldParams extends PageParams {
+  value_kind?: string;
+  physical_quantity?: string;
+  comparison_status?: string;
+}
+
+export interface DatasetLimitationParams extends PageParams {
+  scope?: string;
+  category?: string;
+  severity?: string;
+  status?: string;
+}
+
+export interface PublicationParams extends PageParams {
+  accession?: string;
+  dataset_id?: string;
+  q?: string;
+  year?: number;
+  status?: string;
+}
+
+export interface GasFlameFacetParams {
+  accession?: string;
+  include_qualified?: boolean;
+}
+
 function pageQuery(params: PageParams): QueryParams {
   return { limit: params.limit, offset: params.offset };
 }
@@ -143,6 +189,63 @@ export const api = {
     return apiRequest<DatasetQuality>(
       `/datasets/${encodeURIComponent(datasetId)}/quality`,
       { signal },
+    );
+  },
+
+  getDatasetFiles(
+    datasetId: string,
+    params: DatasetFileParams = {},
+    signal?: AbortSignal,
+  ) {
+    return apiRequest<DatasetFilesResponse>(
+      `/datasets/${encodeURIComponent(datasetId)}/files`,
+      {
+        query: {
+          ...pageQuery(params),
+          kind: params.kind,
+          availability: params.availability,
+        },
+        signal,
+      },
+    );
+  },
+
+  getDatasetFields(
+    datasetId: string,
+    params: DatasetFieldParams = {},
+    signal?: AbortSignal,
+  ) {
+    return apiRequest<DatasetFieldsResponse>(
+      `/datasets/${encodeURIComponent(datasetId)}/fields`,
+      {
+        query: {
+          ...pageQuery(params),
+          value_kind: params.value_kind,
+          physical_quantity: params.physical_quantity,
+          comparison_status: params.comparison_status,
+        },
+        signal,
+      },
+    );
+  },
+
+  getDatasetLimitations(
+    datasetId: string,
+    params: DatasetLimitationParams = {},
+    signal?: AbortSignal,
+  ) {
+    return apiRequest<DatasetLimitationsResponse>(
+      `/datasets/${encodeURIComponent(datasetId)}/limitations`,
+      {
+        query: {
+          ...pageQuery(params),
+          scope: params.scope,
+          category: params.category,
+          severity: params.severity,
+          status: params.status,
+        },
+        signal,
+      },
     );
   },
 
@@ -199,6 +302,16 @@ export const api = {
       `/gas-flame/tests/${encodeURIComponent(observationId)}`,
       { signal },
     );
+  },
+
+  getGasFlameFacets(params: GasFlameFacetParams = {}, signal?: AbortSignal) {
+    return apiRequest<GasFlameFacets>("/gas-flame/facets", {
+      query: {
+        accession: params.accession,
+        include_qualified: params.include_qualified,
+      },
+      signal,
+    });
   },
 
   getMaterialTests(params: MaterialParams = {}, signal?: AbortSignal) {
@@ -297,6 +410,47 @@ export const api = {
 
   getComparability(signal?: AbortSignal) {
     return apiRequest<ComparabilitySummary>("/comparability", { signal });
+  },
+
+  getCitations(params: CitationParams = {}, signal?: AbortSignal) {
+    return apiRequest<Citation[]>("/citations", {
+      query: {
+        ...pageQuery(params),
+        accession: params.accession,
+        dataset_id: params.dataset_id,
+        kind: params.kind,
+        verification_status: params.verification_status,
+        availability: params.availability,
+      },
+      signal,
+    });
+  },
+
+  getCitation(citationId: string, signal?: AbortSignal) {
+    return apiRequest<Citation>(`/citations/${encodeURIComponent(citationId)}`, {
+      signal,
+    });
+  },
+
+  getPublications(params: PublicationParams = {}, signal?: AbortSignal) {
+    return apiRequest<PublicationsResponse>("/publications", {
+      query: {
+        ...pageQuery(params),
+        accession: params.accession,
+        dataset_id: params.dataset_id,
+        q: params.q,
+        year: params.year,
+        status: params.status,
+      },
+      signal,
+    });
+  },
+
+  getPublication(publicationId: string, signal?: AbortSignal) {
+    return apiRequest<Publication>(
+      `/publications/${encodeURIComponent(publicationId)}`,
+      { signal },
+    );
   },
 
   compare(
