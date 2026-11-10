@@ -5,7 +5,7 @@
 **Application:** `backend/app.py`
 **Framework:** FastAPI `0.162.2`, Pydantic `2.14.3`, Uvicorn `0.54.0`
 **API version:** `v1`
-**Status:** Read-only Phase 4 implementation. The frontend consumes this API; assistant endpoints are not implemented.
+**Status:** Read-only Phase 1–4 exploration API plus the Phase 5 grounded assistant. The assistant is deterministic by default and fails closed to deterministic mode when an optional provider is unavailable.
 
 This document describes the running service. `API_DOCUMENTATION.md` records the broader contract, `docs/phase4-contracts.md` records the Phase 4 response shapes, and `docs/comparison-alignment.md` records the comparison methodology.
 
@@ -32,11 +32,11 @@ The app reads canonical Parquet from `data/processed`, the quality report from `
 
 ## 2. Implemented routes
 
-All routes are `GET` and live under `/api/v1`. The OpenAPI schema contains **31 paths**.
+All read endpoints are `GET`; the assistant query endpoint is `POST`. They live under `/api/v1`. The OpenAPI schema contains **35 paths**.
 
 | Route | Purpose |
 |---|---|
-| `/health` | Liveness, dataset version, available/missing tables, assistant disabled. |
+| `/health` | Liveness, dataset version, available/missing tables, assistant mode/provider/fallback. |
 | `/meta` | API version, registry snapshot, canonical table counts, curated dataset and measurement counts. |
 | `/investigations` | NASA PSI catalog with `role`, `q`, `limit`, `offset`. |
 | `/investigations/{accession}` | One investigation plus its curated datasets. |
@@ -67,6 +67,10 @@ All routes are `GET` and live under `/api/v1`. The OpenAPI schema contains **31 
 | `/publications` | Deduplicated publication registry with filters. |
 | `/publications/{publication_id}` | One publication with verification and field status. |
 | `/provenance` | Exact source-file and optional row provenance. |
+| `/assistant/status` | Safe assistant mode, provider, retrieval status, contract version, and allowlisted tools. |
+| `/assistant/suggestions` | Up to nine curated real golden questions. |
+| `/assistant/tools` | Closed tool allowlist with strict argument schemas. |
+| `/assistant/query` | Grounded answer in the shared envelope; deterministic default, validated citations and claims. |
 
 Assistant endpoints remain unimplemented. The target contract's `/datasets/{accession}/publications` path is replaced by `/publications?dataset_id=...`.
 
@@ -181,7 +185,7 @@ CORS is environment-driven:
 
 Set a comma-separated list to change allowed origins. Credentials are disabled; allowed methods are `GET`, `HEAD`, and `OPTIONS`. `X-Request-ID` is exposed.
 
-`create_app(service=..., cors_origins=..., cache_settings=..., rate_limit_settings=...)` allows isolated contract tests with a synthetic dataset.
+`create_app(service=..., assistant=..., cors_origins=..., cache_settings=..., rate_limit_settings=...)` allows isolated contract tests with a synthetic dataset or a stub assistant.
 
 ---
 
@@ -243,7 +247,7 @@ Warnings are deduplicated. Flags are stable reason codes, not prose.
 - All routes declare the shared error responses: 400, 404, 413, 422, 500, 503.
 - The schema contains **31 paths**.
 
-`tests/test_api.py` validates the path set, the presence of error responses, the docs endpoint, and major success and error shapes. `tests/test_phase4_api.py` validates the Phase 4 contracts.
+`tests/test_api.py` validates the path set, the presence of error responses, the docs endpoint, and major success and error shapes. `tests/test_phase4_api.py` validates the Phase 4 contracts over the real canonical dataset. `tests/test_assistant_api.py` validates the assistant HTTP contract, and `tests/assistant` covers the planner, composer, tools, retrieval, providers, orchestration, golden evaluation, and adversarial behavior.
 
 ---
 
@@ -265,7 +269,9 @@ These remain later work in `DEVELOPMENT_ROADMAP.md`.
 | `tests/test_api.py` | Envelopes, all routes, invalid/unknown/repeated parameters, blocked comparisons, pagination, 413 limits, CORS, OpenAPI, unhandled errors. |
 | `tests/test_db.py` | Query layer over a synthetic canonical dataset. |
 | `tests/test_analytics_integration.py` | API-ready service over the real canonical Parquet tables. |
-| `tests/test_phase4_api.py` | Citations, dataset files/fields/limitations, publications, facets, comparison integrity, paired-value withholding, cache/rate limiting, response contracts. |
+| `tests/test_phase4_api.py` | Citations, dataset files/fields/limitations, publications, facets, comparison integrity, paired-value withholding, cache/rate limiting, response contracts, and one real grounded assistant query. |
+| `tests/test_assistant_api.py` | Assistant status/suggestions/tools/query, disabled mode, invalid bodies, tool-call bounds, CORS, and fail-closed validation quality. |
+| `tests/assistant/` | Contract, configuration, conversation, tools, retrieval, providers, orchestrator, golden evaluation, and adversarial tests. |
 | `tests/test_operations.py` | ETag stability, conditional requests, rate-limit windows, settings validation. |
 
 Run the unit contract tests:
@@ -280,4 +286,4 @@ Run everything, including real-data integration:
 python -m pytest -q
 ```
 
-Current result: **297 passed**.
+Current result: **478 passed**.

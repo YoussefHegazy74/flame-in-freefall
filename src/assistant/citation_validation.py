@@ -223,7 +223,16 @@ def validate_citations(
                     )
                 )
         else:
-            if reference.verification_status not in {"verified", "unavailable"}:
+            if reference.verification_status == "partial":
+                checks = (payload.get("verification") or {}).get("checks") or []
+                result.warnings.append(
+                    "Citation "
+                    + citation_id
+                    + " is documented as partially verified"
+                    + (": " + ", ".join(str(check) for check in checks) if checks else "")
+                    + "."
+                )
+            elif reference.verification_status not in {"verified", "unavailable"}:
                 result.issues.append(
                     CitationIssue(
                         code="citation_unverified",

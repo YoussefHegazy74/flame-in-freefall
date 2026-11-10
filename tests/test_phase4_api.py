@@ -21,6 +21,8 @@ from backend.operations import CacheSettings, RateLimitSettings
 from src.analytics.db import AnalyticsDatabase
 from src.analytics.registry import load_registries
 from src.analytics.service import AnalyticsService
+from src.assistant.config import AssistantSettings
+from src.assistant.orchestrator import AssistantOrchestrator
 from src.data_pipeline.config import PROCESSED_DIR, REPORTS_DIR
 
 pytestmark = pytest.mark.integration
@@ -738,3 +740,46 @@ def test_phase4_responses_share_version_and_provenance(client, service):
         assert payload["meta"]["dataset_version"] == bundle.dataset_version
         assert payload["provenance"]
         assert payload["meta"]["request_id"].startswith("req_")
+
+
+# ----------------------------------------------------------------------
+# Phase 5 assistant over the real canonical dataset
+# ----------------------------------------------------------------------
+def test_assistant_query_is_grounded_and_citations_resolve(service):
+    orchestrator = AssistantOrchestrator(
+        service=service, settings=AssistantSettings(retrieval_enabled=False)
+    )
+    assistant_client = TestClient(
+        create_app(
+            service=service,
+            assistant=orchestrator,
+            cache_settings=CacheSettings(max_age_seconds=30),
+            rate_limit_settings=RateLimitSettings(enabled=False),
+        ),
+        raise_server_exceptions=False,
+    )
+    response = assistant_client.post(
+        f"{API_PREFIX}/assistant/query",
+        json={"question": "How many valid PSI-10 gas-flame records are available?"},
+    )
+    payload = assert_envelope(response)
+    assert response.headers["Cache-Control"] == "no-store"
+    data = payload["data"]
+    assert data["evidence_status"] == "fully_supported"
+    assert data["answer_type"] == "numerical"
+    assert data["validation"]["passed"] is True
+    assert data["citations"]
+    assert data["claims"]
+    assert payload["quality"]["status"] == "verified"
+    assert payload["meta"]["assistant_contract_version"] == data["contract_version"]
+
+    for citation in data["citations"]:
+        resolved = assert_envelope(
+            assistant_client.get(
+                f"{API_PREFIX}/citations/{citation['citation_id']}"
+            )
+        )
+        assert resolved["data"]["citation_id"] == citation["citation_id"]
+        assert resolved["data"]["accession"] == citation["accession"]
+        assert resolved["data"]["file"]["name"] == citation["file_name"]
+        assert resolved["data"]["verification"]["status"] in {"verified", "partial"}

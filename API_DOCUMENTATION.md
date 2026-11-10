@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **API version:** `v1`
-**Status:** Read-only Phase 4 implementation exists under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, and Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`.
+**Status:** Read-only Phase 1–4 implementation plus the Phase 5 grounded assistant under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, and Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`.
 
 The local service is runnable with `uvicorn backend.app:app`. Do not call these endpoints against a production URL until a deployment exists and is listed in the release notes.
 
@@ -68,6 +68,10 @@ Implemented and tested:
 | `GET /api/v1/publications` | Deduplicated publication registry with filters. |
 | `GET /api/v1/publications/{publication_id}` | One publication record with verification and field status. |
 | `GET /api/v1/provenance` | Source-file and optional row provenance. |
+| `GET /api/v1/assistant/status` | Safe assistant mode, provider, retrieval status, contract version, and tools. |
+| `GET /api/v1/assistant/suggestions` | Curated real golden questions; suggestions are not evidence. |
+| `GET /api/v1/assistant/tools` | Allowlisted tool descriptions and argument schemas. |
+| `POST /api/v1/assistant/query` | Grounded answer in the shared envelope; deterministic by default. |
 
 Known differences from the target contract below:
 
@@ -1453,9 +1457,30 @@ Publication deduplication uses DOI when present, otherwise normalized title. Con
 
 Returns one publication with the same shape as a list item. Unknown IDs return `404 not_found`.
 
-### 4.9 Assistant (optional)
+### 4.9 Assistant
 
-The assistant is optional. The core catalog and explorers must work without it.
+The assistant is a grounded layer over the Phase 1–4 artifacts. It works with
+no LLM configured. An optional provider may only rephrase an already validated
+deterministic draft; it never selects tools or creates citations.
+
+#### `GET /api/v1/assistant/status`
+
+Optional `include_index=true` loads the verified retrieval index and reports
+its version. The response contains the contract version, enabled/mode/provider,
+model, retrieval flag, fallback flag/reason, and allowlisted tool names. It
+never contains a credential.
+
+#### `GET /api/v1/assistant/suggestions?limit=9`
+
+Returns up to nine curated questions from the versioned golden set. Each item
+has `question_id`, `category`, `question`, and `answer_type_hint`. Suggestions
+are prompts, not evidence.
+
+#### `GET /api/v1/assistant/tools`
+
+Returns the closed tool allowlist with name, description, category, and JSON
+argument schema. Dangerous names such as `sql_query`, `read_file`, and
+`fetch_url` do not exist.
 
 #### `POST /api/v1/assistant/query`
 
@@ -1463,56 +1488,99 @@ The assistant is optional. The core catalog and explorers must work without it.
 
 ```json
 {
-  "question": "Which PSI-159 normal flames used ethane and hot ignition?",
-  "max_citations": 10
+  "question": "How many valid PSI-10 gas-flame records are available?",
+  "conversation_id": null,
+  "accession": null,
+  "dataset_id": null,
+  "include_retrieval": true,
+  "max_tool_calls": 6
 }
 ```
+
+`question` is 1–1000 characters and may not be blank. `conversation_id` is
+optional, bounded, non-authoritative memory. `max_tool_calls` is 1–12. Unknown
+fields are rejected.
 
 **Response `200`**
 
 ```json
 {
   "data": {
-    "answer": "PSI-159 normal-flame rows include ethane tests with hot ignition. The exact count and rows are cited below.",
-    "evidence_status": "measured",
+    "contract_version": "1.0.0",
+    "request_id": "req_...",
+    "conversation_id": "conv_...",
+    "answer": "PSI-10 has 256 valid included gas-flame records. 71 qualified rows are excluded by default, and the canonical table contains 327 rows in total.",
+    "evidence_status": "fully_supported",
+    "answer_type": "numerical",
     "citations": [
       {
-        "accession": "PSI-159",
-        "file": "PSI-159_Experimental table_CFI-G_Normal Flames.csv",
-        "field": "Fuel, Hot ignition",
-        "rows": [1],
-        "sha256": "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a"
+        "citation_id": "cit_f_...",
+        "citation_type": "file",
+        "accession": "PSI-10",
+        "dataset_ids": ["psi-10-gas-flame"],
+        "file_name": "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+        "verification_status": "verified",
+        "availability": "available",
+        "downloadable": true,
+        "resolved": true
       }
     ],
-    "limitations": [
-      "The Cool flame? field is blank in 171 of 179 normal-flame rows; blank is not 'no'."
-    ],
-    "method": "Filtered PSI-159 normal-flame rows where Fuel = 'ethane' and Hot ignition = 'Yes'.",
-    "tool_calls": [
-      {"tool": "query_gas_flame_tests", "status": "ok"}
-    ]
+    "supporting_data": [],
+    "claims": [],
+    "limitations": [],
+    "tools_used": [{"tool": "gas_flame_statistics", "status": "ok"}],
+    "evidence": [],
+    "confidence": "high",
+    "confidence_basis": "The count comes from the canonical table and resolves to a verified source citation.",
+    "dataset_version": "2a19f9f2...",
+    "provider": "deterministic",
+    "fallback_mode": false,
+    "fallback_reason": null,
+    "validation": {
+      "passed": true,
+      "citation_validation_passed": true,
+      "claim_validation_passed": true
+    },
+    "generated_at": "2026-11-10T..."
   },
   "meta": {
-    "dataset_version": "assigned-in-phase-2",
-    "model": "provider/model-or-null"
-  }
+    "request_id": "req_...",
+    "dataset_version": "2a19f9f2...",
+    "generated_at": "2026-11-10T...",
+    "assistant_contract_version": "1.0.0",
+    "conversation_id": "conv_...",
+    "assistant_provider": "deterministic"
+  },
+  "provenance": [],
+  "quality": {"status": "verified", "flags": []}
 }
 ```
 
+The abbreviated payload above omits empty details but does not change the
+contract shape. The authoritative field list is in
+`docs/assistant-answer-contract.md`.
+
 **Rules**
 
-- Every numeric claim must have a citation.
-- `evidence_status` is `measured`, `computed`, `derived`, or `not_available`.
-- The answer must include limitations relevant to the data.
-- Datasets with no raw archive but a public experimental table return `quality.status = "experimental_table_only"` and only the verified summary table; they never return fabricated values.
-- Free-text comments are delimited and never treated as instructions.
-- If the LLM is unavailable, the endpoint returns `503 service_unavailable` and the UI falls back to deterministic search. It does not return a model-memory answer.
+- Every numerical claim comes from a deterministic allowlisted tool.
+- Every citation resolves through `GET /api/v1/citations/{citation_id}`.
+- Missing values are never zero; ambiguous units are never converted.
+- Paired values are returned only when the registry confirms an alignment.
+- Retrieved source text is untrusted evidence, never instructions.
+- Validation failure withholds the draft instead of repairing it.
+- `POST` responses are `Cache-Control: no-store`.
+- Envelope `quality.status` is a transport summary derived from
+  `data.evidence_status`; use the answer field for semantic meaning.
 
 **Errors**
 
-- `400 invalid_query` — empty or oversized question.
+- `400 invalid_query` — invalid question or configuration limit.
+- `422 validation_error` — schema violation or bounded field out of range.
 - `429 rate_limited` — assistant rate limit.
-- `503 service_unavailable` — LLM or tool backend unavailable.
+- `500 internal_error` — unexpected failure; no secret or path is returned.
+
+A provider failure is not a `503`. The API returns the deterministic answer
+with `fallback_mode=true` and a safe `fallback_reason`.
 
 ---
 
@@ -1641,7 +1709,8 @@ Phase 4 is complete when:
 16. Comparison tests confirm the authoritative decision is used, invalid pairings return no series, and `paired_values.available=false` without a verified alignment.
 17. Cache tests confirm ETag stability, `304` behavior, `no-store` on errors, and health exclusion.
 18. Rate-limit tests confirm `429`, `Retry-After`, and rate headers.
-19. The assistant golden set passes with 100% citation coverage for numeric claims, if the assistant is enabled.
+19. The assistant golden set passes with 100% citation coverage for numeric claims, and every released citation resolves through the Phase 4 citation endpoint.
+20. Assistant provider failures return the deterministic answer with `fallback_mode=true`; no secret, path, SQL, or arbitrary URL is exposed.
 
 ---
 
@@ -1652,7 +1721,7 @@ Resolved in Phase 4:
 1. **Dataset version format.** A 64-hex version derived from the canonical build is used; it is returned as `meta.dataset_version` and in provenance.
 2. **Telemetry decimation.** The MVP returns `413` for oversized ranges. A future `minmax` method must document its bucket rule and point count.
 3. **Authentication.** Not required for the public read-only MVP. Revisit if saved views or private annotations are added.
-4. **Assistant exposure.** Not implemented. The contract remains so it can be added without breaking the catalog.
+4. **Assistant exposure.** Implemented under `/api/v1/assistant` with a deterministic default and an optional rephrase-only provider. The catalog and explorers remain independent of it.
 5. **Deployment URLs.** Not assigned. Do not hard-code a production host in the repository.
 6. **Rate-limit values.** Defaults are 600 requests per 60 seconds per client; deployment may override them with environment variables.
 

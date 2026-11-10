@@ -70,7 +70,9 @@ def assert_error(response, expected_status: int, code: str) -> dict:
 def test_health_returns_the_shared_envelope(client):
     payload = assert_envelope(client.get(f"{API_PREFIX}/health"))
     assert payload["data"]["status"] == "ok"
-    assert payload["data"]["assistant"] == "disabled"
+    assert payload["data"]["assistant"] in {"deterministic", "provider", "fallback", "disabled"}
+    assert "assistant_provider" in payload["data"]
+    assert "assistant_fallback_mode" in payload["data"]
     bundle = load_registries()
     assert payload["data"]["dataset_version"] == bundle.dataset_version
     assert payload["meta"]["dataset_version"] == bundle.dataset_version
@@ -561,6 +563,10 @@ def test_openapi_lists_every_required_endpoint(client):
         "/comparability",
         "/compare",
         "/provenance",
+        "/assistant/status",
+        "/assistant/suggestions",
+        "/assistant/tools",
+        "/assistant/query",
     }
     assert {path.removeprefix(API_PREFIX) for path in paths} == required
     assert "413" in paths[f"{API_PREFIX}/telemetry/runs/{{run_id}}/series"]["get"]["responses"]

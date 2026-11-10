@@ -59,6 +59,42 @@ Every assistant response uses the existing API envelope:
 
 Unknown fields are rejected (`extra="forbid"`).
 
+`meta` also carries `assistant_contract_version`, `conversation_id`, and
+`assistant_provider` for the frontend. `provenance` remains empty because the
+resolved citation objects are inside `data.citations`.
+
+The envelope `quality.status` is a coarse transport summary derived from
+`data.evidence_status`:
+
+| `evidence_status` | Envelope `quality.status` |
+|---|---|
+| `fully_supported` | `verified` |
+| `partially_supported`, `insufficient_evidence`, `conflicting_evidence` | `partial` |
+| `unavailable_data` | `not_available` |
+
+Callers must use `data.evidence_status` for answer semantics; the envelope
+quality field is not a second scientific judgment.
+
+### API example
+
+```http
+POST /api/v1/assistant/query
+Content-Type: application/json
+
+{
+  "question": "How many valid PSI-10 gas-flame records are available?",
+  "conversation_id": null,
+  "include_retrieval": true,
+  "max_tool_calls": 6
+}
+```
+
+The route returns the shared envelope. `POST` responses are
+`Cache-Control: no-store`. Invalid bodies, unknown fields, blank questions,
+and `max_tool_calls` outside 1–12 return the standard `validation_error`
+envelope with HTTP 422. Assistant status, suggestions, and tools are available
+without an LLM.
+
 ---
 
 ## 2. Enumerations
@@ -123,6 +159,10 @@ Invariants:
 The validator in `src/assistant/citation_validation.py` resolves every ID
 through `AnalyticsService.get_citation` and checks the locator, kind,
 verification status, availability, accession/dataset scope, and source URL.
+Unknown or out-of-scope IDs fail closed. A file record with Phase 4
+`verification_status="partial"` is accepted with an explicit warning naming
+the missing check; a PSI-101 raw file with `manifest_checksum_missing` is the
+canonical example.
 
 ---
 
@@ -223,11 +263,15 @@ Environment variables:
 Rules:
 
 1. Invalid values are rejected at startup.
-2. Invalid optional provider configuration degrades to deterministic mode
-   with a safe `config_error`; the API still starts.
+2. Invalid optional provider configuration degrades to fallback mode with a
+   safe `config_error`; the API still starts and deterministic answers remain
+   available.
 3. Secrets never appear in status, logs, errors, or the frontend.
 4. A provider failure sets `fallback_mode=true` and a safe reason.
 5. The deterministic mode is fully functional without an LLM.
+6. A provider may only rephrase a validated deterministic draft. It cannot
+   plan, choose tools, add numbers or citations, remove limitations, or bypass
+   validation. Any violation returns the deterministic draft.
 
 ---
 

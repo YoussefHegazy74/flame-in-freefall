@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Contract version:** 1.0.0
-**Status:** Milestone C (verified retrieval)
+**Status:** Milestone D (orchestration, validation, and API)
 
 This document defines the Phase 5 architecture before any model provider is
 selected. The assistant is a controlled layer over the verified Phase 1–4
@@ -146,36 +146,68 @@ same verified sources, so retrieval never blocks the assistant.
 
 ### 4.6 Orchestration (`src/assistant/orchestrator.py`, Milestone D)
 
-The orchestrator classifies intent, selects tools, executes them, retrieves
-context, composes a draft answer, validates claims and citations, and
-returns the contract. Provider output cannot bypass these steps.
+The orchestrator is the application boundary. It resolves bounded
+conversation context (never evidence), asks the deterministic planner for an
+allowlisted tool sequence, executes it, composes a grounded draft, resolves
+every citation through the Phase 4 registry, and validates every claim and
+number against the tool results. A failed validation withholds the draft
+instead of returning it with a repaired citation.
+
+The optional provider is invoked only after the deterministic draft passes
+validation. It can rephrase prose; it cannot select tools, add numbers or
+citations, remove limitations, or bypass validation. A provider response is
+checked twice: once at the provider boundary and again against the tool
+results. Any violation returns the deterministic draft with
+`fallback_mode=true`.
+
+The composer limits citations per tool result and per answer so a broad
+catalog question cannot produce an unusable citation list. Nested claim,
+supporting-data, limitation, and evidence citations are filtered to that
+retained set.
 
 ### 4.7 Provider abstraction (`src/assistant/providers.py`, Milestone D)
 
 `deterministic` is the default and the fallback. `openai_compatible` is
-optional. A provider may propose a plan or rephrase a draft, but it never
-controls tool implementation, security boundaries, citations, or validation.
-Provider failures return a deterministic answer with `fallback_mode=true`
-and a safe `fallback_reason`.
+optional and is used only to rephrase a validated draft. Provider failures
+(timeout, HTTP error, invalid JSON, missing choices, oversized response,
+unsafe output) return a deterministic answer with `fallback_mode=true` and a
+safe `fallback_reason`. Secrets never appear in status, logs, errors, or
+answers.
 
-### 4.8 Validation (`src/assistant/citation_validation.py` and Milestone D)
+### 4.8 Validation (`src/assistant/citation_validation.py`,
+`src/assistant/claim_validation.py`, Milestone D)
 
-Citation validation resolves every ID through the Phase 4 implementation.
-Claim validation checks tool linkage, units, value kinds, limitations, and
-comparison decisions. A failed validation produces a safe response, not a
-repaired or invented citation.
+Citation validation resolves every ID through the Phase 4 implementation and
+checks kind, locator, verification status, availability, scope, and source
+URL. A `partial` file record, such as a PSI-101 raw file with no manifest
+checksum, is accepted with an explicit warning; an unknown record fails
+closed.
+
+Claim validation checks that every claim links to an approved tool call,
+that every numerical value occurs in that tool's result, that units and value
+kinds are preserved, that every citation is in the resolved answer set, that
+prose introduces no ungrounded number, and that dangerous causal, fire-risk,
+or ranking assertions are absent. A failed validation produces a withheld,
+low-confidence response, not a repaired or invented citation.
 
 ### 4.9 API (`backend/app.py`, Milestone D)
 
 Routes under `/api/v1/assistant`:
 
-- `GET /api/v1/assistant/status`
-- `GET /api/v1/assistant/suggestions`
-- `GET /api/v1/assistant/tools`
-- `POST /api/v1/assistant/query`
+- `GET /api/v1/assistant/status?include_index=false` — safe mode, provider,
+  retrieval status, contract version, and tool names.
+- `GET /api/v1/assistant/suggestions?limit=9` — curated real golden
+  questions; suggestions are not evidence.
+- `GET /api/v1/assistant/tools` — allowlisted tool descriptions and argument
+  schemas.
+- `POST /api/v1/assistant/query` — validated `AssistantQuery`; returns the
+  versioned answer in the shared API envelope.
 
-The existing read-only endpoints are unchanged. CORS adds `POST` only for the
-assistant query route.
+Every response uses the shared `Envelope`, the request ID middleware, and the
+existing error envelope. `POST` responses are `Cache-Control: no-store`.
+CORS allows `POST`; only the assistant query route accepts a request body.
+`GET /api/v1/health` reports the assistant mode, provider, fallback flag, and
+contract version instead of a hardcoded `disabled` string.
 
 ### 4.10 Frontend (`frontend/src/app/assistant`, Milestone E)
 
@@ -226,13 +258,14 @@ statistic from retrieved prose.
 
 | Configuration | Mode | Behavior |
 |---|---|---|
-| `FLAME_ASSISTANT_ENABLED=false` | disabled | Assistant routes report disabled; exploration pages unchanged. |
+| `FLAME_ASSISTANT_ENABLED=false` | disabled | Assistant query routes return a safe disabled answer; exploration pages unchanged. |
 | No LLM variables | deterministic | Full deterministic planner, tools, retrieval, validation. |
-| `FLAME_LLM_PROVIDER=openai_compatible` and valid config | provider | Provider may plan/rephrase; deterministic validation still runs. |
+| `FLAME_LLM_PROVIDER=openai_compatible` and valid config | provider | Provider may rephrase a validated draft only; deterministic validation still runs. |
 | Provider timeout/error/invalid output | fallback | Deterministic answer with `fallback_mode=true` and safe reason. |
-| Invalid optional provider config | deterministic | Safe `config_error`; the API still starts. |
+| Invalid optional provider config | fallback | Safe `config_error`; the API still starts and deterministic answers remain available. |
 
-The rest of the platform never depends on a paid provider.
+The rest of the platform never depends on a paid provider. A provider is never
+given retrieved source text as instructions and never selects a tool.
 
 ---
 
@@ -288,7 +321,7 @@ See `docs/assistant-security.md` for the threat model and adversarial tests.
 
 ---
 
-## 11. Known limitations at Milestone A
+## 11. Known limitations at Milestone D
 
 - No real LLM credentials are available. Real-model evaluation will be
   reported separately from deterministic/mock-provider tests.
@@ -299,3 +332,27 @@ See `docs/assistant-security.md` for the threat model and adversarial tests.
 - The assistant is not scientifically validated merely because its software
   tests pass. Evaluation is reported per metric, with failure categories and
   known limitations.
+- The frontend `/assistant` route and the formal evaluation harness are
+  Milestones E and F; Milestone D ends at the validated backend API.
+
+---
+
+## 12. Milestone D verification
+
+```bash
+.venv/bin/python -m pytest tests/assistant -q
+.venv/bin/python -m pytest tests/test_api.py tests/test_assistant_api.py \
+  tests/test_phase4_api.py -q
+.venv/bin/python -m pytest -q
+```
+
+At Milestone D:
+
+- `tests/assistant`: **170 passed**;
+- full backend suite: **478 passed, 1 warning**;
+- all 36 golden questions pass end to end with expected evidence status,
+  expected answer type, expected limitation codes, required tools, required
+  citation types, resolved citations, grounded numbers, and no forbidden
+  claims;
+- provider tests use mocked HTTP transports or deterministic stubs, not a
+  hosted model.

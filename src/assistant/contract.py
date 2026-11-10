@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 CONTRACT_VERSION = "1.0.0"
 SUPPORTED_CONTRACT_VERSIONS = {CONTRACT_VERSION}
@@ -371,6 +371,14 @@ class AssistantQuery(BaseModel):
     dataset_id: str | None = Field(default=None, max_length=128)
     include_retrieval: bool = True
     max_tool_calls: int | None = Field(default=None, ge=1, le=12)
+
+    @field_validator("question")
+    @classmethod
+    def _question_must_not_be_blank(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("question must not be blank")
+        return cleaned
 
 
 class AssistantStatus(BaseModel):

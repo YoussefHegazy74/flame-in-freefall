@@ -41,6 +41,9 @@ from src.analytics.db import (
 from src.analytics.errors import AnalyticsError, InvalidQueryError
 from src.analytics.logging import get_logger
 from src.analytics.service import AnalyticsService
+from src.assistant.config import safe_settings_from_env
+from src.assistant.contract import AssistantQuery, CONTRACT_VERSION
+from src.assistant.orchestrator import AssistantOrchestrator
 
 LOGGER = get_logger("flame.api")
 
@@ -99,6 +102,20 @@ def _request_id(request: Request) -> str:
     return getattr(request.state, "request_id", "req_" + secrets.token_hex(12))
 
 
+ASSISTANT_QUALITY_STATUS = {
+    "fully_supported": "verified",
+    "partially_supported": "partial",
+    "conflicting_evidence": "partial",
+    "insufficient_evidence": "partial",
+    "unavailable_data": "not_available",
+}
+
+
+def _assistant_quality_status(answer: Any) -> str:
+    status = getattr(answer.evidence_status, "value", answer.evidence_status)
+    return ASSISTANT_QUALITY_STATUS.get(str(status), "partial")
+
+
 def _cors_origins() -> list[str]:
     raw = os.environ.get("FLAME_CORS_ORIGINS")
     if raw is None:
@@ -122,6 +139,7 @@ def _parse_conditions(value: str | None) -> dict[str, bool | None] | None:
 def create_app(
     service: AnalyticsService | None = None,
     *,
+    assistant: AssistantOrchestrator | None = None,
     cors_origins: list[str] | None = None,
     cache_settings: CacheSettings | None = None,
     rate_limit_settings: RateLimitSettings | None = None,
@@ -137,7 +155,8 @@ def create_app(
         version="2.0.0",
         description=(
             "Read-only access to the curated NASA PSI combustion datasets, "
-            "serving states, quality warnings, and comparability decisions."
+            "serving states, quality warnings, comparability decisions, and "
+            "a citation-grounded research assistant."
         ),
         docs_url=f"{API_PREFIX}/docs",
         redoc_url=None,
@@ -145,13 +164,22 @@ def create_app(
     )
     application.state.service = service or AnalyticsService()
 
+    if assistant is None:
+        settings, config_error = safe_settings_from_env()
+        assistant = AssistantOrchestrator(
+            service=application.state.service,
+            settings=settings,
+            fallback_reason=config_error,
+        )
+    application.state.assistant = assistant
+
     origins = _cors_origins() if cors_origins is None else cors_origins
     if origins:
         application.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
             allow_credentials=False,
-            allow_methods=["GET", "HEAD", "OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS", "POST"],
             allow_headers=["*"],
             expose_headers=["X-Request-ID"],
             max_age=600,
@@ -244,7 +272,11 @@ def create_app(
         else:
             for key, value in rate_headers.items():
                 response.headers[key] = value
-            if request.method == "GET" and "application/json" in response.headers.get(
+            if request.method == "POST" and "application/json" in response.headers.get(
+                "content-type", ""
+            ):
+                response.headers.setdefault("Cache-Control", "no-store")
+            elif request.method == "GET" and "application/json" in response.headers.get(
                 "content-type", ""
             ):
                 response.headers.setdefault(
@@ -347,9 +379,34 @@ def create_app(
     def svc(request: Request) -> AnalyticsService:
         return request.app.state.service
 
+    def assistant_svc(request: Request) -> AssistantOrchestrator:
+        return request.app.state.assistant
+
+    def assistant_envelope(
+        request: Request, answer: Any
+    ) -> dict[str, Any]:
+        return svc(request)._envelope(
+            answer.model_dump(mode="json"),
+            request_id=_request_id(request),
+            quality_status=_assistant_quality_status(answer),
+            warnings=list(getattr(answer.validation, "warnings", []) or []),
+            meta={
+                "assistant_contract_version": answer.contract_version,
+                "conversation_id": answer.conversation_id,
+                "assistant_provider": answer.provider,
+            },
+        )
+
     @router.get("/health", response_model=Envelope, tags=["health"])
     def health(request: Request) -> dict[str, Any]:
-        return svc(request).health(request_id=_request_id(request))
+        envelope = svc(request).health(request_id=_request_id(request))
+        status = assistant_svc(request).status(load_index=False)
+        data = envelope["data"]
+        data["assistant"] = status.mode if status.enabled else "disabled"
+        data["assistant_provider"] = status.provider
+        data["assistant_fallback_mode"] = status.fallback_mode
+        data["assistant_contract_version"] = CONTRACT_VERSION
+        return envelope
 
     @router.get("/meta", response_model=Envelope, tags=["health"])
     def meta(request: Request) -> dict[str, Any]:
@@ -785,6 +842,61 @@ def create_app(
             row=row,
             request_id=_request_id(request),
         )
+
+    # ------------------------------------------------------------------
+    # Assistant. Deterministic tools own every number and citation; the
+    # optional provider may only rephrase an already validated draft.
+    # ------------------------------------------------------------------
+    @router.get("/assistant/status", response_model=Envelope, tags=["assistant"])
+    def assistant_status(
+        request: Request,
+        include_index: bool = Query(
+            default=False,
+            description="Load the verified retrieval index to report its version.",
+        ),
+    ) -> dict[str, Any]:
+        status = assistant_svc(request).status(load_index=include_index)
+        return svc(request)._envelope(
+            status.model_dump(mode="json"),
+            request_id=_request_id(request),
+            quality_status="verified" if status.enabled else "partial",
+            warnings=status.notes,
+        )
+
+    @router.get("/assistant/suggestions", response_model=Envelope, tags=["assistant"])
+    def assistant_suggestions(
+        request: Request,
+        limit: int = Query(default=9, ge=1, le=9),
+    ) -> dict[str, Any]:
+        suggestions = assistant_svc(request).suggestions(limit)
+        return svc(request)._envelope(
+            {
+                "suggestions": [
+                    suggestion.model_dump(mode="json")
+                    for suggestion in suggestions
+                ],
+                "count": len(suggestions),
+            },
+            request_id=_request_id(request),
+        )
+
+    @router.get("/assistant/tools", response_model=Envelope, tags=["assistant"])
+    def assistant_tools(request: Request) -> dict[str, Any]:
+        tools = assistant_svc(request).tools()
+        return svc(request)._envelope(
+            {"tools": tools, "count": len(tools)},
+            request_id=_request_id(request),
+        )
+
+    @router.post("/assistant/query", response_model=Envelope, tags=["assistant"])
+    def assistant_query(
+        request: Request,
+        query: AssistantQuery,
+    ) -> dict[str, Any]:
+        answer = assistant_svc(request).answer(
+            query, request_id=_request_id(request)
+        )
+        return assistant_envelope(request, answer)
 
     application.include_router(router)
     return application
