@@ -1172,6 +1172,14 @@ export interface AssistantClarification {
   missing: string[];
 }
 
+export interface AssistantProviderUsage {
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
+  estimated_cost_usd: number | null;
+  pricing_configured: boolean;
+}
+
 export interface AssistantAnswer {
   contract_version: string;
   request_id: string;
@@ -1189,6 +1197,7 @@ export interface AssistantAnswer {
   confidence_basis: string;
   dataset_version: string | null;
   provider: string;
+  provider_usage?: AssistantProviderUsage | null;
   fallback_mode: boolean;
   fallback_reason: string | null;
   clarification: AssistantClarification | null;

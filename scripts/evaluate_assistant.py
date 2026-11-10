@@ -43,6 +43,7 @@ from src.assistant.retrieval import get_default_index  # noqa: E402
 GOLDEN_PATH = ROOT / "tests/assistant/golden_questions.json"
 RETRIEVAL_PATH = ROOT / "tests/assistant/retrieval_golden.json"
 DEFAULT_OUTPUT = ROOT / "data/reports/assistant_evaluation.json"
+REAL_MODEL_OUTPUT = ROOT / "data/reports/assistant_real_model_evaluation.json"
 
 
 def _load_json(path: Path) -> dict:
@@ -172,7 +173,16 @@ def _check_report(report: dict) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help=(
+            "report path (default: data/reports/assistant_evaluation.json; "
+            "real-provider mode defaults to "
+            "data/reports/assistant_real_model_evaluation.json)"
+        ),
+    )
     parser.add_argument(
         "--questions",
         type=Path,
@@ -209,6 +219,22 @@ def main(argv: list[str] | None = None) -> int:
         help="exit 1 if any golden, provider, or retrieval threshold fails",
     )
     args = parser.parse_args(argv)
+    if args.output is None:
+        args.output = REAL_MODEL_OUTPUT if args.use_configured_provider else DEFAULT_OUTPUT
+
+    if args.use_configured_provider:
+        configured, config_error = safe_settings_from_env()
+        if not configured.llm_configured:
+            print(
+                "No real provider is configured. Set FLAME_LLM_PROVIDER="
+                "openai_compatible, FLAME_LLM_BASE_URL, FLAME_LLM_MODEL, and "
+                "FLAME_LLM_API_KEY, or run without --use-configured-provider "
+                "for the deterministic evaluation.",
+                file=sys.stderr,
+            )
+            if config_error:
+                print(f"configuration detail: {config_error}", file=sys.stderr)
+            return 2
 
     golden = _load_json(args.questions)
     retrieval_payload = (

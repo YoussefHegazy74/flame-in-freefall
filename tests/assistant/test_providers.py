@@ -130,13 +130,20 @@ def test_complete_provider_configuration_builds_without_exposing_the_key():
     assert "api_key" not in settings.public_status()
 
 
-def _provider(handler) -> OpenAICompatibleProvider:
+def _provider(handler, **overrides) -> OpenAICompatibleProvider:
+    options = {
+        "max_retries": 0,
+        "retry_backoff_seconds": 0.0,
+        "sleep": lambda _seconds: None,
+    }
+    options.update(overrides)
     return OpenAICompatibleProvider(
         model="test-model",
         base_url="https://provider.example/v1",
         api_key="sk-test-secret-value-not-real",
         timeout_seconds=5,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
+        **options,
     )
 
 
@@ -217,3 +224,86 @@ def test_provider_urgent_response_size_is_bounded():
     )
     with pytest.raises(ProviderError):
         provider.rephrase(REQUEST)
+
+
+def test_provider_retries_rate_limit_and_returns_usage_and_cost():
+    calls = {"count": 0}
+    waits: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        assert request.headers["X-Request-ID"] == "req_provider_test"
+        if calls["count"] == 1:
+            return httpx.Response(
+                429,
+                headers={"Retry-After": "0.25"},
+                json={"error": "rate limited"},
+            )
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "In summary, " + DRAFT}}],
+                "usage": {
+                    "prompt_tokens": 120,
+                    "completion_tokens": 30,
+                    "total_tokens": 150,
+                },
+            },
+        )
+
+    provider = _provider(
+        handler,
+        max_retries=1,
+        input_cost_per_million=2.0,
+        output_cost_per_million=8.0,
+        sleep=waits.append,
+    )
+    request = RephraseRequest(
+        question=REQUEST.question,
+        draft_answer=REQUEST.draft_answer,
+        allowed_citation_ids=REQUEST.allowed_citation_ids,
+        allowed_numbers=REQUEST.allowed_numbers,
+        request_id="req_provider_test",
+    )
+    result = provider.rephrase(request)
+    assert result.accepted is True
+    assert result.attempts == 2
+    assert waits == [0.25]
+    assert result.usage is not None
+    assert result.usage.prompt_tokens == 120
+    assert result.usage.completion_tokens == 30
+    assert result.usage.total_tokens == 150
+    assert result.usage.pricing_configured is True
+    assert result.usage.estimated_cost_usd == pytest.approx(0.00048)
+    assert "sk-test-secret-value-not-real" not in repr(result)
+
+
+def test_provider_retries_transport_error_before_success():
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise httpx.ConnectError("temporary failure", request=request)
+        return _completion("In summary, " + DRAFT)
+
+    provider = _provider(handler, max_retries=1)
+    result = provider.rephrase(REQUEST)
+    assert result.accepted is True
+    assert result.attempts == 2
+    assert calls["count"] == 2
+
+
+def test_provider_stops_after_bounded_retries():
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        return httpx.Response(503, json={"error": "unavailable"})
+
+    provider = _provider(handler, max_retries=2)
+    with pytest.raises(ProviderError) as excinfo:
+        provider.rephrase(REQUEST)
+    assert calls["count"] == 3
+    assert "HTTP 503" in str(excinfo.value)
+    assert "sk-test-secret-value-not-real" not in str(excinfo.value)

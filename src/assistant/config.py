@@ -88,6 +88,26 @@ def _parse_float(
     return parsed
 
 
+def _parse_optional_float(
+    name: str,
+    value: str | None,
+    *,
+    minimum: float,
+    maximum: float,
+) -> float | None:
+    if value is None or value.strip() == "":
+        return None
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise AssistantConfigError(f"{name} must be a number") from exc
+    if parsed < minimum or parsed > maximum:
+        raise AssistantConfigError(
+            f"{name} must be between {minimum:g} and {maximum:g}"
+        )
+    return parsed
+
+
 def _validate_base_url(value: str | None) -> str | None:
     if value is None or value.strip() == "":
         return None
@@ -124,6 +144,10 @@ class AssistantSettings:
     timeout_seconds: float = 20.0
     max_context_turns: int = 4
     max_question_chars: int = 1000
+    max_retries: int = 2
+    retry_backoff_seconds: float = 0.5
+    input_cost_per_million: float | None = None
+    output_cost_per_million: float | None = None
     config_error: str | None = None
 
     @classmethod
@@ -218,6 +242,32 @@ class AssistantSettings:
                 1000,
                 minimum=64,
                 maximum=4000,
+            ),
+            max_retries=_parse_int(
+                "FLAME_LLM_MAX_RETRIES",
+                source.get("FLAME_LLM_MAX_RETRIES"),
+                2,
+                minimum=0,
+                maximum=5,
+            ),
+            retry_backoff_seconds=_parse_float(
+                "FLAME_LLM_RETRY_BACKOFF_SECONDS",
+                source.get("FLAME_LLM_RETRY_BACKOFF_SECONDS"),
+                0.5,
+                minimum=0.0,
+                maximum=30.0,
+            ),
+            input_cost_per_million=_parse_optional_float(
+                "FLAME_LLM_INPUT_COST_PER_MILLION",
+                source.get("FLAME_LLM_INPUT_COST_PER_MILLION"),
+                minimum=0.0,
+                maximum=1_000_000.0,
+            ),
+            output_cost_per_million=_parse_optional_float(
+                "FLAME_LLM_OUTPUT_COST_PER_MILLION",
+                source.get("FLAME_LLM_OUTPUT_COST_PER_MILLION"),
+                minimum=0.0,
+                maximum=1_000_000.0,
             ),
         )
         settings.validate()

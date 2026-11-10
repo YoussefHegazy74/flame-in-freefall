@@ -268,6 +268,23 @@ class ClarificationRequest(BaseModel):
     missing: list[str] = Field(default_factory=list)
 
 
+class ProviderUsage(BaseModel):
+    """Token and cost metadata reported by an optional external provider.
+
+    Values are null when the provider did not return them. Cost is estimated
+    only when both input and output pricing are configured. This model never
+    contains prompts, answers, credentials, or request headers.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    completion_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    estimated_cost_usd: float | None = Field(default=None, ge=0)
+    pricing_configured: bool = False
+
+
 class AssistantAnswer(BaseModel):
     """The Phase 5 answer contract, version ``CONTRACT_VERSION``."""
 
@@ -289,6 +306,7 @@ class AssistantAnswer(BaseModel):
     confidence_basis: str = Field(min_length=1)
     dataset_version: str | None = None
     provider: str = Field(min_length=1)
+    provider_usage: ProviderUsage | None = None
     fallback_mode: bool = False
     fallback_reason: str | None = None
     clarification: ClarificationRequest | None = None

@@ -340,6 +340,22 @@ export function AssistantAnswerCard({
               </div>
             </dl>
 
+            {answer.provider_usage ? (
+              <div className="mt-3 rounded-lg border border-navy-700/60 bg-navy-950/40 p-3 text-[11px] text-ink-400">
+                <p className="font-semibold text-ink-300">Provider usage</p>
+                <p className="mt-1 leading-relaxed">
+                  {answer.provider_usage.total_tokens === null
+                    ? "Token usage was not reported."
+                    : `${answer.provider_usage.total_tokens} tokens (${answer.provider_usage.prompt_tokens ?? 0} prompt + ${answer.provider_usage.completion_tokens ?? 0} completion).`}
+                  {answer.provider_usage.estimated_cost_usd === null
+                    ? answer.provider_usage.pricing_configured
+                      ? " Cost was not reported."
+                      : " Cost pricing is not configured."
+                    : ` Estimated cost: $${answer.provider_usage.estimated_cost_usd.toFixed(6)} USD.`}
+                </p>
+              </div>
+            ) : null}
+
             {answer.clarification ? (
               <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3.5">
                 <p className="flex items-center gap-2 text-xs font-semibold text-cyan-100">

@@ -188,6 +188,7 @@ class AssistantOrchestrator:
 
         answer_text = draft.answer
         provider_name = DETERMINISTIC_PROVIDER
+        provider_usage = None
         fallback_mode = bool(self.fallback_reason)
         fallback_reason = self.fallback_reason
         extra_checks: list[ValidationCheck] = []
@@ -199,6 +200,7 @@ class AssistantOrchestrator:
                 draft_answer=draft.answer,
                 allowed_citation_ids=tuple(citation_result.citation_ids),
                 allowed_numbers=tuple(sorted(extract_numbers(draft.answer))),
+                request_id=request_id,
             )
             try:
                 rephrase = self.provider.rephrase(rephrase_request)
@@ -217,6 +219,7 @@ class AssistantOrchestrator:
                     )
                 )
             else:
+                provider_usage = rephrase.usage
                 boundary_ok, boundary_reason = validate_rephrase(
                     rephrase_request, rephrase.answer
                 )
@@ -329,6 +332,7 @@ class AssistantOrchestrator:
             confidence_basis=draft.confidence_basis,
             dataset_version=self.service.bundle.dataset_version,
             provider=provider_name,
+            provider_usage=provider_usage,
             fallback_mode=fallback_mode,
             fallback_reason=fallback_reason,
             validation=validation,
@@ -598,10 +602,12 @@ class AssistantOrchestrator:
         started: float,
         request_id: str,
     ) -> None:
+        usage = answer.provider_usage
         LOGGER.info(
             "assistant_answer topic=%s answer_type=%s evidence_status=%s "
             "provider=%s fallback=%s citations=%d claims=%d tools=%d "
-            "validation=%s duration_ms=%.2f request_id=%s",
+            "validation=%s prompt_tokens=%s completion_tokens=%s "
+            "estimated_cost_usd=%s duration_ms=%.2f request_id=%s",
             plan.topic,
             answer.answer_type.value,
             answer.evidence_status.value,
@@ -611,6 +617,9 @@ class AssistantOrchestrator:
             len(answer.claims),
             len(answer.tools_used),
             answer.validation.passed,
+            usage.prompt_tokens if usage else None,
+            usage.completion_tokens if usage else None,
+            usage.estimated_cost_usd if usage else None,
             (time.perf_counter() - started) * 1000,
             request_id,
         )

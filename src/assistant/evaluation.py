@@ -830,6 +830,40 @@ def run_golden_evaluation(
     summary = summarize_results(results)
     status = orchestrator.status(load_index=retrieval_index is not None)
 
+    usages = [
+        answer.provider_usage
+        for answer in answers
+        if answer.provider_usage is not None
+    ]
+    provider_usage = {
+        "available": bool(usages),
+        "responses_with_usage": len(usages),
+        "prompt_tokens": (
+            sum(item.prompt_tokens or 0 for item in usages) if usages else None
+        ),
+        "completion_tokens": (
+            sum(item.completion_tokens or 0 for item in usages) if usages else None
+        ),
+        "total_tokens": (
+            sum(
+                item.total_tokens
+                or (item.prompt_tokens or 0) + (item.completion_tokens or 0)
+                for item in usages
+            )
+            if usages
+            else None
+        ),
+        "estimated_cost_usd": (
+            round(
+                sum(item.estimated_cost_usd or 0 for item in usages),
+                8,
+            )
+            if usages
+            else None
+        ),
+        "pricing_configured": any(item.pricing_configured for item in usages),
+    }
+
     real_model_evaluated = status.mode == "provider" and status.provider not in {
         "deterministic",
         "mock_provider",
@@ -853,6 +887,7 @@ def run_golden_evaluation(
             "version": status.index_version,
             "enabled": settings.retrieval_enabled,
         },
+        "provider_usage": provider_usage,
         "summary": summary,
         "questions": results,
         "retrieval": None,

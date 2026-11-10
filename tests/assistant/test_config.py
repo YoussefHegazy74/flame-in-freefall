@@ -82,6 +82,30 @@ def test_numeric_bounds_are_enforced():
         AssistantSettings.from_env({"FLAME_ASSISTANT_MAX_TOOL_CALLS": "99"})
     with pytest.raises(AssistantConfigError):
         AssistantSettings.from_env({"FLAME_ASSISTANT_TIMEOUT_SECONDS": "0"})
+    with pytest.raises(AssistantConfigError):
+        AssistantSettings.from_env({"FLAME_LLM_MAX_RETRIES": "6"})
+    with pytest.raises(AssistantConfigError):
+        AssistantSettings.from_env({"FLAME_LLM_INPUT_COST_PER_MILLION": "-1"})
+
+
+def test_provider_retry_and_pricing_settings_parse():
+    settings = AssistantSettings.from_env(
+        {
+            "FLAME_LLM_PROVIDER": "openai_compatible",
+            "FLAME_LLM_BASE_URL": "https://example.test/v1",
+            "FLAME_LLM_MODEL": "test-model",
+            "FLAME_LLM_API_KEY": "secret",
+            "FLAME_LLM_MAX_RETRIES": "3",
+            "FLAME_LLM_RETRY_BACKOFF_SECONDS": "0.25",
+            "FLAME_LLM_INPUT_COST_PER_MILLION": "2.5",
+            "FLAME_LLM_OUTPUT_COST_PER_MILLION": "10",
+        }
+    )
+    assert settings.max_retries == 3
+    assert settings.retry_backoff_seconds == 0.25
+    assert settings.input_cost_per_million == 2.5
+    assert settings.output_cost_per_million == 10.0
+    assert "secret" not in repr(settings)
 
 
 def test_safe_settings_degrades_to_deterministic_on_invalid_config():

@@ -13,12 +13,14 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlparse
 
 import httpx
 
+from src.analytics.logging import get_logger
 from src.assistant.config import (
     DETERMINISTIC_PROVIDER,
     OPENAI_COMPATIBLE_PROVIDER,
@@ -28,6 +30,9 @@ from src.assistant.claim_validation import (
     DANGEROUS_ASSERTIONS,
     NEGATION_RE,
 )
+from src.assistant.contract import ProviderUsage
+
+LOGGER = get_logger("flame.assistant.providers")
 
 MAX_REPHRASE_CHARS = 6000
 MAX_RESPONSE_BYTES = 256_000
@@ -68,6 +73,7 @@ class RephraseRequest:
     draft_answer: str
     allowed_citation_ids: tuple[str, ...] = ()
     allowed_numbers: tuple[str, ...] = ()
+    request_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -76,6 +82,8 @@ class RephraseResult:
     answer: str
     provider: str
     reason: str | None = None
+    usage: ProviderUsage | None = None
+    attempts: int = 1
 
 
 class AnswerProvider(Protocol):
@@ -209,7 +217,14 @@ class OpenAICompatibleProvider:
     base_url: str
     api_key: str = field(repr=False)
     timeout_seconds: float = 20.0
+    max_retries: int = 2
+    retry_backoff_seconds: float = 0.5
+    input_cost_per_million: float | None = None
+    output_cost_per_million: float | None = None
     client: httpx.Client | None = field(default=None, repr=False)
+    sleep: Callable[[float], None] = field(
+        default=time.sleep, repr=False, compare=False
+    )
     name = OPENAI_COMPATIBLE_PROVIDER
     fallback_capable = True
 
@@ -219,24 +234,150 @@ class OpenAICompatibleProvider:
             raise ProviderError("provider base URL is not a safe absolute URL")
         return self.base_url.rstrip("/") + "/chat/completions"
 
-    def _post(self, payload: dict[str, Any]) -> httpx.Response:
+    def _retry_after_seconds(self, response: httpx.Response) -> float | None:
+        raw = response.headers.get("retry-after")
+        if raw is None:
+            return None
+        try:
+            seconds = float(raw.strip())
+        except ValueError:
+            return None
+        return max(0.0, min(seconds, 30.0))
+
+    def _post(
+        self, payload: dict[str, Any], request_id: str | None
+    ) -> tuple[httpx.Response, int]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        try:
-            if self.client is not None:
-                return self.client.post(
-                    self._endpoint(), json=payload, headers=headers
+        if request_id:
+            headers["X-Request-ID"] = request_id
+        attempts = max(0, self.max_retries) + 1
+        last_error: Exception | None = None
+        for attempt in range(1, attempts + 1):
+            try:
+                if self.client is not None:
+                    response = self.client.post(
+                        self._endpoint(), json=payload, headers=headers
+                    )
+                else:
+                    with httpx.Client(timeout=self.timeout_seconds) as client:
+                        response = client.post(
+                            self._endpoint(), json=payload, headers=headers
+                        )
+            except httpx.TimeoutException as exc:
+                last_error = exc
+                if attempt < attempts:
+                    wait = min(
+                        self.retry_backoff_seconds * (2 ** (attempt - 1)), 8.0
+                    )
+                    LOGGER.warning(
+                        "provider_retry reason=timeout attempt=%d max_attempts=%d "
+                        "wait_seconds=%.2f request_id=%s",
+                        attempt,
+                        attempts,
+                        wait,
+                        request_id or "none",
+                    )
+                    if wait > 0:
+                        self.sleep(wait)
+                    continue
+                raise ProviderError(
+                    f"provider request timed out after {attempts} attempt(s)"
+                ) from exc
+            except httpx.HTTPError as exc:
+                last_error = exc
+                if attempt < attempts:
+                    wait = min(
+                        self.retry_backoff_seconds * (2 ** (attempt - 1)), 8.0
+                    )
+                    LOGGER.warning(
+                        "provider_retry reason=transport attempt=%d max_attempts=%d "
+                        "wait_seconds=%.2f request_id=%s",
+                        attempt,
+                        attempts,
+                        wait,
+                        request_id or "none",
+                    )
+                    if wait > 0:
+                        self.sleep(wait)
+                    continue
+                raise ProviderError(
+                    f"provider request failed after {attempts} attempt(s) "
+                    f"({type(exc).__name__})"
+                ) from exc
+
+            retryable = response.status_code in {429, 500, 502, 503, 504}
+            if retryable and attempt < attempts:
+                retry_after = self._retry_after_seconds(response)
+                wait = (
+                    retry_after
+                    if retry_after is not None
+                    else min(
+                        self.retry_backoff_seconds * (2 ** (attempt - 1)), 8.0
+                    )
                 )
-            with httpx.Client(timeout=self.timeout_seconds) as client:
-                return client.post(self._endpoint(), json=payload, headers=headers)
-        except httpx.TimeoutException as exc:
-            raise ProviderError("provider request timed out") from exc
-        except httpx.HTTPError as exc:
-            raise ProviderError(
-                f"provider request failed ({type(exc).__name__})"
-            ) from exc
+                LOGGER.warning(
+                    "provider_retry reason=http_status status=%d attempt=%d "
+                    "max_attempts=%d wait_seconds=%.2f request_id=%s",
+                    response.status_code,
+                    attempt,
+                    attempts,
+                    wait,
+                    request_id or "none",
+                )
+                if wait > 0:
+                    self.sleep(wait)
+                continue
+            if response.status_code >= 400:
+                if response.status_code == 429:
+                    raise ProviderError(
+                        "provider rate limit exceeded (HTTP 429)"
+                    )
+                raise ProviderError(
+                    f"provider returned HTTP {response.status_code}"
+                )
+            return response, attempt
+
+        raise ProviderError(
+            "provider request failed after bounded retries"
+        ) from last_error
+
+    @staticmethod
+    def _optional_int(value: Any) -> int | None:
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        return value if value >= 0 else None
+
+    def _usage_from_body(self, body: Mapping[str, Any]) -> ProviderUsage | None:
+        usage = body.get("usage")
+        if not isinstance(usage, Mapping):
+            return None
+        prompt = self._optional_int(usage.get("prompt_tokens"))
+        completion = self._optional_int(usage.get("completion_tokens"))
+        total = self._optional_int(usage.get("total_tokens"))
+        if total is None and prompt is not None and completion is not None:
+            total = prompt + completion
+        pricing_configured = (
+            self.input_cost_per_million is not None
+            and self.output_cost_per_million is not None
+            and prompt is not None
+            and completion is not None
+        )
+        estimated = None
+        if pricing_configured:
+            estimated = (
+                prompt / 1_000_000 * float(self.input_cost_per_million)
+                + completion / 1_000_000 * float(self.output_cost_per_million)
+            )
+        return ProviderUsage(
+            prompt_tokens=prompt,
+            completion_tokens=completion,
+            total_tokens=total,
+            estimated_cost_usd=estimated,
+            pricing_configured=pricing_configured,
+        )
 
     def rephrase(self, request: RephraseRequest) -> RephraseResult:
         if not self.model or not self.base_url or not self.api_key:
@@ -263,11 +404,8 @@ class OpenAICompatibleProvider:
             "stream": False,
         }
 
-        response = self._post(payload)
-        if response.status_code >= 400:
-            raise ProviderError(
-                f"provider returned HTTP {response.status_code}"
-            )
+        started = time.perf_counter()
+        response, attempts = self._post(payload, request.request_id)
         if len(response.content) > MAX_RESPONSE_BYTES:
             raise ProviderError("provider response exceeded the safe size")
         try:
@@ -277,6 +415,7 @@ class OpenAICompatibleProvider:
         if not isinstance(body, dict):
             raise ProviderError("provider response was not a JSON object")
 
+        usage = self._usage_from_body(body)
         choices = body.get("choices")
         if not isinstance(choices, list) or not choices:
             raise ProviderError("provider response contained no choices")
@@ -287,17 +426,33 @@ class OpenAICompatibleProvider:
             raise ProviderError("provider response contained no answer text")
 
         accepted, reason = validate_rephrase(request, content)
+        LOGGER.info(
+            "provider_rephrase status=%s attempts=%d prompt_tokens=%s "
+            "completion_tokens=%s estimated_cost_usd=%s duration_ms=%.2f "
+            "request_id=%s",
+            "accepted" if accepted else "rejected",
+            attempts,
+            usage.prompt_tokens if usage else None,
+            usage.completion_tokens if usage else None,
+            usage.estimated_cost_usd if usage else None,
+            (time.perf_counter() - started) * 1000,
+            request.request_id or "none",
+        )
         if not accepted:
             return RephraseResult(
                 accepted=False,
                 answer=request.draft_answer,
                 provider=DETERMINISTIC_PROVIDER,
                 reason=reason,
+                usage=usage,
+                attempts=attempts,
             )
         return RephraseResult(
             accepted=True,
             answer=content.strip(),
             provider=self.name,
+            usage=usage,
+            attempts=attempts,
         )
 
 
@@ -320,6 +475,10 @@ def build_provider(
                     base_url=settings.base_url,
                     api_key=settings.api_key,
                     timeout_seconds=settings.timeout_seconds,
+                    max_retries=settings.max_retries,
+                    retry_backoff_seconds=settings.retry_backoff_seconds,
+                    input_cost_per_million=settings.input_cost_per_million,
+                    output_cost_per_million=settings.output_cost_per_million,
                 ),
                 None,
             )
