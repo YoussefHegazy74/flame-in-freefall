@@ -54,6 +54,41 @@ SMOKE_ACCESSIONS = ("PSI-101",)
 
 ACCESSION_PATTERN = re.compile(r"^PSI-\d+$")
 
+AGGREGATE_TABLES = ("gas_flame_test", "material_test", "droplet_test")
+MAX_AGGREGATE_FIELDS = 24
+
+QUALIFIED_GAS_FLAME_SQL = (
+    "COALESCE(quality_flags, '') LIKE '%ramped_condition%' "
+    "OR COALESCE(quality_flags, '') LIKE '%low_oxygen_condition%'"
+)
+
+GAS_FLAME_STAT_FIELDS = (
+    "pressure_initial_atm",
+    "pressure_final_atm",
+    "pressure_mean_atm",
+    "pressure_approx_bar",
+    "oxygen_mole_fraction",
+    "oxygen_mole_fraction_initial",
+    "oxygen_mole_fraction_final",
+    "oxygen_mole_fraction_before",
+    "oxygen_mole_fraction_after",
+    "adiabatic_flame_temp_k",
+    "peak_burner_temp_c",
+    "peak_burner_temp_k",
+    "stoich_mixture_fraction",
+    "fuel_mole_fraction",
+    "fuel_mass_flow_mg_s",
+    "diluent_mass_flow_mg_s",
+    "total_mass_flow_mg_s",
+    "burn_time_s",
+)
+
+GAS_FLAME_OXYGEN_FIELDS = (
+    "oxygen_mole_fraction",
+    "oxygen_mole_fraction_initial",
+    "oxygen_mole_fraction_before",
+)
+
 GAS_FLAME_COLUMNS = (
     "observation_id",
     "accession",
@@ -718,10 +753,7 @@ class AnalyticsDatabase:
             clauses.append("tfp_flag = ?")
             params.append(tfp)
 
-        qualified = (
-            "COALESCE(quality_flags, '') LIKE '%ramped_condition%' "
-            "OR COALESCE(quality_flags, '') LIKE '%low_oxygen_condition%'"
-        )
+        qualified = QUALIFIED_GAS_FLAME_SQL
         base_where = " WHERE " + " AND ".join(clauses)
         if not include_qualified:
             clauses.append(f"NOT ({qualified})")
@@ -803,6 +835,168 @@ class AnalyticsDatabase:
         for row in rows:
             row["quality_flags"] = _json_list(row.get("quality_flags"))
         return rows
+
+    # ------------------------------------------------------------------
+    # Deterministic field statistics
+    # ------------------------------------------------------------------
+    def field_statistics(
+        self,
+        table_name: str,
+        accession: str,
+        fields: Sequence[str] | None = None,
+        *,
+        include_qualified: bool = False,
+    ) -> dict[str, Any]:
+        """Aggregate allowlisted numeric fields for one canonical table.
+
+        The table name comes from a fixed allowlist, the accession is bound as
+        a parameter, and every field name is checked against the canonical
+        schema. No SQL text, path, or free-form expression is accepted.
+        """
+
+        if table_name not in AGGREGATE_TABLES:
+            raise InvalidQueryError(
+                "table is not approved for field statistics",
+                details={"table": table_name, "allowed": list(AGGREGATE_TABLES)},
+            )
+        self._require_table(table_name)
+        _validate_accession(accession)
+        schema = TABLE_SCHEMAS[table_name]
+        numeric_fields = [
+            field.name
+            for field in schema
+            if str(field.type).startswith(
+                ("int", "uint", "float", "double", "decimal")
+            )
+        ]
+        if fields is None:
+            requested = list(numeric_fields)
+        else:
+            requested = list(dict.fromkeys(fields))
+        if not requested:
+            raise InvalidQueryError("at least one numeric field is required")
+        if len(requested) > MAX_AGGREGATE_FIELDS:
+            raise InvalidQueryError(
+                "too many fields requested",
+                details={"limit": MAX_AGGREGATE_FIELDS},
+            )
+        invalid = [field for field in requested if field not in numeric_fields]
+        if invalid:
+            raise InvalidQueryError(
+                "field is not an approved numeric canonical field",
+                details={
+                    "fields": invalid,
+                    "allowed": numeric_fields,
+                    "table": table_name,
+                },
+            )
+
+        canonical_rows = int(
+            self._scalar(
+                f"SELECT COUNT(*) FROM {table_name} WHERE accession = ?",
+                [accession],
+            )
+            or 0
+        )
+        clauses = ["accession = ?"]
+        params: list[Any] = [accession]
+        if table_name == "gas_flame_test" and not include_qualified:
+            clauses.append(f"NOT ({QUALIFIED_GAS_FLAME_SQL})")
+        where = " WHERE " + " AND ".join(clauses)
+        included_rows = int(
+            self._scalar(f"SELECT COUNT(*) FROM {table_name}{where}", params) or 0
+        )
+        excluded_qualified = (
+            canonical_rows - included_rows
+            if table_name == "gas_flame_test" and not include_qualified
+            else 0
+        )
+
+        select_parts = ['COUNT(*) AS "rows_in_scope"']
+        for index, field in enumerate(requested):
+            select_parts.extend(
+                [
+                    f'COUNT("{field}") AS "f{index}_count"',
+                    f'MIN("{field}") AS "f{index}_min"',
+                    f'MAX("{field}") AS "f{index}_max"',
+                    f'AVG("{field}") AS "f{index}_mean"',
+                    f'MEDIAN("{field}") AS "f{index}_median"',
+                ]
+            )
+        row = self._one(
+            f"SELECT {', '.join(select_parts)} FROM {table_name}{where}", params
+        )
+        if row is None:
+            raise QueryError("field statistics query returned no row")
+
+        fields_payload: dict[str, Any] = {}
+        for index, field in enumerate(requested):
+            non_null = int(row[f"f{index}_count"] or 0)
+            fields_payload[field] = {
+                "field": field,
+                "status": "available" if non_null else "missing",
+                "non_null_count": non_null,
+                "missing_count": max(0, included_rows - non_null),
+                "min": row[f"f{index}_min"] if non_null else None,
+                "max": row[f"f{index}_max"] if non_null else None,
+                "mean": row[f"f{index}_mean"] if non_null else None,
+                "median": row[f"f{index}_median"] if non_null else None,
+            }
+
+        return {
+            "table": table_name,
+            "accession": accession,
+            "canonical_rows": canonical_rows,
+            "included_rows": included_rows,
+            "excluded_qualified_rows": excluded_qualified,
+            "include_qualified": include_qualified,
+            "fields": fields_payload,
+            "dataset_version": self.dataset_version(),
+            "notes": [
+                "Missing values are counted as missing, not zero.",
+                "Each field is aggregated independently; fields are never merged.",
+            ],
+        }
+
+    def gas_flame_statistics(
+        self,
+        accession: str,
+        *,
+        include_qualified: bool = False,
+    ) -> dict[str, Any]:
+        """Deterministic counts and numeric summaries for one gas-flame accession."""
+
+        _validate_accession(accession, GAS_FLAME_ACCESSIONS)
+        stats = self.field_statistics(
+            "gas_flame_test",
+            accession,
+            GAS_FLAME_STAT_FIELDS,
+            include_qualified=include_qualified,
+        )
+        pressure_field, pressure_unit = self._gas_flame_pressure_column(accession)
+        stats["pressure"] = {
+            "field": pressure_field,
+            "unit": pressure_unit,
+            "stats": stats["fields"].get(pressure_field) if pressure_field else None,
+        }
+        stats["oxygen_fields"] = list(GAS_FLAME_OXYGEN_FIELDS)
+
+        clauses = ["accession = ?"]
+        params: list[Any] = [accession]
+        if not include_qualified:
+            clauses.append(f"NOT ({QUALIFIED_GAS_FLAME_SQL})")
+        where = " WHERE " + " AND ".join(clauses)
+        stats["flame_type"] = self._rows(
+            f"SELECT flame_type AS value, COUNT(*) AS count FROM gas_flame_test"
+            f"{where} GROUP BY flame_type ORDER BY count DESC, value",
+            params,
+        )
+        stats["fuel"] = self._rows(
+            f"SELECT fuel AS value, COUNT(*) AS count FROM gas_flame_test"
+            f"{where} GROUP BY fuel ORDER BY count DESC, value",
+            params,
+        )
+        return stats
 
     def get_gas_flame_test(self, observation_id: str) -> dict[str, Any]:
         self._require_table("gas_flame_test")

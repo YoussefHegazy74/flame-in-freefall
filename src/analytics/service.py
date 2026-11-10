@@ -24,9 +24,10 @@ from src.analytics.citations import (
 )
 from src.analytics.comparability import ComparabilityEngine
 from src.analytics.dataset_metadata import DatasetMetadata
-from src.analytics.db import AnalyticsDatabase, PageResult
+from src.analytics.db import AGGREGATE_TABLES, AnalyticsDatabase, PageResult
 from src.analytics.errors import InvalidQueryError, NotFoundError
 from src.analytics.facets import build_gas_flame_facets
+from src.analytics.field_metadata import field_metadata
 from src.analytics.integrity import MeasurementIntegrity
 from src.analytics.paired import PairedComparisonRegistry, evaluate_paired_values
 from src.analytics.publications import PublicationRegistry
@@ -1218,6 +1219,196 @@ class AnalyticsService:
             flags=flags,
             warnings=warnings,
             meta={"accession": accession, "include_qualified": include_qualified},
+        )
+
+    # ------------------------------------------------------------------
+    # Deterministic statistics
+    # ------------------------------------------------------------------
+    def gas_flame_statistics(
+        self,
+        accession: str,
+        *,
+        include_qualified: bool = False,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        stats = self.db.gas_flame_statistics(
+            accession, include_qualified=include_qualified
+        )
+        dataset = next(
+            (
+                item
+                for item in self.serving.datasets.values()
+                if item["accession"] == accession
+            ),
+            None,
+        )
+        dataset_id = dataset["dataset_id"] if dataset else None
+        status, flags, warnings = (
+            self._serving_quality(dataset_id, "exploration")
+            if dataset_id
+            else ("partial", [], [])
+        )
+        measurements = {
+            measurement["canonical_field"]: measurement
+            for measurement in self.comparability.measurements.values()
+            if measurement["dataset_id"] == dataset_id
+        }
+        for field, payload in stats["fields"].items():
+            measurement = measurements.get(field)
+            if measurement is None:
+                fallback = field_metadata(accession, field)
+                payload["measurement_id"] = None
+                payload["unit"] = fallback["unit"] if fallback else None
+                payload["value_kind"] = fallback["value_kind"] if fallback else None
+                payload["comparison_status"] = None
+                payload["serving_state"] = None
+                payload["metadata_source"] = fallback["source"] if fallback else None
+                continue
+            serving = self.serving.evaluate_measurement(
+                measurement["measurement_id"], "exploration"
+            )
+            payload["measurement_id"] = measurement["measurement_id"]
+            payload["unit"] = measurement["unit"]
+            payload["value_kind"] = measurement["value_kind"]
+            payload["comparison_status"] = measurement["comparison_status"]
+            payload["serving_state"] = serving.state
+            payload["metadata_source"] = {
+                "kind": "comparability_registry",
+                "path": "data/metadata/comparability_registry.json",
+                "section": "measurements",
+            }
+        citations = (
+            self.citations.list(dataset_id=dataset_id, kind="experimental_table")
+            if dataset_id
+            else []
+        )
+        stats["dataset_id"] = dataset_id
+        stats["citation_ids"] = [
+            citation["citation_id"] for citation in citations
+        ]
+        stats["source_files"] = [
+            citation["file"]["name"] for citation in citations
+        ]
+        stats["quality_status"] = status
+        stats["warnings"] = warnings
+        return self._envelope(
+            stats,
+            request_id=request_id,
+            provenance=[
+                {
+                    "kind": "canonical_table",
+                    "table": "gas_flame_test",
+                    "dataset_version": self.bundle.dataset_version,
+                }
+            ],
+            quality_status=status,
+            flags=flags,
+            warnings=warnings,
+            meta={"accession": accession, "include_qualified": include_qualified},
+        )
+
+    def dataset_field_statistics(
+        self,
+        dataset_id: str,
+        *,
+        fields: Sequence[str] | None = None,
+        include_qualified: bool = False,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        dataset = self.serving.get_dataset(dataset_id)
+        tables = list(dataset.get("canonical_tables") or [])
+        aggregate_tables = [
+            table for table in tables if table in AGGREGATE_TABLES
+        ]
+        if not aggregate_tables:
+            raise InvalidQueryError(
+                "this dataset does not support canonical field statistics",
+                details={
+                    "dataset_id": dataset_id,
+                    "canonical_tables": tables,
+                    "allowed_tables": list(AGGREGATE_TABLES),
+                    "suggestion": (
+                        "Use the telemetry or smoke series tools for time-series "
+                        "datasets, or the dataset metadata endpoints for "
+                        "metadata-only datasets."
+                    ),
+                },
+            )
+        table = aggregate_tables[0]
+        accession = dataset["accession"]
+        stats = self.db.field_statistics(
+            table,
+            accession,
+            fields,
+            include_qualified=include_qualified,
+        )
+        measurements = {
+            measurement["canonical_field"]: measurement
+            for measurement in self.comparability.measurements.values()
+            if measurement["dataset_id"] == dataset_id
+        }
+        for field, payload in stats["fields"].items():
+            measurement = measurements.get(field)
+            if measurement is None:
+                fallback = field_metadata(accession, field)
+                payload["measurement_id"] = None
+                payload["unit"] = fallback["unit"] if fallback else None
+                payload["value_kind"] = fallback["value_kind"] if fallback else None
+                payload["comparison_status"] = None
+                payload["serving_state"] = None
+                payload["quality_restrictions"] = []
+                payload["metadata_source"] = fallback["source"] if fallback else None
+                continue
+            serving = self.serving.evaluate_measurement(
+                measurement["measurement_id"], "exploration"
+            )
+            payload["measurement_id"] = measurement["measurement_id"]
+            payload["unit"] = measurement["unit"]
+            payload["value_kind"] = measurement["value_kind"]
+            payload["comparison_status"] = measurement["comparison_status"]
+            payload["serving_state"] = serving.state
+            payload["quality_restrictions"] = list(
+                measurement.get("quality_restrictions") or []
+            )
+            payload["metadata_source"] = {
+                "kind": "comparability_registry",
+                "path": "data/metadata/comparability_registry.json",
+                "section": "measurements",
+            }
+        citations = self.citations.list(
+            dataset_id=dataset_id, kind="experimental_table"
+        )
+        status, flags, warnings = self._serving_quality(
+            dataset_id, "exploration"
+        )
+        stats["dataset_id"] = dataset_id
+        stats["display_name"] = dataset["display_name"]
+        stats["citation_ids"] = [
+            citation["citation_id"] for citation in citations
+        ]
+        stats["source_files"] = [
+            citation["file"]["name"] for citation in citations
+        ]
+        stats["quality_status"] = status
+        stats["warnings"] = warnings
+        return self._envelope(
+            stats,
+            request_id=request_id,
+            provenance=[
+                {
+                    "kind": "canonical_table",
+                    "table": table,
+                    "dataset_version": self.bundle.dataset_version,
+                }
+            ],
+            quality_status=status,
+            flags=flags,
+            warnings=warnings,
+            meta={
+                "dataset_id": dataset_id,
+                "accession": accession,
+                "include_qualified": include_qualified,
+            },
         )
 
     # ------------------------------------------------------------------
