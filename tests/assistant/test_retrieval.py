@@ -130,7 +130,7 @@ def test_relevant_scientific_chunk_ranks_first():
     assert result["results"]
     assert result["results"][0]["document_id"] == "doc:pressure"
     assert result["results"][0]["scores"]["hybrid"] > 0
-    assert result["retrieval_method"] == "bm25+tfidf-hash-v1"
+    assert result["retrieval_method"] == "bm25+tfidf-hash-v1+source-intent"
 
 
 def test_accession_filter_excludes_other_investigations():

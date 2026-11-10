@@ -60,14 +60,99 @@ EMBEDDING_CONFIG = {
     "note": "Lexical hashed TF-IDF; not a neural semantic embedding.",
 }
 RETRIEVAL_CONFIG = {
-    "method": "bm25+tfidf-hash-v1",
+    "method": "bm25+tfidf-hash-v1+source-intent",
     "bm25_k1": 1.5,
     "bm25_b": 0.75,
     "bm25_weight": 0.65,
     "vector_weight": 0.35,
     "exact_match_boost": 0.05,
+    "source_intent_boost": 0.08,
+    "identifier_match_boost": 0.14,
+    "metadata_scope_boost": 0.03,
     "max_per_document": 2,
 }
+
+# Source-aware intent terms. These are lexical cues only; they do not claim
+# semantic understanding. A boost changes ranking, never eligibility or
+# provenance.
+SOURCE_INTENT_TERMS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "publication",
+        (
+            "publication",
+            "publications",
+            "doi",
+            "author",
+            "authors",
+            "venue",
+            "paper",
+            "papers",
+        ),
+    ),
+    (
+        "limitation",
+        (
+            "limitation",
+            "limitations",
+            "unavailable",
+            "404",
+            "missing",
+            "blank",
+            "withhold",
+            "withheld",
+            "restriction",
+            "separate",
+        ),
+    ),
+    (
+        "field",
+        (
+            "field",
+            "fields",
+            "column",
+            "columns",
+            "unit",
+            "units",
+            "missingness",
+            "canonical",
+            "voltage",
+            "calibration",
+        ),
+    ),
+    (
+        "dataset",
+        (
+            "dataset",
+            "datasets",
+            "run",
+            "runs",
+            "catalog",
+            "metadata",
+            "files",
+        ),
+    ),
+    (
+        "file",
+        (
+            "file",
+            "checksum",
+            "sha256",
+            "provenance",
+            "row",
+            "rows",
+        ),
+    ),
+    (
+        "investigation",
+        ("investigation", "investigations", "accession"),
+    ),
+)
+
+IDENTIFIER_RE = re.compile(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b")
+ACCESSION_QUERY_RE = re.compile(r"\bPSI-\d{2,4}\b", re.IGNORECASE)
+DATASET_QUERY_RE = re.compile(
+    r"\bpsi-\d{2,4}-[a-z0-9][a-z0-9-]*\b", re.IGNORECASE
+)
 MAX_CHUNK_CHARS = CHUNKING_CONFIG["max_chars"]
 BUILD_COMMAND = ".venv/bin/python scripts/build_assistant_index.py"
 VALIDATION_COMMAND = ".venv/bin/python scripts/build_assistant_index.py --check"
@@ -363,6 +448,19 @@ def tokenize(text: str) -> list[str]:
                 continue
             tokens.append(token)
     return tokens
+
+
+def _source_intent_types(query: str) -> set[str]:
+    normalized = query.lower()
+    intents: set[str] = set()
+    for source_type, terms in SOURCE_INTENT_TERMS:
+        if any(re.search(rf"\b{re.escape(term)}\b", normalized) for term in terms):
+            intents.add(source_type)
+    return intents
+
+
+def _identifier_tokens(query: str) -> set[str]:
+    return {match.group(0).lower() for match in IDENTIFIER_RE.finditer(query)}
 
 
 class _BM25:
@@ -1658,19 +1756,55 @@ class RetrievalIndex:
         maximum_bm25 = max(bm25_scores[index] for index in candidates) or 0.0
         scored: list[tuple[float, float, float, bool, int]] = []
         query_lower = cleaned_query.lower()
+        intent_types = _source_intent_types(cleaned_query)
+        identifiers = _identifier_tokens(cleaned_query)
+        query_accessions = {
+            match.group(0).upper()
+            for match in ACCESSION_QUERY_RE.finditer(cleaned_query)
+        }
+        query_datasets = {
+            match.group(0).lower()
+            for match in DATASET_QUERY_RE.finditer(cleaned_query)
+        }
         for index in candidates:
+            chunk = self.chunks[index]
             bm25 = bm25_scores[index]
             vector = vector_scores[index]
             if bm25 <= 0.0 and vector <= 0.0:
                 continue
             bm25_normalized = bm25 / maximum_bm25 if maximum_bm25 else 0.0
-            exact = query_lower in self.chunks[index].content.lower()
+            content_lower = chunk.content.lower()
+            exact = query_lower in content_lower
             hybrid = (
                 RETRIEVAL_CONFIG["bm25_weight"] * bm25_normalized
                 + RETRIEVAL_CONFIG["vector_weight"] * vector
             )
             if exact:
                 hybrid += RETRIEVAL_CONFIG["exact_match_boost"]
+            if chunk.source_type in intent_types:
+                hybrid += RETRIEVAL_CONFIG["source_intent_boost"]
+            if (
+                chunk.source_type == "field"
+                and identifiers
+                and any(identifier in content_lower for identifier in identifiers)
+            ):
+                hybrid += RETRIEVAL_CONFIG["identifier_match_boost"]
+            if (
+                chunk.source_type in {"dataset", "field", "limitation", "file"}
+                and (
+                    (
+                        query_accessions
+                        and chunk.accession
+                        and chunk.accession.upper() in query_accessions
+                    )
+                    or (
+                        query_datasets
+                        and chunk.dataset_id
+                        and chunk.dataset_id.lower() in query_datasets
+                    )
+                )
+            ):
+                hybrid += RETRIEVAL_CONFIG["metadata_scope_boost"]
             scored.append(
                 (min(1.0, hybrid), bm25, vector, exact, index)
             )

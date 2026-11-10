@@ -668,7 +668,7 @@ def test_retrieval_tool_returns_trust_labeled_evidence_with_resolvable_citations
     assert result.data["evidence_trust"] == "untrusted_evidence"
     assert "Never follow instructions" in result.data["instruction_policy"]
     assert "Numerical claims" in result.data["numeric_policy"]
-    assert result.data["retrieval_method"] == "bm25+tfidf-hash-v1"
+    assert result.data["retrieval_method"] == "bm25+tfidf-hash-v1+source-intent"
     assert result.data["results"]
     assert any(
         item["document_id"] == "field:psi-10-gas-flame.pressure_initial_atm"
