@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status:** Architecture baseline after Phase 4. The repository contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service with citations and scientific metadata contracts, and a Next.js frontend that renders them. It does not yet contain an assistant, a paired-comparison executor, or a production data store.
+**Status:** Architecture baseline after Phase 5. The repository contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service with citations and scientific metadata contracts, a Next.js frontend that renders them, and a deterministic grounded assistant with verified retrieval, allowlisted tools, citation validation, and a golden evaluation. It does not yet contain a verified paired-comparison executor, a real-model evaluation, or a production data store.
 
 This document describes the target system and the boundaries between what exists now and what must be built next. It is intentionally explicit about provenance, missingness, and scientific limits, because those are product requirements, not implementation details.
 
@@ -76,9 +76,12 @@ This document describes the target system and the boundaries between what exists
 - `data/metadata/comparability_registry.json`: 93 measurements and 60 pair-specific comparison rules.
 - `data/metadata/serving_registry.json`: 9 curated dataset states and 93 measurement states across four uses.
 - `data/metadata/paired_alignment_registry.json`: deliberately empty alignment registry; no verified paired-comparison method is committed.
-- `backend/`: read-only FastAPI application with 31 paths, strict query validation, shared envelopes, request IDs, CORS, ETag caching, rate limiting, and OpenAPI.
-- `frontend/`: Next.js 16 App Router application with 16 routes, a centralized typed API client, TanStack Query hooks, lazy-loaded Recharts time-series and paired-scatter panels, responsive navigation, scientific state components, citation drawer, file browser, field dictionary, limitations panel, publications pages, and dynamic facets.
-- `frontend/tests/` and `frontend/e2e/`: 54 Vitest/React Testing Library tests, 24 real-backend Playwright flows, and 6 axe WCAG scans.
+- `backend/`: read-only FastAPI application with 35 paths, strict query validation, shared envelopes, request IDs, CORS, ETag caching, rate limiting, and OpenAPI.
+- `frontend/`: Next.js 16 App Router application with 18 routes, including `/assistant`, a centralized typed API client, TanStack Query hooks, lazy-loaded Recharts time-series and paired-scatter panels, responsive navigation, scientific state components, citation drawer, file browser, field dictionary, limitations panel, publications pages, and dynamic facets.
+- `frontend/tests/` and `frontend/e2e/`: 68 Vitest/React Testing Library tests, 27 real-backend Playwright flows, and 7 axe WCAG scans.
+- `src/assistant/`: versioned answer contract, environment-driven configuration, deterministic planner, 22 allowlisted tools, verified retrieval index, grounded composer, citation and claim validators, optional provider boundary, orchestrator, bounded conversation state, and evaluation harness.
+- `scripts/build_assistant_index.py` and `scripts/evaluate_assistant.py`: reproducible retrieval-index build/check and golden-set, retrieval, and provider-boundary evaluation.
+- `docs/phase5-assistant-architecture.md`, `docs/assistant-answer-contract.md`, `docs/assistant-tools.md`, `docs/assistant-retrieval.md`, `docs/assistant-evaluation.md`, `docs/assistant-security.md`: assistant architecture, contract, tool catalog, retrieval design, evaluation, and threat model.
 - `scripts/build_phase2_registries.py`: deterministic registry generator with `--check`.
 - `docs/comparability.md`, `docs/serving-states.md`, `docs/query-contract.md`, `docs/api-implementation.md`, `docs/frontend-readiness.md`, `docs/phase4-contracts.md`, `docs/comparison-alignment.md`, `docs/known-limitations.md`: contracts, methodology, limitations, and frontend handoff.
 - `DATA_SOURCES.md`: verified source inventory, per-record cards, comparability matrix, access limitations, verification log.
@@ -87,7 +90,7 @@ This document describes the target system and the boundaries between what exists
 
 ### 3.2 Not implemented yet
 
-- Grounded assistant and evaluation harness.
+- A real language-model evaluation. The optional provider boundary exists and is tested with deterministic stubs; no hosted model was called.
 - A verified paired-comparison executor. The API exposes eligibility and withholds values.
 - Authentication or user accounts. The public read-only MVP does not need them.
 - CI/CD, deployment, observability, and production operations.
@@ -417,7 +420,7 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 | `/publications` | Deduplicated publication list with verification and missing-field status. |
 | `/publications/[publicationId]` | Publication detail with related investigations, DOI, and provenance. |
 | `/about` | Data sources, processing, comparability, quality, limitations, and citation policy. |
-| `/assistant` | Planned Phase 5; not implemented. |
+| `/assistant` | Grounded research assistant with conversation, suggested questions, evidence panel, citation drawer, validation status, and provider/fallback state. |
 
 ### 9.3 UI rules
 
@@ -428,9 +431,9 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 5. No color-only encoding. Use labels and patterns where possible.
 6. No "risk score" badge unless a documented, validated metric exists.
 7. Records with no `added` archive but a public experimental table show the verified table and an `experimental_table_only` badge; records with no public artifact show "No public files". Neither shows an empty chart that looks like zero data.
-8. The assistant panel, when built, shows `measured`, `computed`, `derived`, or `not available` for each claim.
+8. The assistant shows `measured`, `computed`, `derived`, `raw`, or `not available` for each supporting value, displays exact serialized numbers without frontend rounding, and marks documentary evidence as context rather than a numerical source.
 9. The citation drawer lists the accession, file, field, row/range, checksum, retrieval date, and verification status. It never shows a download link for an unavailable file.
-10. The interface is keyboard accessible and meets WCAG 2.1 AA contrast and focus requirements. Six axe scans currently report no serious or critical violations.
+10. The interface is keyboard accessible and meets WCAG 2.1 AA contrast and focus requirements. Seven axe scans currently report no serious or critical violations.
 11. The comparison studio renders a paired chart only when the backend returns `paired_values.available=true`, `alignment.verified=true`, and numeric points. Otherwise it explains the withholding reason.
 12. Dynamic facet counts come from the backend and preserve accession-specific units; the UI never merges PSI-10 atm with PSI-159 bar.
 
@@ -448,7 +451,8 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 
 ### 9.6 Known frontend limits
 
-- No assistant interface.
+- The assistant UI renders validated backend answers only. It does not call a model directly, generate citations, or compute numbers. A real-model evaluation has not been run.
+- Assistant values are displayed with the backend's exact serialization; the UI does not round scientific numbers.
 - Paired comparison values are not produced from current canonical data; the chart remains conditional and is tested with isolated fixtures. The backend returns `paired_values.available=false`.
 - ETag/304 is handled by the browser cache; the frontend does not implement custom revalidation logic.
 - Visual regression tests remain open. Automated responsive-viewport coverage exists for the dataset metadata page and the main routes.
@@ -460,92 +464,120 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 
 ### 10.1 Purpose
 
-The challenge calls for SI-powered fire-safety insights. The insight layer must help users find, compare, and explain verified observations. It must not invent measurements, competition facts, or NASA conclusions.
+The challenge calls for SI-powered fire-safety insights. The insight layer helps users find, compare, and explain verified observations. It does not invent measurements, competition facts, or NASA conclusions. It is deterministic by default and works with no language model configured.
+
+Phase 5 implements this layer. The normative documents are `docs/phase5-assistant-architecture.md`, `docs/assistant-answer-contract.md`, `docs/assistant-tools.md`, `docs/assistant-retrieval.md`, `docs/assistant-evaluation.md`, and `docs/assistant-security.md`.
 
 ### 10.2 Architecture
 
 ```mermaid
 flowchart LR
     Q[User question]
-    R[Retriever over docs and dataset cards]
-    P[Planner]
-    T[Deterministic tools]
-    API[Read-only API]
-    V[Citation and claim validator]
-    A[Answer with evidence status]
-    Q --> R
-    R --> P
+    C[Bounded conversation context]
+    P[Deterministic planner]
+    T[22 allowlisted tools]
+    S[Phase 1-4 AnalyticsService]
+    R[Verified retrieval index]
+    D[Grounded deterministic draft]
+    V[Citation and claim validation]
+    L[Optional provider rephrase]
+    A[AssistantAnswer contract 1.0.0]
+    Q --> C
+    C --> P
     P --> T
-    T --> API
-    API --> V
+    T --> S
+    P --> R
+    S --> D
+    R --> D
+    D --> V
     V --> A
+    V -. validated draft only .-> L
+    L -. rejected if numbers or citations change .-> V
 ```
 
-### 10.3 Tools
+The optional provider is a rephrase boundary, not a reasoning layer. It receives the user question and the validated deterministic draft. It never selects tools, sees retrieved source text as instructions, or creates numbers, citations, accessions, dataset IDs, or URLs.
 
-| Tool | Purpose | Returns |
+### 10.3 Components
+
+| Component | File | Responsibility |
 |---|---|---|
-| `list_datasets` | Catalog lookup | Accessions, roles, access status, limitations |
-| `get_dataset` | Record detail | Metadata, DOI, files, tables, publications |
-| `get_fields` | Field dictionary lookup | Raw names, canonical names, units, missingness |
-| `query_gas_flame_tests` | Filter PSI-10/PSI-159 | Rows with provenance and quality flags |
-| `get_telemetry_series` | Time range + channel allowlist | Downsampled or full series with units and flags |
-| `get_smoke_series` | SAME-R run + channel allowlist | Series with units and flags |
-| `compare_field` | Curated comparison | Aligned values, units, method, limitations |
-| `get_provenance` | Source lookup | Accession, file, sheet, row, checksum, retrieval date |
-| `get_publications` | Citation lookup | Titles, authors, DOIs, status |
+| Contract | `src/assistant/contract.py` | Versioned answer, claim, citation, evidence, and status models |
+| Configuration | `src/assistant/config.py` | Environment validation, secret-free status, safe deterministic fallback |
+| Planner | `src/assistant/planner.py` | Closed topic selection and fixed tool sequences |
+| Tools | `src/assistant/tools.py` | 22 typed, allowlisted wrappers over existing service methods |
+| Retrieval | `src/assistant/retrieval.py` | Verified-document index, BM25 + hashed TF-IDF, source manifest |
+| Composer | `src/assistant/composer.py` | Grounded templates, supporting data, and claims |
+| Citation validation | `src/assistant/citation_validation.py` | Independent Phase 4 citation resolution and scope checks |
+| Claim validation | `src/assistant/claim_validation.py` | Number, unit, value-kind, scope, and forbidden-claim checks |
+| Providers | `src/assistant/providers.py` | Deterministic default and optional rephrase provider |
+| Orchestrator | `src/assistant/orchestrator.py` | End-to-end pipeline, fallback, and status |
+| Conversation | `src/assistant/conversation.py` | Bounded, non-authoritative follow-up state |
+| Evaluation | `src/assistant/evaluation.py` | Golden, retrieval, provider-boundary, and latency metrics |
 
-### 10.4 Answer contract
+### 10.4 Tools
 
-Every answer returns:
+The assistant has exactly 22 tools, grouped as catalog, metadata, provenance, publications, gas-flame rows and statistics, material and droplet rows, telemetry and smoke series, comparison eligibility, and verified retrieval. The full argument schemas are served by `GET /api/v1/assistant/tools` and documented in `docs/assistant-tools.md`.
+
+There is no SQL, filesystem, URL-fetch, shell, or code-execution tool. A tool result carries units, value kind, scope, citation IDs, and a bounded summary. The composer copies values from the result; it does not recompute them from prose.
+
+### 10.5 Answer contract
+
+Every answer returns contract version `1.0.0` inside the shared API envelope:
 
 ```json
 {
-  "answer": "Short, direct response.",
-  "evidence_status": "measured | computed | derived | not_available",
+  "contract_version": "1.0.0",
+  "answer": "Grounded prose.",
+  "answer_type": "numerical",
+  "evidence_status": "fully_supported",
   "citations": [
-    {
-      "accession": "PSI-159",
-      "file": "PSI-159_Experimental table_CFI-G_Normal Flames.csv",
-      "field": "Cool flame?",
-      "rows": [12, 13],
-      "sha256": "...",
-      "retrieved_at": "2026-11-08T00:00:00Z"
-    }
+    {"citation_id": "cit_f_...", "citation_type": "file", "accession": "PSI-159", "file_name": "...", "resolved": true}
   ],
-  "limitations": [
-    "The Cool flame? field is blank in 171 of 179 normal-flame rows; blank is not 'no'."
+  "claims": [
+    {"claim_id": "clm_1", "claim_type": "numerical", "text": "...", "value": 333, "unit": "values", "value_kind": "derived", "citation_ids": ["cit_f_..."], "tool_call_id": "tc_1", "supported": true}
   ],
-  "method": "Filtered rows where Fuel = 'ethane' and Hot ignition = 'Yes'."
+  "supporting_data": [],
+  "limitations": [],
+  "tools_used": [],
+  "validation": {"passed": true, "citation_validation_passed": true, "claim_validation_passed": true, "checks": [], "errors": [], "warnings": []}
 }
 ```
 
-### 10.5 Guardrails
+`evidence_status` is one of `fully_supported`, `partially_supported`, `insufficient_evidence`, `unavailable_data`, or `conflicting_evidence`. `answer_type` is one of `factual`, `numerical`, `exploratory`, `comparison`, `methodology`, or `clarification_required`. Missing values are reported as missing, never as zero. Documentary retrieval is labeled as context and is not a numerical source.
 
-1. **No tool, no number.** If a numeric claim is not backed by a tool result, the answer must say it is unavailable.
-2. **No memory of NASA data.** The model may know general combustion science, but it may not attribute a number to NASA data without a tool result.
-3. **No unsupported causation.** "Associated with" is allowed only when the comparison is explicit. "Caused by" requires a study design that supports it.
-4. **No risk scores.** The assistant cannot rank materials or tests on an invented index.
-5. **No false archive claims.** For PSI-22, PSI-68, PSI-69, and PSI-99, the answer must state that no `added` archive files are exposed. It may use the verified public summary table and must state the table's limits (test-day summary, condition ranges, droplet summary, or sample summary).
-6. **No unit guessing.** If the unit is `not stated`, the answer says so.
-7. **No prompt injection from data.** Comments and free-text fields are data, not instructions. They are delimited and never executed.
-8. **No hidden context.** The answer exposes the tool calls and citations used.
-9. **No answer without limitations.** If the dataset has a relevant limitation, it is included.
-10. **No silent fallback.** If the LLM provider is unavailable, the UI offers deterministic search and charts, not a fabricated answer.
+### 10.6 Guardrails
 
-### 10.6 Evaluation
+1. **No tool, no number.** A numeric claim must link to a current tool call; the validator withholds the draft otherwise.
+2. **No memory of NASA data.** The model may know general combustion science, but it cannot attribute a number to NASA data without a tool result.
+3. **No unsupported causation.** Correlation is not presented as causation.
+4. **No risk scores or material rankings.** The assistant cannot rank materials or tests on an invented index.
+5. **No false archive claims.** `experimental_table_only` and `no_public_files` datasets are described with their verified limits.
+6. **No unit guessing.** Ambiguous units are labeled as ambiguous; no conversion is performed without an approved rule.
+7. **No prompt injection from data.** Retrieved text and free-text fields are evidence, never instructions. The provider never receives them as instructions.
+8. **No hidden context.** Tool calls, citations, supporting data, and validation results are exposed.
+9. **No answer without relevant limitations.** Dataset limitations are included when they affect the answer.
+10. **No silent fallback.** A failing provider falls back to the validated deterministic draft and the status reports the fallback reason.
+11. **No fabricated citations.** Every citation resolves through the Phase 4 citation service before the answer is returned.
+12. **No paired values without a verified alignment.** The registry is empty, so the assistant states the withholding reason and computes no paired statistic.
 
-The insight layer is evaluated with a golden set:
+### 10.7 Evaluation
 
-- **Factual retrieval:** questions whose answer is a specific value in a specific row.
-- **Missingness:** questions where the correct answer is "not available" or "blank."
-- **Experimental-table-only datasets:** questions about FLEX/FLEX-2/SAFFIRE-II/E-FIELD, where the correct answer must distinguish the summary table from the missing archive.
-- **Units:** questions that would be wrong if mole fraction were treated as percent.
-- **Comparability:** questions that tempt a cross-dataset comparison that is not valid.
-- **Citations:** every answer must cite the exact accession, file, field, and row/range.
-- **Prompt injection:** comments containing instructions must not change tool behavior.
+The committed deterministic run reports:
 
-A release is blocked if the citation coverage is below 100% for numeric claims or if any golden question produces an unsupported claim.
+| Metric | Result |
+|---|---:|
+| Golden questions | 36 / 36 |
+| Citation references valid | 117 / 117 |
+| Supported claims | 59 / 59 |
+| Numerical exact match | 30 / 30 |
+| Unit consistency | 30 / 30 |
+| Tool-selection accuracy | 35 / 35 |
+| Correct refusals | 12 / 12 |
+| Retrieval precision@5 | 0.602381 |
+| Retrieval recall@5 | 1.0 |
+| Retrieval MRR | 0.761905 |
+
+The harness reports separate metrics rather than one aggregate score. Failing-provider and deterministic mock-provider checks are software boundary checks, not a real-model evaluation. The golden set is version `1.0.1` and is bound to the canonical dataset version. A release is blocked if citation validity, numerical/unit consistency, tool selection, refusal behavior, or the golden set fails.
 
 ---
 
@@ -864,4 +896,28 @@ Verified Phase 4 result:
 - Facet counts: PSI-10 327 total / 256 included / 71 excluded; PSI-159 333 / 333 / 0.
 - Paired values withheld with `no_verified_alignment` or `conditions_not_verified`.
 
-The next layer is the grounded insight layer. Remaining product work is a verified paired-comparison executor, deployment operations, and the assistant.
+Phase 5 is complete when:
+
+1. A versioned answer contract defines evidence status, answer type, claims, citations, supporting data, limitations, and validation.
+2. Every tool is typed, allowlisted, bounded, and wraps an existing Phase 1–4 capability; no SQL, path, URL, or code execution is exposed.
+3. Retrieval uses only verified committed artifacts, with source hashes, a manifest, metadata filtering, hybrid ranking, deduplication, and provenance.
+4. Every citation resolves through the Phase 4 citation service, and every numeric claim links to a current tool call.
+5. Refusal behavior is correct for missing values, unit ambiguity, unavailable files, and unverified comparisons.
+6. The deterministic path works with no LLM; an optional provider may only rephrase a validated draft and fails closed.
+7. Prompt injection and adversarial questions do not change tools, citations, secrets, or file access.
+8. The `/assistant` route renders conversation, evidence, citations, suggested questions, and scientific transparency.
+9. The golden set, retrieval set, provider-boundary checks, backend tests, frontend tests, Playwright, axe, and production build pass.
+10. Documentation and the generated evaluation report match the implemented behavior.
+
+Verified Phase 5 result:
+
+- 35 API paths and 483 backend tests.
+- 22 allowlisted deterministic tools and 1,391 verified retrieval chunks.
+- 36 / 36 golden questions; 117 / 117 citations valid; 59 / 59 claims supported; 30 / 30 numerical and unit checks; 12 / 12 correct refusals.
+- 68 frontend unit/component tests, 27 Playwright tests, 7 axe scans, and a passing production build with `/assistant`.
+- No real language model was evaluated; the provider boundary is exercised with deterministic stubs.
+- Paired values remain unavailable because the alignment registry is empty.
+- PSI-159 `pressure_initial_atm` and PSI-10 `pressure_approx_bar` remain empty and are never treated as zero.
+- The two PSI-98 telemetry/sensor workbooks remain unavailable (HTTP 404).
+
+Remaining product work is a verified paired-comparison executor, a real-model evaluation when credentials exist, deployment operations, and the Phase 6 hardening work.

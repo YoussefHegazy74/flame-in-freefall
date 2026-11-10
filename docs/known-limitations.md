@@ -80,7 +80,7 @@ For registry-level `unit` and `unit_status`, use `/api/v1/measurements` or `/api
 
 ---
 
-## 6. API and platform limitations after Phase 4
+## 6. API and platform limitations after Phase 5
 
 Implemented in Phase 4:
 
@@ -90,10 +90,23 @@ Implemented in Phase 4:
 - ETag/`304`, `Cache-Control`, configurable rate limiting, request IDs, and structured request logs;
 - frontend citation drawers, file browser, field dictionary, limitations panel, publications list/detail, dynamic facets, and comparison-integrity/paired-value panels.
 
+Implemented in Phase 5:
+
+- a grounded assistant that works with no LLM configured;
+- 22 typed, allowlisted deterministic tools over the Phase 1–4 service;
+- a reproducible retrieval index over committed documentation and metadata cards;
+- deterministic planning, grounded composition, citation validation, claim validation, and bounded conversation state;
+- a versioned answer contract with `evidence_status`, `answer_type`, claims, citations, supporting data, limitations, tool audit, and validation;
+- `/assistant` conversation, evidence panel, citation drawer, suggested questions, and provider/fallback status;
+- a golden-set, retrieval, provider-boundary, and latency evaluation harness.
+
 Still not implemented or deliberately limited:
 
 - no verified paired-comparison executor; `/compare` returns `paired_values.available=false` with `conditions_not_verified`, `no_verified_alignment`, `comparison_not_approved`, or `measurement_unavailable`;
-- no assistant endpoints or LLM/RAG layer;
+- no real language-model evaluation; the optional provider is exercised only with deterministic stubs, and any hosted-model run must be reported separately with its model, provider, date, cost, and configuration;
+- the retrieval method is lexical (BM25 plus deterministic hashed TF-IDF), not a neural semantic embedding, so paraphrase and synonym recall are limited;
+- the assistant retrieval set has seven labelled cases; precision@5 is a lower bound and cannot establish general retrieval quality;
+- repository documents and publication cards are not Phase 4 citations; documentary evidence is context, not a numerical source;
 - no authentication; the API is public and read-only, and rate limiting is not authorization;
 - rate limiting is process-local and has no shared store;
 - no embedded OpenAPI request/response examples; examples live in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`;
@@ -101,6 +114,17 @@ Still not implemented or deliberately limited:
 - no deployment, CI/CD, or production operations yet.
 
 The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
+
+### 6.1 Assistant-specific scientific limits
+
+- A numeric answer is valid only when a deterministic tool returns the value and a Phase 4 citation resolves. Retrieved documentation cannot supply a count, average, range, or measurement.
+- Missing values remain missing. PSI-159 `pressure_initial_atm` and PSI-10 `pressure_approx_bar` have zero canonical values; the assistant reports that absence and does not substitute zero.
+- The assistant does not convert PSI-10 atm to PSI-159 bar, merge accession-specific units, or infer an oxygen basis. Unit-conversion questions receive an explicit refusal with the relevant field counts.
+- Paired values stay unavailable while `data/metadata/paired_alignment_registry.json` has no verified method. The assistant states `no_verified_alignment` or `conditions_not_verified` and computes no paired statistic.
+- The two PSI-98 telemetry/sensor XLSX files remain HTTP 404. They are never shown as downloadable or treated as empty measurements.
+- The assistant does not produce fire-risk scores, material rankings, causal effects, or spacecraft fire-safety guarantees. Candidate questions that imply these are refused or answered only with verified, non-causal evidence.
+- Passing the golden set is software validation, not scientific validation. It shows contract compliance and grounding for 36 versioned questions; it does not prove a scientific hypothesis or general answer quality.
+- Index validation fails closed. If sources change without a rebuild, the runtime rebuilds in memory from committed sources; if that fails, retrieval-dependent answers return a safe limitation rather than model memory.
 
 ---
 
@@ -126,4 +150,10 @@ If a question needs a value that is not in the canonical tables, the correct res
 - `docs/api-implementation.md` — implemented API surface and gaps.
 - `docs/phase4-contracts.md` — citations, files, fields, limitations, publications, facets.
 - `docs/comparison-alignment.md` — paired-comparison eligibility and withholding rules.
+- `docs/phase5-assistant-architecture.md` — assistant components and scientific boundaries.
+- `docs/assistant-answer-contract.md` — answer, evidence, citation, and refusal contract.
+- `docs/assistant-tools.md` — deterministic tool catalog and execution limits.
+- `docs/assistant-retrieval.md` — verified index, lexical ranking, and retrieval limits.
+- `docs/assistant-evaluation.md` — golden metrics and their scope.
+- `docs/assistant-security.md` — prompt-injection and provider boundaries.
 - `docs/frontend-readiness.md` — what the frontend may rely on and must not infer.

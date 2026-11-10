@@ -99,6 +99,7 @@ running. Set `PLAYWRIGHT_BASE_URL` to target a different frontend origin.
 | `/publications` | Verified publication list with accession and dataset filters |
 | `/publications/[publicationId]` | Publication detail with source references and field status |
 | `/about` | Methods, data processing, comparability, quality, and limitations |
+| `/assistant` | Grounded research assistant with conversation, suggested questions, evidence panel, citation drawer, and provider/fallback status |
 
 Filters that matter to reproducibility are synchronized to the URL. Browser
 back/forward navigation restores them.
@@ -113,10 +114,12 @@ src/
 ├── components/
 │   ├── layout/          Sidebar, topbar, breadcrumbs, shell, footer
 │   ├── scientific/      Domain components: badges, warnings, citations, files, fields, publications
+│   ├── assistant/       Conversation, evidence panel, citation drawer, suggestions, status
 │   ├── charts/          Lazy-loaded Recharts time-series and paired-scatter panels
 │   └── ui/              Buttons, cards, filters, pagination, states, disclosure
 └── lib/
     ├── api/             Client, endpoint functions, query keys, TanStack hooks, types
+    ├── assistant.ts     Assistant labels, evidence tones, exact value serialization
     ├── format.ts        Number, unit, date, and missing-value formatting
     ├── series.ts        Chart-row and unit-group helpers
     ├── labels.ts        Human-readable domain labels
@@ -144,6 +147,12 @@ src/
   comparison-integrity, and paired-value components live in
   `src/components/scientific/`; they render backend metadata and states rather
   than deriving them.
+- **Assistant.** `src/components/assistant/` renders only validated backend
+  answers: conversation, suggested questions, evidence and citation panels,
+  supporting values, limitations, tool audit, validation status, and
+  provider/fallback state. It never calls a model, resolves a citation, or
+  computes a number. `src/lib/assistant.ts` owns labels and exact value
+  serialization.
 
 ### API capabilities the frontend relies on
 
@@ -161,6 +170,8 @@ src/
 - `GET /comparability`, `/compare`, `/provenance`
 - `GET /citations`, `/citations/{citation_id}`
 - `GET /publications`, `/publications/{publication_id}`
+- `GET /assistant/status`, `/assistant/suggestions`, `/assistant/tools`
+- `POST /assistant/query`
 
 ---
 
@@ -209,6 +220,17 @@ src/
   preserved.
 - Gas-flame facets come from `/gas-flame/facets`, report excluded qualified rows,
   and keep PSI-10 atm and PSI-159 bar separate.
+- Assistant answers render only the validated backend contract. Evidence status,
+  answer type, claims, citations, supporting data, limitations, tools used, and
+  validation results are displayed rather than inferred.
+- Assistant numeric values use the backend's exact serialization. The UI does
+  not round, convert, or reformat a scientific value for display.
+- Documentary evidence is labeled as context, not as a numerical source.
+  Citation IDs resolve through `/citations/{citation_id}` and unavailable files
+  never show a download link.
+- The assistant shows whether the answer came from the deterministic provider or
+  an optional provider, and whether a fallback occurred. A provider failure is
+  not hidden.
 
 ### Deliberate omissions
 
@@ -218,15 +240,18 @@ src/
 - No material safety claim is made.
 - No full public-file inventory is exposed; the file browser uses the curated
   manifest plus documented known-unavailable files.
-- No assistant UI is present; Phase 5 is not implemented.
+- No language model is called by the frontend. The assistant is deterministic by
+  default, and the optional provider is server-side only.
+- No assistant answer is repaired, completed, or reworded in the browser. An
+  invalid or unavailable answer is displayed with its actual status.
 
 ---
 
 ## Testing
 
 ```bash
-npm test                 # 54 unit/component tests
-npm run test:e2e         # 24 Playwright flows, including 6 axe scans
+npm test                 # 68 unit/component tests
+npm run test:e2e         # 27 Playwright flows, including 7 axe scans
 npm run typecheck
 npm run lint
 npm run build
@@ -238,8 +263,9 @@ serving states and Phase 4 metadata panels, accession-bound gas-flame filters
 and dynamic facets, telemetry run identity and units, `413` guidance, smoke run
 identity and sentinels, conditional and blocked comparisons, paired-value
 withholding, citation drawers, publication list/detail, provenance resolution
-and 404 handling, mobile viewport behavior, and serious/critical WCAG A/AA axe
-scans.
+and 404 handling, assistant suggested questions and grounded answers, evidence
+and citation panels, provider/fallback status, mobile viewport behavior, and
+serious/critical WCAG A/AA axe scans.
 
 ---
 
@@ -249,7 +275,12 @@ These are documented, not worked around with fabricated data:
 
 - No verified paired-comparison executor. `/compare` returns eligibility and a
   withholding reason; observations and series are empty.
-- No assistant endpoints; Phase 5 is not implemented.
+- No real language-model evaluation has been run. The assistant works
+  deterministically, and the optional provider is exercised only through
+  server-side boundary checks.
+- The assistant retrieval method is lexical (BM25 plus deterministic hashed
+  TF-IDF), not a neural embedding. Documentary evidence is not a numerical
+  source.
 - Rate limiting is process-local and has no shared store.
 - The API is public and read-only with no authentication.
 - `/material/tests` is the implemented route; the broader target contract names
@@ -258,4 +289,5 @@ These are documented, not worked around with fabricated data:
   the documentation.
 
 See `../docs/frontend-readiness.md`, `../docs/phase4-contracts.md`,
-`../docs/comparison-alignment.md`, and `../DEVELOPMENT_ROADMAP.md`.
+`../docs/comparison-alignment.md`, `../docs/phase5-assistant-architecture.md`,
+`../docs/assistant-answer-contract.md`, and `../DEVELOPMENT_ROADMAP.md`.

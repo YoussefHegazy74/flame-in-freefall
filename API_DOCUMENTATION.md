@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **API version:** `v1`
-**Status:** Read-only Phase 1–4 implementation plus the Phase 5 grounded assistant under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, and Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`.
+**Status:** Read-only Phase 1–5 implementation under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`, and the assistant contract, tools, retrieval, evaluation, and security boundaries are recorded in `docs/phase5-assistant-architecture.md` and the linked `docs/assistant-*.md` documents.
 
 The local service is runnable with `uvicorn backend.app:app`. Do not call these endpoints against a production URL until a deployment exists and is listed in the release notes.
 
@@ -31,7 +31,7 @@ It does not expose:
 - computed risk scores, material rankings, or predictions;
 - any value that is not backed by a source row and a citation.
 
-### 1.1 Implementation status (Phase 4)
+### 1.1 Implementation status (Phase 5)
 
 Implemented and tested:
 
@@ -79,10 +79,10 @@ Known differences from the target contract below:
 - Dataset metadata paths use the curated `dataset_id` (for example `psi-10-gas-flame`), not the accession.
 - The material path is `/material/tests`, not `/materials/tests`.
 - Publication records are served from `/publications` and `/publications/{publication_id}`; there is no `/datasets/{dataset_id}/publications` path. Filter `/publications?dataset_id=...` or `?accession=...` instead.
-- Assistant endpoints are **not implemented**.
+- Assistant answers are deterministic by default and require no LLM. An optional OpenAI-compatible provider may only rephrase an already validated deterministic draft; it cannot change numbers, citations, accessions, dataset IDs, or URLs. Its status is reported separately, and a provider failure falls back to the deterministic answer.
 - A blocked or not-comparable decision is returned as HTTP `200` from `/compare`, with the decision in `data.status`.
 - The implemented success envelope always includes `data`, `meta`, `provenance`, and `quality`; `quality.status` uses the five values listed in §3.6.
-- Paired comparison values are deliberately withheld. `/compare` always returns `paired_values.available=false` in Phase 4 because no verified alignment method is registered. The frontend renders a chart only when a future backend returns a complete paired contract.
+- Paired comparison values are deliberately withheld. `/compare` always returns `paired_values.available=false` because no verified alignment method is registered. The frontend renders a chart only when a future backend returns a complete paired contract.
 
 Run the service and tests as described in `docs/api-implementation.md`.
 

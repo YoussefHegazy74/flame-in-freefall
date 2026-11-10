@@ -1,6 +1,6 @@
 # Scripts
 
-**Status:** Phase 1 complete and Phase 2 registries added (2026-11-09). The scripts cover metadata collection, the curated acquisition manifest, the checksum-verifying downloader, exact experimental-table schemas, authentic fixtures, the parse/build/validate/report pipeline, and the comparability/serving registry generator.
+**Status:** Phase 5 complete (2026-11-10). The scripts cover metadata collection, the curated acquisition manifest, the checksum-verifying downloader, exact experimental-table schemas, authentic fixtures, the parse/build/validate/report pipeline, the comparability/serving registry generator, the verified assistant retrieval index, and the assistant evaluation harness.
 
 The metadata and manifest generators use the Python 3 standard library. Parquet, Excel, and test work requires the pinned dependencies in `requirements.txt`.
 
@@ -247,6 +247,57 @@ It never reads raw NASA files, never invents a measurement or comparison, and ne
 `--check` is read-only and exits 1 if either committed registry differs from the generated output. It also fails when the canonical dataset manifest or download manifest is missing.
 
 The committed result is 93 measurements, 60 comparison rules, 9 curated datasets, and 93 measurement states. See `docs/comparability.md`, `docs/serving-states.md`, and `docs/query-contract.md`.
+
+---
+
+## `build_assistant_index.py`
+
+Builds or checks the verified assistant retrieval index at `data/assistant/index.json`.
+
+```bash
+# Build the index from committed documentation and metadata cards.
+.venv/bin/python scripts/build_assistant_index.py
+
+# Fail if the artifact is missing, stale, or does not match current sources.
+.venv/bin/python scripts/build_assistant_index.py --check
+```
+
+The index covers only committed repository documents and metadata cards generated from Phase 1–4 registries. It never indexes raw NASA files, uncommitted files, or arbitrary URLs. Ranking is BM25 plus a deterministic hashed TF-IDF vector; the manifest records source hashes, chunking, ranking configuration, dataset and registry versions, build timestamp, build command, validation command, and index version.
+
+`data/assistant/` is gitignored because the artifact is generated. The runtime rebuilds it in memory when needed, so a clean checkout does not require the file. Rebuild after documentation or registry changes, then regenerate the evaluation report.
+
+See `docs/assistant-retrieval.md`.
+
+---
+
+## `evaluate_assistant.py`
+
+Runs the grounded-assistant golden evaluation and writes `data/reports/assistant_evaluation.json`.
+
+```bash
+# Full deterministic run; writes the committed report.
+.venv/bin/python scripts/evaluate_assistant.py
+
+# Same, plus a non-zero exit when a threshold fails.
+.venv/bin/python scripts/evaluate_assistant.py --check
+```
+
+The default run uses the deterministic provider. It reports contract, citation, claim, numerical, unit, tool-selection, refusal, scope, retrieval, provider-boundary, and latency metrics separately; it does not combine them into one score. The failing-provider and deterministic mock-provider checks exercise the provider boundary and are not a real-model evaluation.
+
+Optional flags:
+
+| Flag | Effect |
+|---|---|
+| `--output PATH` | Write the report somewhere other than the default. |
+| `--questions PATH` | Use a different golden set. |
+| `--retrieval-cases PATH` | Use a different labelled retrieval set. |
+| `--no-retrieval` | Skip retrieval cases and the index. |
+| `--no-provider-checks` | Skip failing-provider and mock-provider checks. |
+| `--use-configured-provider` | Evaluate the environment-configured provider; may call a real model and is not reproducible. |
+
+`FLAME_LOG_LEVEL` defaults to `WARNING` for readable metric output; set it explicitly to `INFO` for per-tool logs.
+
+See `docs/assistant-evaluation.md`.
 
 ---
 

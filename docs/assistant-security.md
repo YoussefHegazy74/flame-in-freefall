@@ -1,6 +1,6 @@
 # Phase 5 — Assistant Security and Trust Boundaries
 
-**Status:** Milestone D
+**Status:** Phase 5 complete (2026-11-10)
 **Scope:** `/api/v1/assistant` and `src/assistant/*`
 
 The assistant is a controlled layer over verified Phase 1–4 artifacts. It is

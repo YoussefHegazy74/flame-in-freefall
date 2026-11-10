@@ -7,7 +7,7 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository now includes **Phase 4: scientific metadata and comparison contracts, integrated into the frontend**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, and a Next.js exploration interface. The backend suite has **297 passing tests**; the frontend has **54 unit/component tests and 24 real-backend Playwright tests**. It does **not** yet contain the grounded assistant, and it does not claim results that have not been computed from source data.
+This repository now includes **Phase 5: a grounded research assistant with deterministic tools, verified retrieval, citations, and evaluation**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, a Next.js exploration interface, and a `/assistant` workspace. The backend suite has **483 passing tests**; the frontend has **68 unit/component tests and 27 real-backend Playwright tests**, including seven axe scans. The assistant is deterministic by default, works with no LLM configured, and completes **36 / 36 golden questions** with 100% citation validity and 100% numerical/unit consistency. A real language model was **not** evaluated; the optional provider is exercised only through deterministic boundary checks. The platform does not claim results that have not been computed from source data.
 
 > Phase numbering note: the delivery brief calls the frontend work Phase 3. The internal development roadmap tracks the same frontend work as Phase 4, after its Phase 3 read-only API. Both refer to the interface described in `frontend/README.md`.
 
@@ -130,7 +130,7 @@ The interface keeps these scientific constraints visible:
 - Comparison status comes from `/compare`; blocked comparisons render reasons and no chart, and conditional comparisons require explicit condition checkboxes.
 - No browser-side aggregation, interpolation, downsampling, unit conversion, risk score, or material ranking is performed.
 
-Frontend setup, architecture, and test commands are in `frontend/README.md`. The interface deliberately does not invent capabilities the API lacks: the assistant and the paired-comparison executor remain unimplemented.
+Frontend setup, architecture, and test commands are in `frontend/README.md`. The interface deliberately does not invent capabilities the API lacks: the assistant is implemented, while the verified paired-comparison executor remains unimplemented.
 
 ---
 
@@ -162,6 +162,42 @@ Phase 4 keeps the scientific constraints explicit:
 - Facets are computed from canonical rows, report qualified-row exclusions, and never merge PSI-10 atm with PSI-159 bar.
 - `/compare` returns `paired_values.available=false` with `conditions_not_verified` or `no_verified_alignment`; the frontend renders a chart only for a future complete, verified contract.
 - The API is public and read-only with no authentication; rate limiting is an abuse control, not authentication.
+
+---
+
+## Phase 5 results (2026-11-10)
+
+Phase 5 adds an optional grounded assistant over the verified Phase 1–4 artifacts. The deterministic pipeline remains authoritative: the assistant selects only allowlisted tools, composes a draft from their results, resolves citations through the Phase 4 registry, and validates every claim before returning an answer.
+
+| Phase 5 artifact | Result |
+|---|---|
+| API paths | 35 under `/api/v1`, including four assistant routes |
+| Assistant tools | 22 deterministic, typed, allowlisted tools |
+| Retrieval | 1,391 chunks from committed documentation and metadata cards; BM25 + deterministic hashed TF-IDF hybrid |
+| Answer contract | Version `1.0.0` with evidence status, claims, citations, supporting data, limitations, tools, and validation |
+| Golden set | 36 questions, version `1.0.1`; 36 / 36 passed |
+| Citation validity | 117 / 117 references resolved |
+| Supported claims | 59 / 59, each linked to a current tool call |
+| Numerical exact match | 30 / 30 checks |
+| Unit consistency | 30 / 30 checks |
+| Correct refusals | 12 / 12 |
+| Retrieval evaluation | 7 labelled cases; precision@5 `0.602381`, recall@5 `1.0`, MRR `0.761905` |
+| Deterministic latency | mean `115.024 ms`, p95 `335.201 ms` (local run, not an SLO) |
+| Backend tests | 483 passing |
+| Frontend tests | 68 unit/component and 27 Playwright tests; 7 axe scans |
+
+The assistant keeps these constraints explicit:
+
+- No LLM is required. The deterministic provider is the default and the fallback.
+- An optional OpenAI-compatible provider may only rephrase an already validated draft. It cannot select tools, see retrieved source instructions, add numbers, add citations, or bypass validation.
+- Every number comes from a deterministic tool. Retrieved documents explain concepts, structure, publications, limitations, and methodology; they are not a numerical source.
+- Missing values are never zero. PSI-10 atm and PSI-159 bar are never converted or merged without an approved rule.
+- Paired values remain unavailable while the alignment registry is empty. The assistant states the withholding reason and produces no paired statistic.
+- Retrieved text is untrusted evidence. Prompt injection cannot change tools, citations, secrets, or filesystem access.
+- The frontend `/assistant` route shows the conversation, evidence panel, citation drawer, suggested questions, validation status, and scientific transparency. Exact serialized values are displayed without frontend rounding.
+- The evaluation harness reports separate metrics, not one aggregate score. Failing-provider and deterministic mock-provider checks are software checks, not a real-model benchmark.
+
+See `docs/assistant-tools.md`, `docs/assistant-retrieval.md`, `docs/assistant-evaluation.md`, and `docs/assistant-security.md`.
 
 ---
 
@@ -217,6 +253,7 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   │   └── download_manifest.csv     Acquisition status, checksums, timestamps
 │   ├── reports/
 │   │   ├── acquisition_report.json   HTTP, size, checksum, and 404 verification
+│   │   ├── assistant_evaluation.json Golden questions, citations, retrieval, provider checks
 │   │   ├── dataset_quality_report.json  Missingness, flags, channels, provenance
 │   │   ├── processing_report.json    Canonical table counts and dataset version
 │   │   └── validation_report.json    Acquisition and canonical gate results
@@ -241,16 +278,24 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── comparison-alignment.md       Paired-comparison eligibility and withholding rules
 │   ├── frontend-readiness.md         What the frontend may rely on and must not infer
 │   ├── known-limitations.md          Consolidated scientific and API limitations
+│   ├── phase5-assistant-architecture.md  Assistant components, trust boundaries, API
+│   ├── assistant-answer-contract.md  Versioned answer schema and validation rules
+│   ├── assistant-tools.md            Deterministic tool catalog and execution limits
+│   ├── assistant-retrieval.md        Verified index, ranking, manifest, and retrieval eval
+│   ├── assistant-evaluation.md       Golden set, metrics, thresholds, and limits
+│   ├── assistant-security.md         Threat model, prompt injection, provider boundary
 │   ├── screenshots/phase3/           Captured views of the running frontend
 │   └── research/
 │       └── source-verification-log.md
 ├── scripts/
+│   ├── build_assistant_index.py      Build or check the verified retrieval index
 │   ├── build_download_manifest.py    Build or check the 72-file selection
 │   ├── build_et_schemas.py           Build or check the 22-table schema registry
 │   ├── build_fixtures.py             Build or check authentic parser fixtures
 │   ├── build_mvp_catalog.py          Reproducible MVP catalog generator
 │   ├── build_phase2_registries.py    Comparability and serving registry generator
 │   ├── download_psi_files.py         Thin wrapper around the acquisition CLI
+│   ├── evaluate_assistant.py         Golden, retrieval, and provider-boundary evaluation
 │   ├── fetch_psi_metadata.py         Standard-library PSI metadata collector
 │   └── README.md                     Script and CLI usage
 ├── src/data_pipeline/
@@ -281,14 +326,28 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── integrity.py                  Canonical-data presence checks
 │   ├── errors.py                     Typed analytics errors and HTTP mapping
 │   └── logging.py                    Structured logger helper
+├── src/assistant/
+│   ├── contract.py                   Versioned answer, claim, and citation models
+│   ├── config.py                     Environment validation and safe fallback
+│   ├── planner.py                    Deterministic topic and tool selection
+│   ├── tools.py                      22 allowlisted deterministic tools
+│   ├── retrieval.py                  Verified index, BM25 + TF-IDF hybrid, manifest
+│   ├── composer.py                   Grounded answer templates and claims
+│   ├── citation_validation.py        Phase 4 citation resolution
+│   ├── claim_validation.py           Number, unit, scope, and forbidden-claim checks
+│   ├── providers.py                  Deterministic and optional rephrase providers
+│   ├── orchestrator.py               End-to-end pipeline and safe fallback
+│   ├── evaluation.py                 Golden, retrieval, and provider metrics
+│   └── conversation.py               Bounded, non-authoritative conversation state
 ├── backend/
 │   ├── app.py                        FastAPI app, routes, strict validation, CORS, cache, rate limit
 │   ├── operations.py                 ETag, conditional requests, and fixed-window rate limiter
 │   └── models.py                     Pydantic envelopes and error models
 ├── frontend/
-│   ├── src/app/                      Next.js App Router pages and route states
-│   ├── src/components/               Layout, scientific, chart, and UI components
+│   ├── src/app/                      Next.js App Router pages and route states, including /assistant
+│   ├── src/components/               Layout, scientific, assistant, chart, and UI components
 │   ├── src/lib/api/                  Centralized typed API client and TanStack hooks
+│   ├── src/lib/assistant.ts          Assistant labels, tones, and exact value serialization
 │   ├── tests/                        Vitest and React Testing Library suites
 │   ├── e2e/                          Playwright critical flows and axe scans
 │   ├── .env.example                  Public frontend environment placeholders
@@ -323,6 +382,13 @@ python3 scripts/build_et_schemas.py --check
 python3 scripts/build_fixtures.py --check
 python -m src.data_pipeline manifest --check
 python3 scripts/build_phase2_registries.py --check
+
+# Build and validate the verified assistant retrieval index (gitignored).
+python3 scripts/build_assistant_index.py
+python3 scripts/build_assistant_index.py --check
+
+# Run the deterministic assistant evaluation (writes data/reports/assistant_evaluation.json).
+python3 scripts/evaluate_assistant.py --check
 
 # Check the 72-file selection and limits without downloading.
 python -m src.data_pipeline download --all --dry-run
@@ -373,6 +439,12 @@ The metadata collector does **not** download experimental data files. The pipeli
 | How are comparisons decided? | `docs/comparability.md` |
 | When may a dataset be served? | `docs/serving-states.md` |
 | How does DuckDB query the canonical tables? | `docs/query-contract.md` |
+| How does the assistant work end to end? | `docs/phase5-assistant-architecture.md` |
+| What can the assistant do, and what can it not do? | `docs/assistant-answer-contract.md` |
+| Which tools may the assistant call? | `docs/assistant-tools.md` |
+| How are documents retrieved and ranked? | `docs/assistant-retrieval.md` |
+| How is the assistant evaluated? | `docs/assistant-evaluation.md` |
+| How is prompt injection handled? | `docs/assistant-security.md` |
 | What can the frontend rely on? | `docs/frontend-readiness.md` |
 | How does the frontend work, and how is it tested? | `frontend/README.md` |
 | What is known to be limited or unavailable? | `docs/known-limitations.md` |
@@ -445,12 +517,22 @@ These rules are binding for code, charts, prose, and assistant answers:
 - Added 27 backend tests and 13 frontend unit/component tests; extended Playwright to 24 flows and axe to 6 scans.
 - Documented the Phase 4 contracts, comparison alignment methodology, cache/rate-limit configuration, and known limitations.
 
-**Next (Phase 5 and later)**
+**Done in Phase 5 (grounded research assistant)**
 
-1. Add the Phase 5 grounded insight layer with citations and a golden-set evaluation.
-2. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
-3. Add Phase 6 CI/CD, deployment, observability, and production operations.
-4. Revisit authentication only if private data or write operations are added.
+- Froze the versioned answer contract with evidence status, structured claims, citations, supporting data, limitations, tool calls, and validation.
+- Added 22 allowlisted deterministic tools over the Phase 1–4 service; no arbitrary SQL, paths, URLs, or code execution.
+- Built a reproducible retrieval index over committed documentation and metadata cards with BM25 + deterministic hashed TF-IDF ranking and a source-hash manifest.
+- Implemented the deterministic planner, composer, citation validator, claim validator, bounded conversation memory, and safe provider fallback.
+- Added an optional OpenAI-compatible provider that may only rephrase a validated deterministic draft; it cannot select tools, add numbers, add citations, or bypass validation.
+- Added the `/assistant` frontend with conversation, evidence panel, citation drawer, suggested questions, provider/fallback status, and scientific transparency.
+- Added 36 golden questions, 7 labelled retrieval cases, adversarial and prompt-injection tests, provider-failure tests, and an evaluation report with separate metrics.
+- Verified 483 backend tests, 68 frontend unit/component tests, 27 Playwright tests, 7 axe scans, and a production build.
+
+**Next (Phase 6 and later)**
+
+1. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
+2. Add Phase 6 CI/CD, deployment, observability, and production operations.
+3. Revisit authentication only if private data or write operations are added.
 
 The full sequence and exit gates are in `DEVELOPMENT_ROADMAP.md`.
 

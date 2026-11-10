@@ -2,7 +2,7 @@
 
 **Project:** Flame in Freefall
 **Team:** AFAQ
-**Status:** Implemented in Phase 4. The frontend described here exists in `frontend/`; this document remains the backend contract and state-handling reference.
+**Status:** Implemented through Phase 5. The frontend described here exists in `frontend/`; this document remains the backend contract and state-handling reference. The Phase 5 assistant is documented separately in `docs/phase5-assistant-architecture.md` and `docs/assistant-answer-contract.md`.
 **API:** `v1`, read-only, FastAPI
 
 This document tells the frontend team what the API guarantees, which states must be visible, and what must not be inferred in the browser. See `frontend/README.md` for the implemented architecture, routes, and test commands.
@@ -31,6 +31,7 @@ This document tells the frontend team what the API guarantees, which states must
 | Publications | `GET /api/v1/publications`, `/publications/{publication_id}` |
 | Gas-flame facets | `GET /api/v1/gas-flame/facets` |
 | Provenance | `GET /api/v1/provenance` |
+| Grounded assistant | `GET /api/v1/assistant/status`, `/assistant/suggestions`, `/assistant/tools`; `POST /api/v1/assistant/query` |
 
 Every success response has `data`, `meta`, `provenance`, and `quality`. Every list has `meta.page`. Every series has a bounded time range and a point cap. Dataset file, field, limitation, citation, publication, facet, and comparison-integrity contracts are documented in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`.
 
@@ -216,7 +217,10 @@ Rate limiting:
 
 - There is no authentication. The API is public and read-only.
 - Rate limiting exists but is not an authorization mechanism.
-- There is no assistant endpoint; Phase 5 is not implemented.
+- The assistant endpoints exist under `/assistant`, but the assistant is not a general chatbot. It answers only from allowlisted deterministic tools and verified retrieval, and it returns an explicit refusal or insufficient-evidence state when the data cannot support a claim.
+- The frontend must not call a language model directly. The assistant is deterministic by default; the optional provider is server-side and may only rephrase a validated draft.
+- Assistant values must be rendered with the backend's exact serialization. Do not round, convert, or reformat a scientific value in the browser.
+- Retrieved documents are context, not a numerical source. A citation ID must resolve through `/citations/{citation_id}`; the frontend must not construct or infer one.
 - There is no verified paired-comparison executor. `/compare` may return eligibility, but `paired_values.available` is currently false.
 - There is no full public-file inventory in the file browser. It exposes the curated manifest plus documented known-unavailable files, with inventory counts for context.
 - The material path is `/material/tests`, not `/materials/tests`.
@@ -251,6 +255,7 @@ This section started as a handoff proposal. It is retained for contract context;
 | `/publications` | Verified publication list with filters. | `/publications` |
 | `/publications/[publication_id]` | Publication detail with source references. | `/publications/{publication_id}` |
 | `/about` | Comparability, serving, limitations, sources. | Static docs plus registry metadata |
+| `/assistant` | Grounded conversation, evidence and citation panels, suggested questions, validation and provider status. | `/assistant/status`, `/assistant/suggestions`, `/assistant/tools`, `POST /assistant/query`, `/citations/{citation_id}` |
 
 ### 8.2 Components
 

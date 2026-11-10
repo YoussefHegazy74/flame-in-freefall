@@ -32,7 +32,7 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 | 2 | Scientific validation and canonical data | **Complete** (2026-11-09) | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
 | 3 | Read-only API | **Complete** (2026-11-10) | OpenAPI contract, provenance, pagination, cache, rate limiting, and contract tests pass |
 | 4 | Frontend exploration experience | **Complete** (2026-11-10) | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
-| 5 | Grounded insight layer | Planned (next) | Golden-set evaluation passes; numeric claims are 100% cited |
+| 5 | Grounded insight layer | **Complete** (2026-11-10) | Golden-set evaluation passes; numeric claims are 100% cited |
 | 6 | Hardening and deployment | Planned | CI/CD, observability, security, backups, and runbook verified |
 | 7 | Future extensions | Deferred | Separate decision record and validation plan |
 
@@ -441,16 +441,16 @@ Add an assistant that answers questions from verified data and documents, with c
 
 ### 8.2 Workstreams
 
-- [ ] Build a retrieval index over dataset cards, data dictionary, limitations, and publication metadata.
-- [ ] Implement deterministic tools for catalog, tests, telemetry, smoke, comparison, and provenance.
-- [ ] Implement a planner that selects tools and never generates raw SQL.
-- [ ] Implement the answer contract (`answer`, `evidence_status`, `citations`, `limitations`, `method`).
-- [ ] Implement a citation validator.
-- [ ] Implement refusal behavior for `no_public_files` datasets and out-of-scope questions, and explicit summary-table limits for `experimental_table_only` datasets.
-- [ ] Implement prompt-injection defenses for free-text comments.
-- [ ] Implement a golden evaluation set.
-- [ ] Implement a deterministic fallback when the LLM is unavailable.
-- [ ] Document the provider interface and environment variables.
+- [x] Build a retrieval index over dataset cards, data dictionary, limitations, and publication metadata.
+- [x] Implement deterministic tools for catalog, tests, telemetry, smoke, comparison, and provenance.
+- [x] Implement a planner that selects tools and never generates raw SQL.
+- [x] Implement the answer contract (`answer`, `evidence_status`, `citations`, `limitations`, `method`).
+- [x] Implement a citation validator.
+- [x] Implement refusal behavior for `no_public_files` datasets and out-of-scope questions, and explicit summary-table limits for `experimental_table_only` datasets.
+- [x] Implement prompt-injection defenses for free-text comments.
+- [x] Implement a golden evaluation set.
+- [x] Implement a deterministic fallback when the LLM is unavailable.
+- [x] Document the provider interface and environment variables.
 
 ### 8.3 Acceptance criteria
 
@@ -486,6 +486,41 @@ Phase 5 can build on the Phase 4 contracts without changing them. Recommended or
 6. **Add refusal tests for the known traps.** Missing values are not zero; PSI-10 atm is not PSI-159 bar; PSI-98's two telemetry files are unavailable; `experimental_table_only` answers are limited to the summary table.
 7. **Implement the deterministic fallback early.** Search, catalog answers, and citation lookup must work with the LLM disabled.
 8. **Keep the paired-comparison executor as a separate scientific milestone.** A verified alignment method with exact keys, value fields, and units must be committed before any series is computed. Until then, Phase 5 answers cite the withholding reason.
+
+### 8.6 Phase 5 completion record (2026-11-10)
+
+Phase 5 is complete. The assistant is deterministic by default, works with no LLM configured, and fails closed to deterministic mode when an optional provider is unavailable.
+
+| Item | Verified result |
+|---|---|
+| Answer contract | `1.0.0` with evidence status, answer type, claims, citations, supporting data, limitations, tool audit, and validation |
+| Deterministic tools | 22 typed, allowlisted tools over the Phase 1–4 service; no SQL, filesystem, URL, or code-execution tool |
+| Retrieval | 1,391 chunks from committed documentation and metadata cards; BM25 + deterministic hashed TF-IDF hybrid; source-hash manifest |
+| API paths | 35 under `/api/v1`; assistant `status`, `suggestions`, `tools`, and `query` |
+| Golden questions | 36 questions, version `1.0.1`; 36 / 36 passed |
+| Citation validity | 117 / 117 references resolved through Phase 4 citation endpoints |
+| Supported claims | 59 / 59, each linked to a current tool call |
+| Numerical exact match | 30 / 30 checks |
+| Unit consistency | 30 / 30 checks |
+| Correct refusals | 12 / 12 |
+| Tool-selection accuracy | 35 / 35 |
+| Retrieval evaluation | 7 labelled cases; precision@5 `0.602381`, recall@5 `1.0`, MRR `0.761905` |
+| Deterministic latency | mean `115.024 ms`, p95 `335.201 ms` (local run; not an SLO) |
+| Backend tests | 483 passing |
+| Frontend tests | 68 unit/component tests; 27 Playwright tests, including 7 axe scans |
+| Production build | Passes with the `/assistant` route |
+
+Milestones are committed in order: contracts (`12e620f`), tools (`d1b5f21`), retrieval (`0f2d21c`), orchestration and API (`5f7e66a`), frontend (`7fbaf4a`), evaluation (`e794245`), and documentation/release (Milestone G).
+
+The assistant preserves the Phase 1–4 limits:
+
+- A real language model was **not** evaluated. The optional provider is exercised only through deterministic stubs; a real-model run must be reported separately.
+- The paired-alignment registry remains empty, so paired values stay unavailable. The assistant states the withholding reason and computes no paired statistic.
+- PSI-159 `pressure_initial_atm` and PSI-10 `pressure_approx_bar` have zero canonical values. They are never filled with zeros or silently converted.
+- The two PSI-98 telemetry/sensor workbooks remain HTTP 404. They are shown as unavailable, never as downloadable.
+- Retrieved documents are evidence, not instructions. They cannot select tools, create numbers or citations, or reach the optional provider as instructions.
+
+The Phase 5 architecture, answer contract, tool catalog, retrieval design, evaluation method, and security model are documented in `docs/phase5-assistant-architecture.md`, `docs/assistant-answer-contract.md`, `docs/assistant-tools.md`, `docs/assistant-retrieval.md`, `docs/assistant-evaluation.md`, and `docs/assistant-security.md`.
 
 ---
 
@@ -650,10 +685,12 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 ### Milestone 5 — Insight
 
-- [ ] Golden set passes.
-- [ ] Numeric citation coverage 100%.
-- [ ] Refusal and missingness behavior correct.
-- [ ] Deterministic fallback works.
+- [x] Golden set passes: 36 / 36 questions, version `1.0.1`.
+- [x] Numeric citation coverage 100%: 117 / 117 citation references valid, 30 / 30 numerical and unit checks.
+- [x] Refusal and missingness behavior correct: 12 / 12 refusals; missing values are not zero; unit and paired-value traps are refused.
+- [x] Deterministic fallback works: no LLM required; failing providers fall back to the validated deterministic answer.
+- [x] Prompt-injection and adversarial questions pass without changing tool behavior or exposing secrets.
+- [x] `/assistant` frontend, evidence panel, citation drawer, suggested questions, and accessibility checks pass.
 
 ### Milestone 6 — Deployment
 
@@ -707,13 +744,10 @@ A feature is done when:
 
 ## 15. Immediate next actions
 
-1. Build the Phase 5 golden question set and freeze the answer/citation contract.
-2. Index only verified artifacts: dataset cards, data dictionary, limitations, publications, and citation records.
-3. Wrap existing service methods as deterministic assistant tools; do not add raw SQL or filesystem access.
-4. Implement citation validation through the Phase 4 citation endpoints.
-5. Implement refusal behavior for missing values, unit mismatches, unavailable files, and unverified comparisons.
-6. Add the deterministic fallback and run the golden-set evaluation with the LLM disabled first.
-7. Treat the paired-comparison executor as a separate scientific milestone with its own alignment method and validation.
-8. Add Phase 6 CI/CD, deployment, observability, and production operations after Phase 5 passes.
+1. Run the Phase 6 CI/CD, deployment, observability, and production-operations work.
+2. Record a real-model evaluation only when credentials are available; report it separately from the deterministic software checks, with model, provider, date, cost, and configuration.
+3. Treat the paired-comparison executor as a separate scientific milestone with its own committed alignment method, exact keys, value fields, units, and validation.
+4. Re-run the golden evaluation and rebuild the retrieval index whenever the canonical dataset version or assistant documentation changes.
+5. Revisit authentication only if private data or write operations are added; the public API remains read-only and rate limiting is not authentication.
 
 The order matters: the gas-flame tables establish the test-level schema; the telemetry and smoke tables establish the time-series schema; the material matrices establish the context schema. The interface and assistant are built only after these contracts exist, so the data never has to be forced into the UI or the answer.

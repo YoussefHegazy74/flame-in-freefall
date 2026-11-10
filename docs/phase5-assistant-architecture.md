@@ -3,12 +3,12 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Contract version:** 1.0.0
-**Status:** Milestone D (orchestration, validation, and API)
+**Status:** Phase 5 complete (2026-11-10)
 
-This document defines the Phase 5 architecture before any model provider is
-selected. The assistant is a controlled layer over the verified Phase 1–4
-artifacts. It is not a new source of truth, it does not replace the analytics
-service, and it does not become authoritative when a model is configured.
+This document defines the implemented Phase 5 architecture. The assistant is a
+controlled layer over the verified Phase 1–4 artifacts. It is not a new source
+of truth, it does not replace the analytics service, and it does not become
+authoritative when a model is configured.
 
 ---
 
@@ -319,40 +319,56 @@ See `docs/assistant-security.md` for the threat model and adversarial tests.
 - **G — Documentation and release:** docs updates, review, commit, push,
   remote SHA verification.
 
+All seven milestones are implemented. Milestone commits: contracts
+`12e620f`, tools `d1b5f21`, retrieval `0f2d21c`, orchestration and API
+`5f7e66a`, frontend `7fbaf4a`, evaluation `e794245`, and documentation/release
+(Milestone G).
+
 ---
 
-## 11. Known limitations at Milestone D
+## 11. Known limitations after Phase 5
 
-- No real LLM credentials are available. Real-model evaluation will be
-  reported separately from deterministic/mock-provider tests.
-- The paired-alignment registry is empty. Paired values remain unavailable.
+- No real LLM credentials were available. No hosted model was evaluated;
+  real-model results must be reported separately from deterministic and
+  mock-provider software checks.
+- The paired-alignment registry is empty. Paired values remain unavailable,
+  and the assistant computes no paired statistic.
 - PSI-159 `pressure_initial_atm` and PSI-10 `pressure_approx_bar` have zero
-  canonical values.
-- The two PSI-98 telemetry/sensor workbooks return HTTP 404.
+  canonical values. The assistant reports the absence; it never substitutes
+  zero or converts across accessions.
+- The two PSI-98 telemetry/sensor workbooks return HTTP 404 and are never
+  presented as downloadable.
+- Retrieval is lexical (BM25 plus deterministic hashed TF-IDF), not a neural
+  semantic embedding. The seven labelled retrieval cases cannot establish
+  general retrieval quality.
 - The assistant is not scientifically validated merely because its software
   tests pass. Evaluation is reported per metric, with failure categories and
   known limitations.
-- The frontend `/assistant` route and the formal evaluation harness are
-  Milestones E and F; Milestone D ends at the validated backend API.
+- Repository documents and publication cards are not Phase 4 citations.
+  Documentary evidence is context, not a numerical source.
 
 ---
 
-## 12. Milestone D verification
+## 12. Phase 5 verification
 
 ```bash
 .venv/bin/python -m pytest tests/assistant -q
-.venv/bin/python -m pytest tests/test_api.py tests/test_assistant_api.py \
-  tests/test_phase4_api.py -q
 .venv/bin/python -m pytest -q
+.venv/bin/python scripts/build_assistant_index.py --check
+.venv/bin/python scripts/evaluate_assistant.py --check
 ```
 
-At Milestone D:
+Verified Phase 5 result:
 
-- `tests/assistant`: **170 passed**;
-- full backend suite: **478 passed, 1 warning**;
-- all 36 golden questions pass end to end with expected evidence status,
-  expected answer type, expected limitation codes, required tools, required
-  citation types, resolved citations, grounded numbers, and no forbidden
-  claims;
+- `tests/assistant`: **175 passed**;
+- full backend suite: **483 passed, 1 warning**;
+- 36 / 36 golden questions pass with expected evidence status, answer type,
+  limitation codes, tools, citation types, resolved citations, grounded
+  numbers, and no forbidden claims;
+- 117 / 117 citation references valid, 59 / 59 claims supported, 30 / 30
+  numerical and 30 / 30 unit checks, 35 / 35 tool-selection checks, and
+  12 / 12 correct refusals;
+- 68 frontend unit/component tests, 27 Playwright tests, 7 axe scans, and a
+  passing production build with `/assistant`;
 - provider tests use mocked HTTP transports or deterministic stubs, not a
   hosted model.
