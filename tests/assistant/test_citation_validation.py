@@ -35,6 +35,7 @@ def test_resolves_a_real_file_citation(service):
     assert reference.sha256
 
 
+@pytest.mark.integration
 def test_resolves_a_real_row_citation(service):
     citation_id = _row_citation_id(service)
     result = validate_citations([citation_id], service)
@@ -104,6 +105,7 @@ def test_duplicate_citations_are_deduplicated(service):
     assert result.warnings
 
 
+@pytest.mark.integration
 def test_row_citation_prefix_mismatch_is_rejected(service):
     citation_id = _row_citation_id(service)
     result = validate_citations([citation_id.replace("cit_r_", "cit_f_")], service)

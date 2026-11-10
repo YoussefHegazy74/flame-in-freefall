@@ -111,6 +111,7 @@ def test_require_fails_closed_for_a_missing_interim_table(tmp_path):
         _require(missing)
 
 
+@pytest.mark.integration
 def test_dataset_manifest_and_processing_report_are_consistent():
     dataset = json.loads(DATASET_MANIFEST_JSON.read_text(encoding="utf-8"))
     report = json.loads(PROCESSING_REPORT_JSON.read_text(encoding="utf-8"))

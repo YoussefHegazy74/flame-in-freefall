@@ -92,6 +92,7 @@ def test_source_lookup_fails_closed_for_a_missing_file():
         _source(entry, {})
 
 
+@pytest.mark.integration
 def test_parse_report_describes_every_selected_source_and_output():
     from src.data_pipeline.pipeline import PARSE_REPORT_JSON
 

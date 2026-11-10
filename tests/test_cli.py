@@ -157,7 +157,11 @@ def test_validate_command_pass_and_fail(monkeypatch, capsys):
     assert cli.main(["validate"]) == 1
 
 
-def test_report_command_writes_reports(monkeypatch):
+def test_report_command_writes_reports(monkeypatch, tmp_path):
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    (processed / "dummy.parquet").write_bytes(b"")
+    monkeypatch.setattr(cli, "PROCESSED_DIR", processed)
     monkeypatch.setattr(cli, "write_schema_report", lambda path: None)
     monkeypatch.setattr(
         cli,
