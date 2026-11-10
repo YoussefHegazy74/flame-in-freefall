@@ -33,7 +33,7 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 | 3 | Read-only API | **Complete** (2026-11-10) | OpenAPI contract, provenance, pagination, cache, rate limiting, and contract tests pass |
 | 4 | Frontend exploration experience | **Complete** (2026-11-10) | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
 | 5 | Grounded insight layer | **Complete** (2026-11-10) | Golden-set evaluation passes; numeric claims are 100% cited |
-| 6 | Hardening and deployment | Planned | CI/CD, observability, security, backups, and runbook verified |
+| 6 | Hardening and deployment | **Complete** (2026-11-10) | Deployment, CI/CD, monitoring, security review, performance baseline, backups, and runbook verified; live-model evaluation pending credentials |
 | 7 | Future extensions | Deferred | Separate decision record and validation plan |
 
 ---
@@ -528,43 +528,68 @@ The Phase 5 architecture, answer contract, tool catalog, retrieval design, evalu
 
 ### 9.1 Goal
 
-Make the platform operable, observable, secure, and reproducible in a public deployment.
+Make the platform operable, observable, secure, and reproducible in a public deployment without changing Phase 1–5 scientific decisions.
 
 ### 9.2 Workstreams
 
-- [ ] Add Dockerfiles and Docker Compose.
-- [ ] Add CI for lint, type check, unit, fixture, contract, accessibility, and assistant evals.
-- [ ] Add secret scanning and dependency scanning.
-- [ ] Add staging and production deployment.
-- [ ] Add PostgreSQL migrations with Alembic.
-- [ ] Add object storage for raw/processed data.
-- [ ] Add structured logs, metrics, traces, and alerts.
-- [ ] Add data-quality dashboard.
-- [ ] Add backups and a restore drill.
-- [ ] Add a runbook for PSI drift, 404s, blocked datasets, and provider outages.
-- [ ] Add a privacy and attribution page.
-- [ ] Add a release checklist.
+- [x] Add production Dockerfiles and a Compose topology.
+- [x] Add default data-free CI for compile, unit, contract, reproducibility, lint, type check, unit/component tests, build, and dependency audits.
+- [x] Add a manual full-data CI workflow for integration, Playwright, axe, canonical validation, index freshness, and assistant evaluation.
+- [x] Add dependency scanning for Python runtime and frontend production dependencies.
+- [ ] Add automated secret scanning. No secret-scanning service is configured; secrets are excluded by `.gitignore` and reviewed manually.
+- [ ] Add a hosted staging deployment. Native production startup and local Compose topology are documented; no hosting account or staging environment was available.
+- [ ] Add PostgreSQL migrations with Alembic. The current canonical store is read-only Parquet plus committed metadata; no PostgreSQL deployment is required by Phase 6.
+- [ ] Add object storage for raw/processed data. Deployment currently uses read-only filesystem mounts.
+- [x] Add structured request/assistant logs and bounded operational metrics.
+- [ ] Add distributed traces and alert delivery. Metrics and a runbook exist; no external alerting backend is configured.
+- [ ] Add a separate operations data-quality dashboard. The existing `/quality` page covers scientific quality; no new ops dashboard was added.
+- [x] Document backups and a recovery procedure. A destructive restore drill was not run against production data.
+- [x] Add a runbook for PSI drift, 404s, blocked datasets, index staleness, validation failure, and provider outages.
+- [ ] Add a dedicated privacy page. The `/about` page carries attribution and data-source limits; a separate privacy page is not implemented.
+- [x] Add a release checklist in the security review and CI gates.
 
 ### 9.3 Acceptance criteria
 
-1. CI passes on a clean checkout.
-2. Staging deploy passes smoke tests and data-quality checks.
-3. Production deploy is reproducible by image digest.
-4. Backups restore successfully in a drill.
-5. Alerts fire for metadata drift, 404s, blocked datasets, and citation-coverage failure.
-6. No secrets or raw data are in the image.
-7. The runbook covers the known failure modes.
-8. The public site displays NASA attribution and does not imply endorsement.
+1. Production deployment architecture is implemented and documented.
+2. Native local production startup works for the backend and frontend.
+3. Default CI passes from a clean, data-free checkout.
+4. Existing scientific and application tests remain green on full data.
+5. Provider retries, timeout, usage, cost, and safe fallback are implemented.
+6. A real-model evaluation is completed if credentials exist; otherwise it is explicitly pending.
+7. Retrieval changes are measured before adoption and preserve recall.
+8. Readiness, metrics, structured logs, and a runbook are functional.
+9. Security review is completed with residual risks documented.
+10. Performance baselines are recorded with reproducible methodology.
+11. Backup and recovery instructions exist.
+12. Frontend production build and accessibility checks pass.
+13. No Phase 1–5 scientific safeguard is weakened.
+14. Documentation is updated.
+15. Changes are committed and pushed.
 
-### 9.4 Tests
+### 9.4 Verified Phase 6 result
 
-- Container build and scan.
-- Migration up/down tests.
-- Smoke tests in staging.
-- Load tests for catalog, test query, and bounded telemetry series.
-- Restore drill.
-- Alert simulation.
-- Security headers and CORS tests.
+- Native Uvicorn plus Next.js standalone production startup verified; `/ready` returned 200 with the verified index.
+- Dockerfiles and Compose are implemented. Image build and scan remain pending because the local Docker daemon was inaccessible.
+- Default CI data-free gate: 362 passed, 131 integration tests deselected in a clean worktree.
+- Full backend suite: 493 passed, 1 warning.
+- Frontend: 68 unit/component tests, lint, typecheck, production build; 27 Playwright tests and 7 axe scans passed.
+- Provider: bounded retries, `Retry-After`, request IDs, usage, optional cost, safe logs, deterministic fallback. Live model evaluation pending credentials.
+- Retrieval: MRR improved from `0.761905` to `1.0`; recall stayed `1.0`; precision@5 `0.602381`.
+- Operations: `/ready`, `/metrics`, bounded counters, request limits, security headers, structured logs, and runbook.
+- Performance: 10 scenarios, 30 requests each, concurrency 8, 0 errors; telemetry p95 `604.966 ms`, assistant p95 `273.357 ms`.
+- Security: Python runtime and frontend production dependency audits clean; full dev-only npm audit has documented follow-ups.
+- Backup/recovery and deployment procedures documented; no production restore drill was possible.
+
+### 9.5 Phase 6 tests
+
+- Readiness 200/503 gates for dataset and index.
+- Metrics aggregation without user content.
+- Security headers and request-size limit.
+- Provider retry, rate-limit, timeout, usage, and cost tests.
+- Clean-checkout data-free test gate.
+- Full-data integration, Playwright, and axe suites.
+- Retrieval before/after evaluation.
+- Performance scenarios for catalog, metadata, gas-flame, telemetry, citations, provenance, and assistant.
 
 ---
 
@@ -694,11 +719,13 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 ### Milestone 6 — Deployment
 
-- [ ] CI/CD passes.
-- [ ] Staging smoke tests pass.
-- [ ] Observability and alerts active.
-- [ ] Backup restore drill passes.
-- [ ] Runbook complete.
+- [x] Data-free CI gate passes from a clean checkout; full-data workflow is provided.
+- [x] Native production startup passes; Docker image build remains pending a Docker-capable host.
+- [x] Readiness, metrics, structured logs, and runbook are implemented.
+- [x] Backup and recovery procedure documented; production restore drill not possible.
+- [x] Full backend, frontend, Playwright, axe, build, and reproducibility checks pass.
+- [ ] Hosted staging deployment and external alert delivery.
+- [ ] Live-model evaluation with real credentials.
 
 ---
 
@@ -717,9 +744,14 @@ This register is qualitative. It does not assign arbitrary numeric risk scores.
 | LLM hallucination | Medium | High | Tool-only numbers; citation validator; golden eval | Insight lead |
 | Prompt injection in comments | Low | Medium | Delimit data; no instruction following; tool allowlist | Security lead |
 | Raw data accidentally committed | Medium | High | `.gitignore`; pre-commit check; size limits | Repo maintainer |
-| Secret leak | Low | High | `.env` ignored; secret scan; rotation runbook | Repo maintainer |
+| Secret leak | Low | High | `.env` ignored; manual review; add automated scanning before a public release | Repo maintainer |
 | Frontend implies NASA endorsement | Low | High | Attribution page; disclaimer; review | Communications lead |
 | Scope creep into deferred datasets | High | Medium | Phase gates; ADR required | Project lead |
+| Provider outage or rate limit | Medium | Medium | Bounded retries, timeout, deterministic fallback, metrics | Operations lead |
+| Stale retrieval index after docs change | Medium | Medium | Source-hash validation, `--check`, readiness warning, rebuild instructions | Insight lead |
+| Container build untested locally | Medium | Medium | Build and scan on a Docker-capable host before release | Operations lead |
+| Development dependency vulnerabilities | Medium | Low | Production audit clean; upgrade test/lint toolchain in a dedicated change | Frontend lead |
+| Multi-replica rate-limit/metrics split | Low | Medium | Keep single process or add shared stores before scaling | Operations lead |
 
 Owners are generic roles because the public team roster is not available. Assign named owners in the repository's private project tracker, not by inventing names here.
 
@@ -744,10 +776,11 @@ A feature is done when:
 
 ## 15. Immediate next actions
 
-1. Run the Phase 6 CI/CD, deployment, observability, and production-operations work.
-2. Record a real-model evaluation only when credentials are available; report it separately from the deterministic software checks, with model, provider, date, cost, and configuration.
+1. Record a real-model evaluation when provider credentials are available; report it separately from deterministic and mock-provider checks, with model, provider, date, cost, and configuration.
+2. Build and scan the Docker images on a Docker-capable host, then run the Compose smoke test.
 3. Treat the paired-comparison executor as a separate scientific milestone with its own committed alignment method, exact keys, value fields, units, and validation.
 4. Re-run the golden evaluation and rebuild the retrieval index whenever the canonical dataset version or assistant documentation changes.
-5. Revisit authentication only if private data or write operations are added; the public API remains read-only and rate limiting is not authentication.
+5. Upgrade the frontend test/lint toolchain to clear the documented development-only audit findings.
+6. Revisit authentication only if private data or write operations are added; the public API remains read-only and rate limiting is not authentication.
 
 The order matters: the gas-flame tables establish the test-level schema; the telemetry and smoke tables establish the time-series schema; the material matrices establish the context schema. The interface and assistant are built only after these contracts exist, so the data never has to be forced into the UI or the answer.

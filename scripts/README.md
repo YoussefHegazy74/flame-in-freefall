@@ -1,6 +1,6 @@
 # Scripts
 
-**Status:** Phase 5 complete (2026-11-10). The scripts cover metadata collection, the curated acquisition manifest, the checksum-verifying downloader, exact experimental-table schemas, authentic fixtures, the parse/build/validate/report pipeline, the comparability/serving registry generator, the verified assistant retrieval index, and the assistant evaluation harness.
+**Status:** Phase 6 complete (2026-11-10). The scripts cover metadata collection, the curated acquisition manifest, the checksum-verifying downloader, exact experimental-table schemas, authentic fixtures, the parse/build/validate/report pipeline, the comparability/serving registry generator, the verified assistant retrieval index, the assistant evaluation harness, reproducibility gates, and the API performance benchmark.
 
 The metadata and manifest generators use the Python 3 standard library. Parquet, Excel, and test work requires the pinned dependencies in `requirements.txt`.
 
@@ -298,6 +298,43 @@ Optional flags:
 `FLAME_LOG_LEVEL` defaults to `WARNING` for readable metric output; set it explicitly to `INFO` for per-tool logs.
 
 See `docs/assistant-evaluation.md`.
+
+---
+
+## `verify_reproducibility.sh`
+
+Runs the shared local/CI reproducibility checks.
+
+```bash
+# Data-free: committed manifest, download manifest, MVP catalog, JSON parse.
+PYTHON=.venv/bin/python bash scripts/verify_reproducibility.sh
+
+# Full data: also schemas, fixtures, Phase 2 registries, canonical validation,
+# retrieval index freshness, and deterministic assistant evaluation.
+PYTHON=.venv/bin/python bash scripts/verify_reproducibility.sh --with-data
+```
+
+The default mode works in an ordinary clean checkout. `--with-data` requires
+raw files, canonical Parquet, and a current retrieval index. It does not
+download the full NASA archive.
+
+---
+
+## `benchmark_api.py`
+
+Runs a bounded local performance baseline against an already-running API.
+
+```bash
+.venv/bin/python scripts/benchmark_api.py \
+  --iterations 30 \
+  --concurrency 8 \
+  --server-pid "$(pgrep -f 'uvicorn backend.app:app' | head -1)"
+```
+
+It discovers telemetry and citation identifiers from the API, exercises ten
+scenarios, reports mean/p50/p95/max latency and error counts, and writes
+`data/reports/phase6_performance.json`. It does not download raw data or change
+scientific query semantics.
 
 ---
 

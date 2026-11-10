@@ -168,11 +168,13 @@ retained set.
 ### 4.7 Provider abstraction (`src/assistant/providers.py`, Milestone D)
 
 `deterministic` is the default and the fallback. `openai_compatible` is
-optional and is used only to rephrase a validated draft. Provider failures
-(timeout, HTTP error, invalid JSON, missing choices, oversized response,
-unsafe output) return a deterministic answer with `fallback_mode=true` and a
-safe `fallback_reason`. Secrets never appear in status, logs, errors, or
-answers.
+optional and is used only to rephrase a validated draft. Phase 6 adds bounded
+retries (`FLAME_LLM_MAX_RETRIES`), exponential backoff, `Retry-After` handling,
+request-ID propagation, token-usage parsing, and optional cost estimation.
+Provider failures (timeout, HTTP error, invalid JSON, missing choices,
+oversized response, unsafe output) return a deterministic answer with
+`fallback_mode=true` and a safe `fallback_reason`. Secrets never appear in
+status, logs, errors, or answers.
 
 ### 4.8 Validation (`src/assistant/citation_validation.py`,
 `src/assistant/claim_validation.py`, Milestone D)
@@ -358,10 +360,10 @@ All seven milestones are implemented. Milestone commits: contracts
 .venv/bin/python scripts/evaluate_assistant.py --check
 ```
 
-Verified Phase 5 result:
+Current verification (Phase 6):
 
-- `tests/assistant`: **175 passed**;
-- full backend suite: **483 passed, 1 warning**;
+- `tests/assistant`: **189 passed**;
+- full backend suite: **493 passed, 1 warning**;
 - 36 / 36 golden questions pass with expected evidence status, answer type,
   limitation codes, tools, citation types, resolved citations, grounded
   numbers, and no forbidden claims;

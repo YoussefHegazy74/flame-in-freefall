@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **API version:** `v1`
-**Status:** Read-only Phase 1–5 implementation under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`, and the assistant contract, tools, retrieval, evaluation, and security boundaries are recorded in `docs/phase5-assistant-architecture.md` and the linked `docs/assistant-*.md` documents.
+**Status:** Read-only Phase 1–6 implementation under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`, the assistant contract, tools, retrieval, evaluation, and security boundaries are recorded in `docs/phase5-assistant-architecture.md` and the linked `docs/assistant-*.md` documents, and deployment, operations, and performance are recorded in `docs/phase6-*.md`.
 
 The local service is runnable with `uvicorn backend.app:app`. Do not call these endpoints against a production URL until a deployment exists and is listed in the release notes.
 
@@ -37,7 +37,9 @@ Implemented and tested:
 
 | Implemented path | Purpose |
 |---|---|
-| `GET /api/v1/health` | Liveness, dataset version, table readiness. |
+| `GET /api/v1/health` | Liveness, dataset version, table readiness, assistant mode. |
+| `GET /api/v1/ready` | Deployment readiness; HTTP 200 when required dataset/index checks pass, 503 otherwise. |
+| `GET /api/v1/metrics` | Bounded aggregate request, latency, rate-limit, assistant, tool, and token counters. |
 | `GET /api/v1/meta` | Registry snapshot, canonical counts, dataset and measurement counts. |
 | `GET /api/v1/investigations` | NASA PSI catalog. |
 | `GET /api/v1/investigations/{accession}` | One investigation and curated datasets. |
@@ -310,7 +312,7 @@ Pagination is offset-based in the MVP. Cursor pagination may be added for teleme
 
 ### 3.10 Caching
 
-Caching is enabled by default and is process-local. It applies to successful `GET` JSON responses except `/health`:
+Caching is enabled by default and is process-local. It applies to successful `GET` JSON responses except `/health`, `/ready`, and `/metrics`:
 
 - `ETag` is a strong hash of a stable representation of the response body. `meta.request_id` and `meta.generated_at` are removed before hashing so repeated requests produce the same validator.
 - `Cache-Control: public, max-age=60, must-revalidate` by default.
@@ -350,6 +352,10 @@ Configuration:
 | `FLAME_RATE_LIMIT_REQUESTS` | `600` | Allowed requests per window per client. |
 | `FLAME_RATE_LIMIT_WINDOW_SECONDS` | `60` | Fixed window length in seconds. |
 | `FLAME_TRUST_PROXY` | `false` | Trust the first `X-Forwarded-For` value. |
+| `FLAME_MAX_REQUEST_BYTES` | `1048576` | Declared request-body limit; oversized requests return `413 request_too_large`. |
+| `FLAME_METRICS_ENABLED` | `true` | Enable aggregate metrics. |
+| `FLAME_READINESS_REQUIRE_FULL_DATASET` | `true` | Require every canonical table for `/ready`. |
+| `FLAME_READINESS_REQUIRE_ASSISTANT_INDEX` | `true` | Require a usable retrieval index for `/ready`. |
 
 Authentication decision: the public MVP has no authentication or user accounts. All data is public NASA PSI material; write operations do not exist. A deployment that adds private data or write operations must add authentication before exposing those capabilities.
 
@@ -361,7 +367,8 @@ Authentication decision: the public MVP has no authentication or user accounts. 
 
 #### `GET /api/v1/health`
 
-Liveness and readiness.
+Liveness and dataset/assistant summary. It is always cached with
+`Cache-Control: no-store` and does not load the retrieval index.
 
 **Response `200`**
 
@@ -369,18 +376,93 @@ Liveness and readiness.
 {
   "data": {
     "status": "ok",
-    "registry_snapshot": "2026-11-08",
+    "api_version": "v1",
+    "registry_snapshot": "2026-11-10",
+    "dataset_version": "2a19f9f2...",
+    "registry_version": "...",
     "database": "ok",
-    "object_store": "ok",
-    "assistant": "disabled"
+    "assistant": "deterministic",
+    "assistant_provider": "deterministic",
+    "assistant_fallback_mode": false,
+    "assistant_contract_version": "1.0.0",
+    "available_tables": 13,
+    "missing_tables": []
   },
-  "meta": {
-    "request_id": "req_01J..."
-  }
+  "meta": {"request_id": "req_..."},
+  "provenance": [],
+  "quality": {"status": "verified", "flags": []}
 }
 ```
 
-`status` is `ok`, `degraded`, or `unavailable`. A degraded service may still serve cached metadata.
+`status` is `ok`, `degraded`, or `unavailable`. A degraded service may still serve metadata but is not ready for a full production deployment.
+
+#### `GET /api/v1/ready`
+
+Deployment readiness. Unlike `/health`, it loads the retrieval-index gate and
+returns HTTP `503` when a required check fails.
+
+**Response `200` or `503`**
+
+```json
+{
+  "data": {
+    "status": "ready",
+    "checks": {
+      "dataset": {
+        "ready": true,
+        "database": "ok",
+        "dataset_version": "2a19f9f2...",
+        "available_tables": 13,
+        "missing_tables": []
+      },
+      "assistant": {
+        "ready": true,
+        "enabled": true,
+        "retrieval_enabled": true,
+        "index_required": true,
+        "index_ready": true,
+        "index_version": "assistant-index-v1-...",
+        "mode": "deterministic"
+      }
+    }
+  },
+  "meta": {"request_id": "req_..."},
+  "provenance": [],
+  "quality": {"status": "verified", "flags": []}
+}
+```
+
+When not ready, `data.status` is `not_ready`, quality status is `blocked`, and
+flags include `dataset_not_ready` or `assistant_index_not_ready`.
+
+#### `GET /api/v1/metrics`
+
+Aggregate operational counters. The response contains no user questions,
+answers, citation IDs, headers, or secrets. It is `Cache-Control: no-store`.
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "requests": {"total": 120, "by_method": {"GET": 110}, "by_status": {"200": 118}, "by_route": {"/api/v1/health": 40}},
+    "rate_limited_total": 2,
+    "latency_ms": {"samples": 120, "mean": 42.1, "p95": 110.4, "max": 560.2},
+    "assistant": {
+      "queries_total": 10,
+      "fallback_total": 0,
+      "validation_failures_total": 0,
+      "evidence_status": {"fully_supported": 10},
+      "tool_calls_total": 20,
+      "tool_failures_total": 0,
+      "provider_tokens": {"prompt": 0, "completion": 0, "total": 0},
+      "provider_estimated_cost_usd": 0.0,
+      "mode": "deterministic"
+    },
+    "dataset_version": "2a19f9f2...",
+    "registry_version": "..."
+  }
+}
+```
 
 #### `GET /api/v1/meta`
 
@@ -1534,6 +1616,7 @@ fields are rejected.
     "confidence_basis": "The count comes from the canonical table and resolves to a verified source citation.",
     "dataset_version": "2a19f9f2...",
     "provider": "deterministic",
+    "provider_usage": null,
     "fallback_mode": false,
     "fallback_reason": null,
     "validation": {
@@ -1569,6 +1652,8 @@ contract shape. The authoritative field list is in
 - Retrieved source text is untrusted evidence, never instructions.
 - Validation failure withholds the draft instead of repairing it.
 - `POST` responses are `Cache-Control: no-store`.
+- `provider_usage` is present only when a configured provider reports token or
+  cost metadata; it never contains prompts, answers, or credentials.
 - Envelope `quality.status` is a transport summary derived from
   `data.evidence_status`; use the answer field for semantic meaning.
 

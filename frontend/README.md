@@ -1,9 +1,11 @@
 # Flame in Freefall — Frontend
 
 Scientific data exploration interface for the Flame in Freefall platform. It is a
-read-only Next.js application over the Phase 4 FastAPI service and the canonical
-NASA PSI data. It renders backend decisions; it does not reimplement
-comparability, serving-state, calibration, or quality logic.
+read-only Next.js application over the Phase 5–6 FastAPI service and the
+canonical NASA PSI data. It renders backend decisions; it does not reimplement
+comparability, serving-state, calibration, or quality logic. Phase 6 adds a
+standalone production build, container configuration, security headers, and
+provider-usage transparency.
 
 ---
 
@@ -45,6 +47,8 @@ npm run dev
 |---|---|
 | Frontend | <http://localhost:3000> |
 | Backend API | <http://127.0.0.1:8000/api/v1> |
+| Readiness | <http://127.0.0.1:8000/api/v1/ready> |
+| Metrics | <http://127.0.0.1:8000/api/v1/metrics> |
 | Swagger UI | <http://127.0.0.1:8000/api/v1/docs> |
 
 The backend must include the frontend origin in `FLAME_CORS_ORIGINS`. The
@@ -76,6 +80,20 @@ credentials, cookies, or secrets. `.env.local` is gitignored.
 
 `npm run test:e2e` starts both servers automatically unless they are already
 running. Set `PLAYWRIGHT_BASE_URL` to target a different frontend origin.
+
+### Production build
+
+```bash
+npm ci
+NEXT_PUBLIC_API_BASE_URL=https://api.example.org/api/v1 \
+NEXT_PUBLIC_SITE_URL=https://example.org \
+npm run build
+npm start
+```
+
+The Docker image uses Next.js standalone output. `frontend/Dockerfile` creates a
+non-root runtime and copies `.next/standalone` and `.next/static`. The public API
+URL is a build-time value; it must not contain a secret.
 
 ---
 
@@ -231,6 +249,11 @@ src/
 - The assistant shows whether the answer came from the deterministic provider or
   an optional provider, and whether a fallback occurred. A provider failure is
   not hidden.
+- When the backend reports provider token usage or estimated cost, the answer
+  card displays it as optional metadata. The browser never computes or invents
+  token or cost values.
+- Production responses set `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, and `Permissions-Policy`; `poweredByHeader` is disabled.
 
 ### Deliberate omissions
 
@@ -279,9 +302,14 @@ These are documented, not worked around with fabricated data:
   deterministically, and the optional provider is exercised only through
   server-side boundary checks.
 - The assistant retrieval method is lexical (BM25 plus deterministic hashed
-  TF-IDF), not a neural embedding. Documentary evidence is not a numerical
-  source.
-- Rate limiting is process-local and has no shared store.
+  TF-IDF, with source-aware ranking), not a neural embedding. Documentary
+  evidence is not a numerical source.
+- The Docker image build was not executed locally because the Docker daemon was
+  inaccessible. Native standalone startup was verified.
+- Full `npm audit` includes development-only findings in the test/lint toolchain.
+  Production dependency audit is clean; a toolchain upgrade is a documented
+  follow-up.
+- Rate limiting and metrics are process-local and have no shared store.
 - The API is public and read-only with no authentication.
 - `/material/tests` is the implemented route; the broader target contract names
   `/materials/tests`.
@@ -290,4 +318,5 @@ These are documented, not worked around with fabricated data:
 
 See `../docs/frontend-readiness.md`, `../docs/phase4-contracts.md`,
 `../docs/comparison-alignment.md`, `../docs/phase5-assistant-architecture.md`,
-`../docs/assistant-answer-contract.md`, and `../DEVELOPMENT_ROADMAP.md`.
+`../docs/assistant-answer-contract.md`, `../docs/phase6-deployment.md`,
+`../docs/phase6-operations.md`, and `../DEVELOPMENT_ROADMAP.md`.

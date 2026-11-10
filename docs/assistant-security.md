@@ -1,6 +1,6 @@
 # Phase 5 — Assistant Security and Trust Boundaries
 
-**Status:** Phase 5 complete (2026-11-10)
+**Status:** Phase 5 complete; Phase 6 provider and operations hardening added (2026-11-10)
 **Scope:** `/api/v1/assistant` and `src/assistant/*`
 
 The assistant is a controlled layer over verified Phase 1–4 artifacts. It is
@@ -113,6 +113,12 @@ reruns claim validation against the tool results. Any failure falls back to
 the deterministic draft. A provider error is reported as a safe reason without
 the exception payload or credentials.
 
+Phase 6 adds bounded retries for timeout, transport failure, HTTP 429, and 5xx
+responses, with numeric `Retry-After` support and exponential backoff. Retries
+never bypass validation, never change the fallback policy, and never log the
+prompt, draft answer, key, or authorization header. Token usage and estimated
+cost are optional metadata and contain no user content.
+
 ---
 
 ## 6. Citation and claim integrity
@@ -137,6 +143,11 @@ repaired.
 - Tool logs record tool name, validated arguments, status, duration, and
   request ID. A retrieval tool argument may contain a bounded user-derived
   search phrase; tool results, credentials, and secrets are not logged.
+- Provider logs record status, attempt count, token counts, estimated cost,
+  duration, and request ID. They do not record prompts, answers, keys, or
+  authorization headers.
+- The metrics registry stores aggregate counters only. It does not store user
+  questions, answers, citation IDs, or per-user identifiers.
 - Error handlers never return exception messages or filesystem paths.
 
 ---
@@ -169,5 +180,11 @@ validation of the underlying NASA experiments.
   hosted model.
 - The assistant can only answer within the curated artifacts. Absence of an
   answer is not evidence that the underlying phenomenon does not exist.
-- Rate limiting and CORS are deployment controls, not substitutes for
-  authentication or network isolation.
+- Rate limiting, request-size limits, metrics, and CORS are deployment
+  controls, not substitutes for authentication or network isolation.
+- The request-size middleware relies on `Content-Length`; an edge proxy should
+  enforce a hard body limit for chunked requests.
+- Docker image build and scan were not executed because the local daemon was
+  inaccessible.
+- Development-only npm findings are documented in the Phase 6 security review;
+  production dependency audit is clean.

@@ -7,7 +7,7 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository now includes **Phase 5: a grounded research assistant with deterministic tools, verified retrieval, citations, and evaluation**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, a Next.js exploration interface, and a `/assistant` workspace. The backend suite has **483 passing tests**; the frontend has **68 unit/component tests and 27 real-backend Playwright tests**, including seven axe scans. The assistant is deterministic by default, works with no LLM configured, and completes **36 / 36 golden questions** with 100% citation validity and 100% numerical/unit consistency. A real language model was **not** evaluated; the optional provider is exercised only through deterministic boundary checks. The platform does not claim results that have not been computed from source data.
+This repository now includes **Phase 6: production readiness and operational hardening** on top of the grounded Phase 5 assistant. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, a Next.js exploration interface with `/assistant`, production Docker/Compose configuration, CI quality gates, readiness and metrics endpoints, and bounded provider retries with token/cost reporting. The backend suite has **493 passing tests**; the frontend has **68 unit/component tests and 27 real-backend Playwright tests**, including seven axe scans. The assistant is deterministic by default and completes **36 / 36 golden questions** with 100% citation validity and 100% numerical/unit consistency; retrieval MRR improved from `0.761905` to `1.0` after a measured source-aware ranking change. A real language model remains **pending** because no provider credentials were available; the optional provider is exercised only through deterministic and mock-transport boundary checks. The platform does not claim results that have not been computed from source data.
 
 > Phase numbering note: the delivery brief calls the frontend work Phase 3. The internal development roadmap tracks the same frontend work as Phase 4, after its Phase 3 read-only API. Both refer to the interface described in `frontend/README.md`.
 
@@ -165,9 +165,9 @@ Phase 4 keeps the scientific constraints explicit:
 
 ---
 
-## Phase 5 results (2026-11-10)
+## Phase 5 results at release (2026-11-10)
 
-Phase 5 adds an optional grounded assistant over the verified Phase 1–4 artifacts. The deterministic pipeline remains authoritative: the assistant selects only allowlisted tools, composes a draft from their results, resolves citations through the Phase 4 registry, and validates every claim before returning an answer.
+Phase 5 adds an optional grounded assistant over the verified Phase 1–4 artifacts. The deterministic pipeline remains authoritative: the assistant selects only allowlisted tools, composes a draft from their results, resolves citations through the Phase 4 registry, and validates every claim before returning an answer. The Phase 6 section below records the current test counts and the improved retrieval metric.
 
 | Phase 5 artifact | Result |
 |---|---|
@@ -198,6 +198,32 @@ The assistant keeps these constraints explicit:
 - The evaluation harness reports separate metrics, not one aggregate score. Failing-provider and deterministic mock-provider checks are software checks, not a real-model benchmark.
 
 See `docs/assistant-tools.md`, `docs/assistant-retrieval.md`, `docs/assistant-evaluation.md`, and `docs/assistant-security.md`.
+
+---
+
+## Phase 6 results (2026-11-10)
+
+Phase 6 adds production deployment, CI gates, operational visibility, provider hardening, a measured retrieval improvement, and a performance baseline. It does not change Phase 1–5 scientific decisions.
+
+| Phase 6 artifact | Verified result |
+|---|---|
+| Deployment | Backend and frontend Dockerfiles plus Compose; native `uvicorn` and Next.js standalone production startup verified |
+| Docker image build | Not executed: the local Docker daemon was inaccessible; documented as pending |
+| CI | Default data-free workflow and manual full-data workflow in `.github/workflows/` |
+| Data-free backend gate | 362 passed, 131 integration tests deselected in a clean worktree |
+| Full backend suite | 493 passed, 1 warning |
+| Frontend | 68 unit/component tests; lint, typecheck, and production build pass |
+| Playwright | 27 passed, including 7 axe scans |
+| Readiness | `/api/v1/ready` returns 200/503 with dataset and assistant-index checks |
+| Metrics | `/api/v1/metrics` exposes bounded request, latency, rate-limit, assistant, tool, and token counters |
+| Provider hardening | Bounded retries, `Retry-After`, request IDs, token usage, optional cost estimation, safe logs, deterministic fallback |
+| Real-model evaluation | **Pending**: no provider credentials were available |
+| Retrieval | MRR `1.0` (up from `0.761905`), precision@5 `0.602381`, recall@5 `1.0`, index `assistant-index-v1-be81f78826a2` |
+| Performance | 10 scenarios, 30 requests each, concurrency 8, 0 errors; telemetry p95 `604.966 ms`, deterministic assistant p95 `273.357 ms` |
+| Security audit | Python runtime and frontend production dependencies have no known vulnerabilities; full dev-only npm audit has documented follow-ups |
+| Reproduction | Committed artifacts, canonical validation, retrieval index, and deterministic assistant evaluation all pass |
+
+The Phase 6 documents are `docs/phase6-deployment.md`, `docs/phase6-ci-cd.md`, `docs/phase6-operations.md`, `docs/phase6-security-review.md`, `docs/phase6-performance.md`, and `docs/phase6-real-model-evaluation.md`.
 
 ---
 
@@ -234,8 +260,13 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 ├── DATA_DICTIONARY.md                Exact headers, units, sentinels, canonical schema
 ├── API_DOCUMENTATION.md              Target API contract and implementation status
 ├── CONTRIBUTING.md                   Contribution workflow and review rules
-├── requirements.txt                  Pinned Phase 1 and Phase 2 dependencies
+├── requirements.txt                  Pinned test and development dependencies
+├── requirements-prod.txt             Pinned runtime dependencies for containers
 ├── pytest.ini                        Test configuration and integration marker
+├── Dockerfile                        Production FastAPI image
+├── docker-compose.yml                Backend + frontend production topology
+├── .dockerignore                     Keeps raw data and build caches out of images
+├── .github/workflows/                Data-free CI and manual full-data workflows
 ├── .env.example                      Placeholder environment variables only
 ├── .gitignore                        Excludes raw data, secrets, and build artifacts
 ├── data/
@@ -254,6 +285,7 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── reports/
 │   │   ├── acquisition_report.json   HTTP, size, checksum, and 404 verification
 │   │   ├── assistant_evaluation.json Golden questions, citations, retrieval, provider checks
+│   │   ├── phase6_performance.json   Benchmark environment, latency, errors, resources
 │   │   ├── dataset_quality_report.json  Missingness, flags, channels, provenance
 │   │   ├── processing_report.json    Canonical table counts and dataset version
 │   │   └── validation_report.json    Acquisition and canonical gate results
@@ -284,6 +316,13 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── assistant-retrieval.md        Verified index, ranking, manifest, and retrieval eval
 │   ├── assistant-evaluation.md       Golden set, metrics, thresholds, and limits
 │   ├── assistant-security.md         Threat model, prompt injection, provider boundary
+│   ├── phase6-implementation-plan.md Audit findings and milestone plan
+│   ├── phase6-deployment.md          Containers, readiness, storage, recovery
+│   ├── phase6-ci-cd.md               CI gates and clean-checkout limitations
+│   ├── phase6-operations.md          Logs, metrics, runbook, privacy
+│   ├── phase6-security-review.md     Security findings and residual risks
+│   ├── phase6-performance.md         Benchmark methodology and baseline
+│   ├── phase6-real-model-evaluation.md  Provider status and pending live evaluation
 │   ├── screenshots/phase3/           Captured views of the running frontend
 │   └── research/
 │       └── source-verification-log.md
@@ -293,10 +332,12 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── build_et_schemas.py           Build or check the 22-table schema registry
 │   ├── build_fixtures.py             Build or check authentic parser fixtures
 │   ├── build_mvp_catalog.py          Reproducible MVP catalog generator
+│   ├── benchmark_api.py              Reproducible local API performance baseline
 │   ├── build_phase2_registries.py    Comparability and serving registry generator
 │   ├── download_psi_files.py         Thin wrapper around the acquisition CLI
 │   ├── evaluate_assistant.py         Golden, retrieval, and provider-boundary evaluation
 │   ├── fetch_psi_metadata.py         Standard-library PSI metadata collector
+│   ├── verify_reproducibility.sh     Data-free and full-data reproducibility gates
 │   └── README.md                     Script and CLI usage
 ├── src/data_pipeline/
 │   ├── __main__.py                   `download`, `validate`, `parse`, `build-canonical`, `report`
@@ -340,8 +381,8 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── evaluation.py                 Golden, retrieval, and provider metrics
 │   └── conversation.py               Bounded, non-authoritative conversation state
 ├── backend/
-│   ├── app.py                        FastAPI app, routes, strict validation, CORS, cache, rate limit
-│   ├── operations.py                 ETag, conditional requests, and fixed-window rate limiter
+│   ├── app.py                        FastAPI app, routes, readiness, metrics, CORS, cache, rate limit
+│   ├── operations.py                 ETag, rate limiter, request limits, bounded metrics
 │   └── models.py                     Pydantic envelopes and error models
 ├── frontend/
 │   ├── src/app/                      Next.js App Router pages and route states, including /assistant
@@ -350,6 +391,7 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── src/lib/assistant.ts          Assistant labels, tones, and exact value serialization
 │   ├── tests/                        Vitest and React Testing Library suites
 │   ├── e2e/                          Playwright critical flows and axe scans
+│   ├── Dockerfile                    Multi-stage standalone production image
 │   ├── .env.example                  Public frontend environment placeholders
 │   └── README.md                     Frontend architecture, setup, and tests
 └── tests/
@@ -364,7 +406,7 @@ Raw NASA files (`data/raw/`), interim parses (`data/interim/`), and processed Pa
 
 ## Quick start
 
-Phase 1 and Phase 2 use a local virtual environment with pinned dependencies. The metadata collector itself remains standard-library only.
+Phases 1–6 use a local virtual environment with pinned dependencies. The metadata collector itself remains standard-library only.
 
 ```bash
 git clone https://github.com/YoussefHegazy74/flame-in-freefall.git
@@ -406,15 +448,29 @@ python -m src.data_pipeline report
 python -m pytest -m "not integration"
 python -m pytest -m integration
 
+# Verify committed artifacts without canonical data.
+PYTHON=.venv/bin/python bash scripts/verify_reproducibility.sh
+
 # Run the read-only API against the canonical data.
 uvicorn backend.app:app --host 127.0.0.1 --port 8000
 # OpenAPI: http://127.0.0.1:8000/api/v1/docs
+# Readiness: http://127.0.0.1:8000/api/v1/ready
+# Metrics:   http://127.0.0.1:8000/api/v1/metrics
 
 # In a second terminal, run the frontend against that API.
 cd frontend
 cp .env.example .env.local
 npm install
 npm run dev
+# Frontend: http://localhost:3000
+
+# Production frontend (after npm ci):
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run build
+npm start
+
+# Production Docker topology (requires a Docker daemon):
+docker compose up --build -d
+curl http://127.0.0.1:8000/api/v1/ready
 # Frontend: http://localhost:3000
 ```
 
@@ -445,6 +501,12 @@ The metadata collector does **not** download experimental data files. The pipeli
 | How are documents retrieved and ranked? | `docs/assistant-retrieval.md` |
 | How is the assistant evaluated? | `docs/assistant-evaluation.md` |
 | How is prompt injection handled? | `docs/assistant-security.md` |
+| How is the platform deployed? | `docs/phase6-deployment.md` |
+| What does CI run, and what needs full data? | `docs/phase6-ci-cd.md` |
+| How are logs, readiness, and metrics operated? | `docs/phase6-operations.md` |
+| What did the security review find? | `docs/phase6-security-review.md` |
+| What is the performance baseline? | `docs/phase6-performance.md` |
+| Was a real model evaluated? | `docs/phase6-real-model-evaluation.md` |
 | What can the frontend rely on? | `docs/frontend-readiness.md` |
 | How does the frontend work, and how is it tested? | `frontend/README.md` |
 | What is known to be limited or unavailable? | `docs/known-limitations.md` |
@@ -528,11 +590,24 @@ These rules are binding for code, charts, prose, and assistant answers:
 - Added 36 golden questions, 7 labelled retrieval cases, adversarial and prompt-injection tests, provider-failure tests, and an evaluation report with separate metrics.
 - Verified 483 backend tests, 68 frontend unit/component tests, 27 Playwright tests, 7 axe scans, and a production build.
 
-**Next (Phase 6 and later)**
+**Done in Phase 6 (production readiness)**
 
-1. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
-2. Add Phase 6 CI/CD, deployment, observability, and production operations.
-3. Revisit authentication only if private data or write operations are added.
+- Added production Dockerfiles, Compose topology, non-root users, read-only data/index mounts, and health checks.
+- Verified native Uvicorn and Next.js standalone production startup; Docker image build remains pending because the local daemon was inaccessible.
+- Added `/api/v1/ready` and `/api/v1/metrics`, bounded operational counters, request-size limits, and security headers.
+- Added default data-free and manual full-data GitHub Actions workflows, dependency audits, and a reproducibility script.
+- Hardened the optional provider with bounded retries, `Retry-After`, request IDs, token usage, optional cost estimation, and safe logs.
+- Improved retrieval MRR from `0.761905` to `1.0` with a measured source-aware ranking change; recall stayed `1.0`.
+- Recorded a 10-scenario performance baseline with 0 errors; 493 backend tests, 68 frontend tests, 27 Playwright tests, and 7 axe scans pass.
+- Documented deployment, CI/CD, operations, security review, performance, backup/recovery, and the pending real-model evaluation.
+
+**Next (Phase 7 and later)**
+
+1. Run a live-model evaluation when provider credentials are available.
+2. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
+3. Build and scan the Docker images on a Docker-capable host.
+4. Upgrade the frontend test/lint toolchain to clear the documented development-only audit findings.
+5. Revisit authentication only if private data or write operations are added.
 
 The full sequence and exit gates are in `DEVELOPMENT_ROADMAP.md`.
 

@@ -103,15 +103,19 @@ Implemented in Phase 5:
 Still not implemented or deliberately limited:
 
 - no verified paired-comparison executor; `/compare` returns `paired_values.available=false` with `conditions_not_verified`, `no_verified_alignment`, `comparison_not_approved`, or `measurement_unavailable`;
-- no real language-model evaluation; the optional provider is exercised only with deterministic stubs, and any hosted-model run must be reported separately with its model, provider, date, cost, and configuration;
-- the retrieval method is lexical (BM25 plus deterministic hashed TF-IDF), not a neural semantic embedding, so paraphrase and synonym recall are limited;
+- no live language-model evaluation; the optional provider is implemented and tested with mock transports, and any hosted-model run must be reported separately with its model, provider, date, cost, and configuration;
+- the retrieval method is lexical (BM25 plus deterministic hashed TF-IDF with source-aware ranking), not a neural semantic embedding, so paraphrase and synonym recall are limited;
 - the assistant retrieval set has seven labelled cases; precision@5 is a lower bound and cannot establish general retrieval quality;
 - repository documents and publication cards are not Phase 4 citations; documentary evidence is context, not a numerical source;
 - no authentication; the API is public and read-only, and rate limiting is not authorization;
-- rate limiting is process-local and has no shared store;
+- rate limiting, metrics, and conversation memory are process-local and have no shared store;
 - no embedded OpenAPI request/response examples; examples live in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`;
 - the file browser exposes the curated manifest plus documented known-unavailable files, not the full public inventory;
-- no deployment, CI/CD, or production operations yet.
+- the Docker image build was not executed because the local Docker daemon was inaccessible; native production startup was verified instead;
+- no hosted staging/production deployment, external alert delivery, or automated secret scanning is configured;
+- the production restore procedure is documented, but no destructive restore drill was performed;
+- full development `npm audit` reports development-only findings in the test/lint toolchain; production dependencies are clean;
+- no PostgreSQL/object-storage deployment; canonical Parquet and committed metadata are mounted read-only.
 
 The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
 
@@ -156,4 +160,10 @@ If a question needs a value that is not in the canonical tables, the correct res
 - `docs/assistant-retrieval.md` — verified index, lexical ranking, and retrieval limits.
 - `docs/assistant-evaluation.md` — golden metrics and their scope.
 - `docs/assistant-security.md` — prompt-injection and provider boundaries.
+- `docs/phase6-deployment.md` — deployment, readiness, storage, and recovery.
+- `docs/phase6-ci-cd.md` — CI gates and clean-checkout limits.
+- `docs/phase6-operations.md` — logs, metrics, runbook, and privacy.
+- `docs/phase6-security-review.md` — security findings and residual risks.
+- `docs/phase6-performance.md` — performance baseline and methodology.
+- `docs/phase6-real-model-evaluation.md` — provider status and pending live evaluation.
 - `docs/frontend-readiness.md` — what the frontend may rely on and must not infer.

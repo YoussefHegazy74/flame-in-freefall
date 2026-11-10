@@ -4,7 +4,7 @@
 **Team:** AFAQ
 **Baseline SHA:** `f777185e16636325f73a78b05139fd48309e9b4a`
 **Audit date:** 2026-11-10
-**Status:** Milestone A complete; implementation proceeds through Milestones B–H.
+**Status:** Phase 6 complete (2026-11-10). Milestones A–H were implemented; the live-provider evaluation remains pending credentials.
 
 This plan is based on the repository as it exists at the Phase 5 release. It
 does not assume a deployment system that is not present, and it does not
@@ -28,6 +28,9 @@ replace Phase 1–5 safeguards.
 | Retrieval index | `assistant-index-v1-537b6ec9903d`, 1,391 chunks, 944 documents, 18 sources |
 | Evaluation report | 36 / 36 golden questions; 117 / 117 citations valid |
 | Canonical dataset | 13 tables, 8,058,206 rows, version `2a19f9f2...` |
+
+These are the audit baseline values. Final Phase 6 test counts, index version, and
+performance results are recorded in the Phase 6 documents and generated reports.
 
 ### 1.2 Existing capabilities
 

@@ -5,7 +5,7 @@
 **Application:** `backend/app.py`
 **Framework:** FastAPI `0.162.2`, Pydantic `2.14.3`, Uvicorn `0.54.0`
 **API version:** `v1`
-**Status:** Read-only Phase 1–4 exploration API plus the Phase 5 grounded assistant. The assistant is deterministic by default and fails closed to deterministic mode when an optional provider is unavailable.
+**Status:** Read-only Phase 1–6 API: exploration routes, grounded assistant, readiness, and bounded operational metrics. The assistant is deterministic by default and fails closed to deterministic mode when an optional provider is unavailable.
 
 This document describes the running service. `API_DOCUMENTATION.md` records the broader contract, `docs/phase4-contracts.md` records the Phase 4 response shapes, and `docs/comparison-alignment.md` records the comparison methodology.
 
@@ -22,7 +22,9 @@ uvicorn backend.app:app --host 127.0.0.1 --port 8000
 
 | URL | Purpose |
 |---|---|
-| `http://127.0.0.1:8000/api/v1/health` | Liveness and dataset readiness |
+| `http://127.0.0.1:8000/api/v1/health` | Liveness and dataset/assistant summary |
+| `http://127.0.0.1:8000/api/v1/ready` | Deployment readiness (200/503) |
+| `http://127.0.0.1:8000/api/v1/metrics` | Aggregate operational counters |
 | `http://127.0.0.1:8000/api/v1/docs` | Swagger UI |
 | `http://127.0.0.1:8000/api/v1/openapi.json` | OpenAPI schema |
 
@@ -32,11 +34,13 @@ The app reads canonical Parquet from `data/processed`, the quality report from `
 
 ## 2. Implemented routes
 
-All read endpoints are `GET`; the assistant query endpoint is `POST`. They live under `/api/v1`. The OpenAPI schema contains **35 paths**.
+All read endpoints are `GET`; the assistant query endpoint is `POST`. They live under `/api/v1`. The OpenAPI schema contains **37 paths**.
 
 | Route | Purpose |
 |---|---|
 | `/health` | Liveness, dataset version, available/missing tables, assistant mode/provider/fallback. |
+| `/ready` | Deployment readiness with dataset and retrieval-index gates; HTTP 503 on failure. |
+| `/metrics` | Bounded aggregate request, latency, rate-limit, assistant, tool, and token counters. |
 | `/meta` | API version, registry snapshot, canonical table counts, curated dataset and measurement counts. |
 | `/investigations` | NASA PSI catalog with `role`, `q`, `limit`, `offset`. |
 | `/investigations/{accession}` | One investigation plus its curated datasets. |
@@ -72,7 +76,7 @@ All read endpoints are `GET`; the assistant query endpoint is `POST`. They live 
 | `/assistant/tools` | Closed tool allowlist with strict argument schemas. |
 | `/assistant/query` | Grounded answer in the shared envelope; deterministic default, validated citations and claims. |
 
-Assistant endpoints remain unimplemented. The target contract's `/datasets/{accession}/publications` path is replaced by `/publications?dataset_id=...`.
+The target contract's `/datasets/{accession}/publications` path is replaced by `/publications?dataset_id=...`.
 
 ---
 
@@ -185,7 +189,7 @@ CORS is environment-driven:
 
 Set a comma-separated list to change allowed origins. Credentials are disabled; allowed methods are `GET`, `HEAD`, and `OPTIONS`. `X-Request-ID` is exposed.
 
-`create_app(service=..., assistant=..., cors_origins=..., cache_settings=..., rate_limit_settings=...)` allows isolated contract tests with a synthetic dataset or a stub assistant.
+`create_app(service=..., assistant=..., cors_origins=..., cache_settings=..., rate_limit_settings=..., request_limit_settings=..., readiness_settings=..., metrics_settings=...)` allows isolated contract tests with a synthetic dataset or a stub assistant.
 
 ---
 
@@ -273,6 +277,7 @@ These remain later work in `DEVELOPMENT_ROADMAP.md`.
 | `tests/test_assistant_api.py` | Assistant status/suggestions/tools/query, disabled mode, invalid bodies, tool-call bounds, CORS, and fail-closed validation quality. |
 | `tests/assistant/` | Contract, configuration, conversation, tools, retrieval, providers, orchestrator, golden evaluation, and adversarial tests. |
 | `tests/test_operations.py` | ETag stability, conditional requests, rate-limit windows, settings validation. |
+| `tests/test_phase6_operations.py` | Readiness gates, metrics aggregates, security headers, request-size limits. |
 
 Run the unit contract tests:
 

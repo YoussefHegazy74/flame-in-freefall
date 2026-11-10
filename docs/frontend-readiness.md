@@ -2,7 +2,7 @@
 
 **Project:** Flame in Freefall
 **Team:** AFAQ
-**Status:** Implemented through Phase 5. The frontend described here exists in `frontend/`; this document remains the backend contract and state-handling reference. The Phase 5 assistant is documented separately in `docs/phase5-assistant-architecture.md` and `docs/assistant-answer-contract.md`.
+**Status:** Implemented through Phase 6. The frontend described here exists in `frontend/`; this document remains the backend contract and state-handling reference. The Phase 5 assistant is documented separately in `docs/phase5-assistant-architecture.md` and `docs/assistant-answer-contract.md`; production operations are in `docs/phase6-deployment.md` and `docs/phase6-operations.md`.
 **API:** `v1`, read-only, FastAPI
 
 This document tells the frontend team what the API guarantees, which states must be visible, and what must not be inferred in the browser. See `frontend/README.md` for the implemented architecture, routes, and test commands.
@@ -219,6 +219,7 @@ Rate limiting:
 - Rate limiting exists but is not an authorization mechanism.
 - The assistant endpoints exist under `/assistant`, but the assistant is not a general chatbot. It answers only from allowlisted deterministic tools and verified retrieval, and it returns an explicit refusal or insufficient-evidence state when the data cannot support a claim.
 - The frontend must not call a language model directly. The assistant is deterministic by default; the optional provider is server-side and may only rephrase a validated draft.
+- `provider_usage` is optional response metadata. When present, display token/cost values as reported; never compute them in the browser.
 - Assistant values must be rendered with the backend's exact serialization. Do not round, convert, or reformat a scientific value in the browser.
 - Retrieved documents are context, not a numerical source. A citation ID must resolve through `/citations/{citation_id}`; the frontend must not construct or infer one.
 - There is no verified paired-comparison executor. `/compare` may return eligibility, but `paired_values.available` is currently false.

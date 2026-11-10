@@ -97,7 +97,7 @@ Optional flags:
 | `--retrieval-cases PATH` | Use a different labelled retrieval set. |
 | `--no-retrieval` | Skip retrieval cases and the index. |
 | `--no-provider-checks` | Skip failing-provider and mock-provider checks. |
-| `--use-configured-provider` | Evaluate the environment-configured provider; may call a real model and is not reproducible. |
+| `--use-configured-provider` | Evaluate the environment-configured provider; may call a real model and is not reproducible. Requires a complete provider configuration and writes `assistant_real_model_evaluation.json`; exits 2 if unconfigured. |
 
 The default run uses `AssistantSettings()` with the deterministic provider. It
 does not read provider credentials from the environment and does not call a
@@ -142,8 +142,9 @@ The committed deterministic run reports:
 | Scope coverage rate | 1.0 |
 | Failure categories | none |
 
-Latency in that run: mean `115.024 ms`, p50 `89.145 ms`, p95 `335.201 ms`,
-maximum `773.147 ms`. Latency depends on the machine, warm caches, and the
+Latency in the committed run: mean `187.269 ms`, p50 `127.048 ms`,
+p95 `559.370 ms`, maximum `1457.140 ms`. Latency depends on the machine, warm
+caches, and the
 first index build, so treat it as an indicative measurement rather than a
 service-level guarantee.
 
@@ -156,7 +157,7 @@ service-level guarantee.
 | Label errors | 0 |
 | Mean precision@5 | 0.602381 |
 | Mean recall@5 | 1.0 |
-| Mean reciprocal rank | 0.761905 |
+| Mean reciprocal rank | 1.0 |
 
 The relevance labels are minimal. Precision is a lower bound because
 unlabelled results may be relevant. The set is too small to support a general
@@ -168,7 +169,7 @@ retrieval claim.
 |---|---|
 | Failing-provider fallback | Passed |
 | Deterministic mock-provider rephrase | Passed |
-| Real model evaluated | **No** |
+| Real model evaluated | **No — pending credentials** |
 
 The failing provider is a stub that raises `ProviderError`. The mock provider
 returns a deterministic prefix plus the validated draft. These checks prove
@@ -240,6 +241,7 @@ to waive.
 | `real_model_evaluated` | Boolean; false unless a real provider run is recorded. |
 | `provider` | Safe provider metadata (name, model, mode, fallback). |
 | `index` | Retrieval enabled flag and index version. |
+| `provider_usage` | Aggregate prompt/completion/total tokens and estimated cost when a provider reports them; null/False when unavailable. |
 | `summary` | Aggregate metrics and failure categories. |
 | `questions` | Per-question result, failures, counts, and latency. |
 | `retrieval` | Retrieval metrics, per-case results, index and dataset versions. |

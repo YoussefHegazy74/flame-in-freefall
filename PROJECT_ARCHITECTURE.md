@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status:** Architecture baseline after Phase 5. The repository contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service with citations and scientific metadata contracts, a Next.js frontend that renders them, and a deterministic grounded assistant with verified retrieval, allowlisted tools, citation validation, and a golden evaluation. It does not yet contain a verified paired-comparison executor, a real-model evaluation, or a production data store.
+**Status:** Architecture baseline after Phase 6. The repository contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service with citations, scientific metadata contracts, readiness, and bounded operational metrics, a Next.js frontend that renders them, a deterministic grounded assistant with verified retrieval, allowlisted tools, citation validation, provider hardening, and a golden evaluation, and production Docker/Compose plus CI quality gates. It does not yet contain a verified paired-comparison executor, a live-model evaluation, or a hosted production data store.
 
 This document describes the target system and the boundaries between what exists now and what must be built next. It is intentionally explicit about provenance, missingness, and scientific limits, because those are product requirements, not implementation details.
 
@@ -76,12 +76,15 @@ This document describes the target system and the boundaries between what exists
 - `data/metadata/comparability_registry.json`: 93 measurements and 60 pair-specific comparison rules.
 - `data/metadata/serving_registry.json`: 9 curated dataset states and 93 measurement states across four uses.
 - `data/metadata/paired_alignment_registry.json`: deliberately empty alignment registry; no verified paired-comparison method is committed.
-- `backend/`: read-only FastAPI application with 35 paths, strict query validation, shared envelopes, request IDs, CORS, ETag caching, rate limiting, and OpenAPI.
+- `backend/`: read-only FastAPI application with 37 paths, strict query validation, shared envelopes, request IDs, CORS, ETag caching, rate limiting, readiness, bounded metrics, security headers, and OpenAPI.
 - `frontend/`: Next.js 16 App Router application with 18 routes, including `/assistant`, a centralized typed API client, TanStack Query hooks, lazy-loaded Recharts time-series and paired-scatter panels, responsive navigation, scientific state components, citation drawer, file browser, field dictionary, limitations panel, publications pages, and dynamic facets.
 - `frontend/tests/` and `frontend/e2e/`: 68 Vitest/React Testing Library tests, 27 real-backend Playwright flows, and 7 axe WCAG scans.
 - `src/assistant/`: versioned answer contract, environment-driven configuration, deterministic planner, 22 allowlisted tools, verified retrieval index, grounded composer, citation and claim validators, optional provider boundary, orchestrator, bounded conversation state, and evaluation harness.
-- `scripts/build_assistant_index.py` and `scripts/evaluate_assistant.py`: reproducible retrieval-index build/check and golden-set, retrieval, and provider-boundary evaluation.
+- `scripts/build_assistant_index.py`, `scripts/evaluate_assistant.py`, `scripts/benchmark_api.py`, and `scripts/verify_reproducibility.sh`: reproducible index build/check, assistant evaluation, API benchmark, and CI gates.
+- `Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`, and `.dockerignore`: production containers and local topology.
+- `.github/workflows/ci.yml` and `full-data.yml`: data-free CI and manual full-data validation.
 - `docs/phase5-assistant-architecture.md`, `docs/assistant-answer-contract.md`, `docs/assistant-tools.md`, `docs/assistant-retrieval.md`, `docs/assistant-evaluation.md`, `docs/assistant-security.md`: assistant architecture, contract, tool catalog, retrieval design, evaluation, and threat model.
+- `docs/phase6-deployment.md`, `docs/phase6-ci-cd.md`, `docs/phase6-operations.md`, `docs/phase6-security-review.md`, `docs/phase6-performance.md`, `docs/phase6-real-model-evaluation.md`: deployment, CI, operations, security, performance, and live-model status.
 - `scripts/build_phase2_registries.py`: deterministic registry generator with `--check`.
 - `docs/comparability.md`, `docs/serving-states.md`, `docs/query-contract.md`, `docs/api-implementation.md`, `docs/frontend-readiness.md`, `docs/phase4-contracts.md`, `docs/comparison-alignment.md`, `docs/known-limitations.md`: contracts, methodology, limitations, and frontend handoff.
 - `DATA_SOURCES.md`: verified source inventory, per-record cards, comparability matrix, access limitations, verification log.
@@ -90,11 +93,12 @@ This document describes the target system and the boundaries between what exists
 
 ### 3.2 Not implemented yet
 
-- A real language-model evaluation. The optional provider boundary exists and is tested with deterministic stubs; no hosted model was called.
+- A live language-model evaluation. The optional provider boundary, retries, usage, and cost reporting are implemented and tested with deterministic and mock transports; no hosted model was called.
 - A verified paired-comparison executor. The API exposes eligibility and withholds values.
 - Authentication or user accounts. The public read-only MVP does not need them.
-- CI/CD, deployment, observability, and production operations.
-- A production data store and external cache. Caching and rate limiting are process-local.
+- A hosted staging/production environment and image build verification. Dockerfiles and Compose exist, but the local Docker daemon was inaccessible.
+- Distributed rate limiting, metrics, tracing, and alert delivery. The current deployment is a single process.
+- A production PostgreSQL/object-storage data store. Canonical Parquet and committed metadata are mounted read-only.
 
 The roadmap in `DEVELOPMENT_ROADMAP.md` defines the gates between these states.
 
@@ -575,7 +579,7 @@ The committed deterministic run reports:
 | Correct refusals | 12 / 12 |
 | Retrieval precision@5 | 0.602381 |
 | Retrieval recall@5 | 1.0 |
-| Retrieval MRR | 0.761905 |
+| Retrieval MRR | 1.0 |
 
 The harness reports separate metrics rather than one aggregate score. Failing-provider and deterministic mock-provider checks are software boundary checks, not a real-model evaluation. The golden set is version `1.0.1` and is bound to the canonical dataset version. A release is blocked if citation validity, numerical/unit consistency, tool selection, refusal behavior, or the golden set fails.
 
@@ -670,66 +674,84 @@ A read-only internal page shows, per dataset:
 
 ## 13. Deployment
 
-### 13.1 Environments
+### 13.1 Implemented environments
 
 | Environment | Purpose | Data |
 |---|---|---|
-| Local | Development and tests | Registry + small fixtures; raw data optional |
-| Staging | Integration and demo rehearsal | Full MVP processed data; synthetic user traffic only |
-| Production | Public demo | Full MVP processed data; read-only API |
+| Local development | Development and tests | Committed registry/fixtures; canonical Parquet optional |
+| Local production | Startup and container rehearsal | Full canonical Parquet and retrieval index |
+| Hosted staging/production | Not provided in this phase | Requires a Docker-capable host and data mounts |
 
-### 13.2 Local composition
+Native Uvicorn plus Next.js standalone startup was verified locally. Docker
+images and Compose are implemented but could not be built because the local
+Docker daemon was inaccessible.
+
+### 13.2 Implemented composition
 
 ```text
 docker compose up
-  api        FastAPI + Uvicorn
-  web        Next.js
-  postgres   metadata and provenance
-  minio      optional S3-compatible object store for raw/processed data
+  backend    FastAPI + Uvicorn, port 8000
+  frontend   Next.js standalone server, port 3000
 ```
 
-DuckDB can read Parquet directly for local development, so MinIO is optional. PostgreSQL is required for metadata and provenance in staging/production.
+Mounted read-only:
+
+```text
+./data/processed -> /app/data/processed
+./data/assistant -> /app/data/assistant
+```
+
+Committed registries, metadata, reports, fixtures, and documentation are baked
+into the backend image. Raw NASA files are excluded.
 
 ### 13.3 Production topology
 
-- Container images for `api`, `web`, and `insight`.
-- Managed PostgreSQL with backups and point-in-time recovery.
-- Object storage for raw and processed data, with lifecycle policies.
-- CDN for the web app and static assets.
-- Read replicas or a read-only role for analytical queries if needed.
-- A scheduled metadata refresh job and a separate ingestion job.
-- No raw data in the web container.
+- Two independently deployable containers: FastAPI backend and Next.js frontend.
+- Environment-driven CORS, rate limits, request limits, metrics, and readiness.
+- `/api/v1/health` for liveness and `/api/v1/ready` for deployment gating.
+- No secrets in browser code; provider credentials are server-side only.
+- Canonical data and the retrieval index are read-only mounts, not image layers.
+- A reverse proxy should terminate TLS and enforce its own body limit before the
+  application.
+- The current design is single-process. Multi-replica deployment needs shared
+  rate-limit, metrics, and conversation stores.
 
 ### 13.4 CI/CD
 
-**CI**
+**Default CI**
 
-1. Lint and format.
-2. Type check.
-3. Unit tests.
-4. Parser fixture tests.
-5. Data validation tests.
-6. API contract tests.
-7. Frontend build and accessibility checks.
-8. Assistant golden-set evaluation.
-9. Secret scan and dependency scan.
+1. Compile backend and scripts.
+2. Data-free unit and contract tests.
+3. Python dependency audit.
+4. Committed manifest, catalog, and JSON reproducibility checks.
+5. Frontend lint, type check, unit/component tests, production audit, and build.
+6. Release quality gate.
 
-**CD**
+**Manual full-data CI**
 
-1. Build and sign images.
-2. Deploy to staging.
-3. Run smoke tests and data-quality checks.
-4. Promote to production with a manual approval.
-5. Record the deployed image digest and dataset version.
-6. Roll back on failed health or data-quality checks.
+1. Full backend suite.
+2. Canonical validation.
+3. Experimental-table schema, fixture, and Phase 2 registry checks.
+4. Retrieval index freshness and deterministic assistant evaluation.
+5. Playwright and axe scans.
+
+**Not implemented**
+
+- Hosted staging deployment.
+- Image signing and digest promotion.
+- Automated secret scanning and external alert delivery.
+- Live-provider CI.
 
 ### 13.5 Backup and recovery
 
-- PostgreSQL: daily backups, point-in-time recovery, restore drill.
-- Object storage: versioning and lifecycle policy.
-- Registry: Git history plus the generated snapshot.
-- Processed data: regenerable from raw + pipeline version; checksums recorded.
-- Recovery time and recovery point objectives are set with the deployment owner, not invented here.
+- Canonical Parquet and dataset manifest: back up or rebuild from raw.
+- Raw NASA files: optional retention; re-downloadable under the curated manifest.
+- Retrieval index: regenerate with `scripts/build_assistant_index.py`.
+- Registries and reports: Git history plus reproducible generators.
+- Provider credentials: platform secret store, never Git.
+- Recovery procedure: restore raw/canonical data, validate, start the API,
+  rebuild or mount the index, check `/ready`, then run the golden evaluation.
+- No destructive restore drill was performed against production data.
 
 ---
 
@@ -920,4 +942,34 @@ Verified Phase 5 result:
 - PSI-159 `pressure_initial_atm` and PSI-10 `pressure_approx_bar` remain empty and are never treated as zero.
 - The two PSI-98 telemetry/sensor workbooks remain unavailable (HTTP 404).
 
-Remaining product work is a verified paired-comparison executor, a real-model evaluation when credentials exist, deployment operations, and the Phase 6 hardening work.
+Phase 6 is complete when:
+
+1. Production deployment architecture is implemented and documented.
+2. Native local production startup works for the API and frontend.
+3. Default CI passes from a clean, data-free checkout.
+4. Existing scientific and application tests remain green on full data.
+5. Provider retries, timeout, usage, cost, and safe fallback are implemented.
+6. A live-model evaluation is completed if credentials exist, otherwise marked pending.
+7. Retrieval changes are measured and preserve recall.
+8. Readiness, metrics, structured logs, and a runbook are functional.
+9. Security review is complete with residual risks documented.
+10. Performance baselines are recorded with reproducible methodology.
+11. Backup and recovery instructions exist.
+12. Frontend production build, Playwright, and axe checks pass.
+13. No Phase 1–5 safeguard is weakened.
+14. Documentation is updated.
+15. Changes are committed and pushed.
+
+Verified Phase 6 result:
+
+- 37 API paths and 493 backend tests.
+- Data-free CI gate: 362 passed, 131 integration tests deselected in a clean worktree.
+- 68 frontend unit/component tests, 27 Playwright tests, 7 axe scans, and a passing production build.
+- Readiness returns 200 only when the canonical dataset and required index are usable; metrics expose bounded request, latency, assistant, tool, and token counters.
+- Provider retries, `Retry-After`, request IDs, usage, optional cost, and deterministic fallback are implemented; live-model evaluation is pending credentials.
+- Retrieval MRR improved from `0.761905` to `1.0`; recall stayed `1.0`; precision@5 is `0.602381`.
+- Performance baseline: 10 scenarios, 30 requests each, concurrency 8, 0 errors.
+- Dockerfiles and Compose are implemented; image build and scan remain pending a Docker-capable host.
+- No restore drill or hosted staging deployment was performed.
+
+Remaining product work is a verified paired-comparison executor, a live-model evaluation when credentials exist, hosted deployment and image verification, and the deferred Phase 7 extensions.

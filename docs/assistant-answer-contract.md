@@ -51,6 +51,7 @@ Every assistant response uses the existing API envelope:
 | `confidence_basis` | string | yes | Why that confidence is justified |
 | `dataset_version` | string or null | no | Canonical dataset version |
 | `provider` | string | yes | `deterministic` or the configured provider |
+| `provider_usage` | object or null | no | Optional prompt/completion/total tokens and estimated USD cost; no prompt, answer, or credential |
 | `fallback_mode` | boolean | yes | True when a provider failed or was unavailable |
 | `fallback_reason` | string or null | no | Safe, secret-free reason |
 | `clarification` | object or null | no | Required only for `clarification_required` |

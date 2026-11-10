@@ -114,14 +114,21 @@ Ranking is deterministic and dependency-free:
 | BM25 | `k1=1.5`, `b=0.75`, weight `0.65` |
 | Hashed TF-IDF cosine | 256 dimensions, weight `0.35` |
 | Exact phrase match | `+0.05` |
+| Source-intent boost | `+0.08` for explicit limitation, publication, field, dataset, file, or investigation terms |
+| Explicit field-identifier boost | `+0.14` when a `snake_case` field token appears in a field card |
+| Metadata-scope boost | `+0.03` for matching accession or dataset mentions |
 | Max chunks per document | 2 |
-| Method label | `bm25+tfidf-hash-v1` |
+| Method label | `bm25+tfidf-hash-v1+source-intent` |
 
 The vector component is **lexical hashed TF-IDF**, not a neural semantic
 embedding. The manifest, every search result, and the documentation carry that
 label. No external embedding API is required to build or query the shipped
 index. The optional `FLAME_EMBEDDING_PROVIDER` setting is validated for future
 work, but the current index builder does not make an external embedding call.
+
+The source-intent terms are lexical cues, not semantic understanding. They
+change ranking only; they never change which metadata scope is eligible, and
+they never promote an unverified document to a citation.
 
 The query is normalized with Unicode NFKC, lowercasing, scientific-token
 preservation, and a stopword list. Search results are sorted by hybrid score,
@@ -211,7 +218,13 @@ The current deterministic run reports:
 | Label errors | 0 |
 | Mean precision@5 | 0.602381 |
 | Mean recall@5 | 1.0 |
-| Mean reciprocal rank | 0.761905 |
+| Mean reciprocal rank | 1.0 |
+
+Before the source-aware ranking change, the same seven cases reported
+precision@5 `0.602381`, recall@5 `1.0`, and MRR `0.761905`. The change raised
+MRR to `1.0` by moving explicit field cards and source-intent matches to the
+first result. Recall did not decrease, and the full golden assistant set still
+passes 36 / 36.
 
 Precision is a lower bound because unlabelled results may also be relevant.
 The set is too small to support a general retrieval claim. The full results,
