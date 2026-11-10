@@ -222,6 +222,12 @@ def plan_question(
         "fire safety guarantee",
         "guarantee spacecraft fire safety",
         "predict spacecraft fire",
+        "safer than",
+        "which is safer",
+        "which material is safest",
+        "safest material",
+        "safe for spacecraft",
+        "spacecraft-safe",
     )
     if _has(text, *fire_markers):
         calls = (
