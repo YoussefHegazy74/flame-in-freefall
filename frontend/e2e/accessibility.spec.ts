@@ -11,6 +11,7 @@ const PAGES = [
   },
   { path: "/datasets/psi-98-metadata", name: "dataset metadata" },
   { path: "/publications", name: "publications" },
+  { path: "/assistant", name: "research assistant" },
 ];
 
 for (const target of PAGES) {

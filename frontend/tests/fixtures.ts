@@ -1,4 +1,7 @@
 import type {
+  AssistantAnswer,
+  AssistantStatus,
+  AssistantSuggestion,
   Citation,
   ComparisonDecision,
   ComparisonIntegrity,
@@ -463,6 +466,170 @@ export function pairedValues(overrides: Partial<PairedValues> = {}): PairedValue
         note: "A reviewed alignment method must be committed before values can be paired.",
       },
     },
+    ...overrides,
+  };
+}
+
+export function assistantSuggestion(
+  overrides: Partial<AssistantSuggestion> = {},
+): AssistantSuggestion {
+  return {
+    question_id: "dq-009",
+    category: "numerical",
+    question: "How many valid PSI-10 gas-flame records are available?",
+    answer_type_hint: "numerical",
+    ...overrides,
+  };
+}
+
+export function assistantStatus(
+  overrides: Partial<AssistantStatus> = {},
+): AssistantStatus {
+  return {
+    enabled: true,
+    mode: "deterministic",
+    provider: "deterministic",
+    model: null,
+    retrieval_enabled: true,
+    index_version: null,
+    contract_version: "1.0.0",
+    fallback_mode: false,
+    fallback_reason: null,
+    tools_available: ["gas_flame_statistics", "get_dataset_fields", "resolve_citation"],
+    notes: [],
+    ...overrides,
+  };
+}
+
+export function assistantAnswer(
+  overrides: Partial<AssistantAnswer> = {},
+): AssistantAnswer {
+  return {
+    contract_version: "1.0.0",
+    request_id: "req_assistant_test",
+    conversation_id: "conv_test",
+    answer:
+      "The mean measured peak_burner_temp_c in PSI-159 is 210.40181331133797 °C over 284 non-null values. The observed range is 25.6 to 651.5 °C. 49 rows are missing and are not zero.",
+    evidence_status: "fully_supported",
+    answer_type: "numerical",
+    citations: [
+      {
+        citation_id: "cit_f_21df4ec92db1eca0",
+        citation_type: "file",
+        accession: "PSI-159",
+        dataset_ids: ["psi-159-gas-flame"],
+        file_name: "PSI-159_Experimental table_CFI-G_Normal Flames.csv",
+        sheet: null,
+        row: null,
+        source_url:
+          "https://psi.nasa.gov/geode-py/ws/studies/PSI-159/download?file=PSI-159_Experimental%20table_CFI-G_Normal%20Flames.csv",
+        sha256: "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a",
+        verification_status: "verified",
+        availability: "available",
+        downloadable: true,
+        resolved: true,
+      },
+    ],
+    supporting_data: [
+      {
+        data_id: "data_1",
+        tool_call_id: "call_1",
+        label: "peak_burner_temp_c summary",
+        value_kind: "measured",
+        unit: "°C",
+        dataset_id: "psi-159-gas-flame",
+        accession: "PSI-159",
+        summary:
+          "peak_burner_temp_c has 284 non-null measured values and 49 missing values.",
+        values: {
+          status: "available",
+          non_null_count: 284,
+          missing_count: 49,
+          min: 25.6,
+          max: 651.5,
+          mean: 210.40181331133797,
+          median: 169.75,
+        },
+        citation_ids: ["cit_f_21df4ec92db1eca0"],
+      },
+    ],
+    claims: [
+      {
+        claim_id: "claim_1",
+        text: "peak_burner_temp_c mean is 210.40181331133797 °C.",
+        claim_type: "numerical",
+        value: 210.40181331133797,
+        unit: "°C",
+        value_kind: "measured",
+        dataset_id: "psi-159-gas-flame",
+        accession: "PSI-159",
+        tool_call_id: "call_1",
+        citation_ids: ["cit_f_21df4ec92db1eca0"],
+        supported: true,
+        validation_notes: [],
+      },
+    ],
+    limitations: [
+      {
+        code: "missing_not_zero",
+        message: "49 peak_burner_temp_c values are missing and are not zero.",
+        scope: "psi-159-gas-flame",
+        severity: "warning",
+        citation_ids: ["cit_f_21df4ec92db1eca0"],
+      },
+    ],
+    tools_used: [
+      {
+        call_id: "call_1",
+        tool: "dataset_field_statistics",
+        arguments: {
+          dataset_id: "psi-159-gas-flame",
+          fields: ["peak_burner_temp_c"],
+        },
+        status: "ok",
+        duration_ms: 1.23,
+        result_summary: "1 field summary returned.",
+        result_hash: "abc123",
+        error: null,
+      },
+    ],
+    evidence: [
+      {
+        evidence_id: "ev_call_1",
+        source_type: "tool_result",
+        title: "peak_burner_temp_c statistics",
+        snippet: "1 field summary returned.",
+        document_id: null,
+        source_reference: null,
+        accession: "PSI-159",
+        dataset_id: "psi-159-gas-flame",
+        citation_id: null,
+        section: null,
+        content_hash: "abc123",
+        index_version: null,
+        trusted_as_instruction: false,
+      },
+    ],
+    confidence: "high",
+    confidence_basis:
+      "The value comes from a deterministic field-statistics tool and resolves to a verified source citation.",
+    dataset_version: "dataset-version-test",
+    provider: "deterministic",
+    fallback_mode: false,
+    fallback_reason: null,
+    clarification: null,
+    validation: {
+      passed: true,
+      citation_validation_passed: true,
+      claim_validation_passed: true,
+      checks: [
+        { name: "citation_ids_resolved", passed: true, detail: "resolved 1 of 1" },
+        { name: "answer_numbers_grounded", passed: true, detail: null },
+      ],
+      errors: [],
+      warnings: [],
+    },
+    generated_at: "2026-11-10T16:00:00Z",
     ...overrides,
   };
 }

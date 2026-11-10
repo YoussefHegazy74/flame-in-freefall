@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiRequest, isApiError } from "@/lib/api/client";
+import { ApiError, apiPost, apiRequest, isApiError } from "@/lib/api/client";
 import { api } from "@/lib/api/endpoints";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -121,5 +121,73 @@ describe("apiRequest", () => {
     expect(isApiError(error)).toBe(true);
     expect((error as ApiError).kind).toBe("network");
     expect((error as ApiError).code).toBe("network_error");
+  });
+});
+
+describe("apiPost", () => {
+  it("sends an assistant question as a JSON POST body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(validEnvelope));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const payload = {
+      question: "How many valid PSI-10 gas-flame records are available?",
+      conversation_id: "conv_test",
+      include_retrieval: true,
+    };
+    await apiPost("/assistant/query", payload);
+
+    const [requestedUrl, init] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(new URL(requestedUrl).pathname).toBe("/api/v1/assistant/query");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBe(JSON.stringify(payload));
+    expect(init.headers).toMatchObject({
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    });
+    expect(init.credentials).toBe("omit");
+    expect(init.cache).toBe("no-store");
+  });
+
+  it("keeps the assistant error envelope instead of returning a partial answer", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          error: {
+            code: "validation_error",
+            message: "max_tool_calls must be between 1 and 12",
+            request_id: "req_assistant_error",
+          },
+        },
+        422,
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      apiPost("/assistant/query", { question: "test", max_tool_calls: 13 }),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      kind: "http",
+      status: 422,
+      code: "validation_error",
+      requestId: "req_assistant_error",
+    });
+  });
+
+  it("routes the assistant query helper through POST", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(validEnvelope));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.queryAssistant({ question: "What is in PSI-159?" });
+
+    const [requestedUrl, init] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(new URL(requestedUrl).pathname).toBe("/api/v1/assistant/query");
+    expect(init.method).toBe("POST");
   });
 });

@@ -105,11 +105,22 @@ export interface RequestOptions {
   timeoutMs?: number;
 }
 
-export async function apiRequest<T>(
+interface InternalRequestOptions extends RequestOptions {
+  method?: "GET" | "POST";
+  body?: unknown;
+}
+
+async function requestEnvelope<T>(
   path: string,
-  options: RequestOptions = {},
+  options: InternalRequestOptions = {},
 ): Promise<Envelope<T>> {
-  const { query, signal, timeoutMs = 20_000 } = options;
+  const {
+    query,
+    signal,
+    timeoutMs = 20_000,
+    method = "GET",
+    body,
+  } = options;
   const controller = new AbortController();
   let timedOut = false;
 
@@ -129,11 +140,17 @@ export async function apiRequest<T>(
   const onAbort = () => controller.abort();
   signal?.addEventListener("abort", onAbort, { once: true });
 
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
   let response: Response;
   try {
     response = await fetch(buildUrl(path, query), {
-      method: "GET",
-      headers: { Accept: "application/json" },
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
       signal: controller.signal,
       cache: "no-store",
       credentials: "omit",
@@ -203,4 +220,24 @@ export async function apiRequest<T>(
   }
 
   return payload as Envelope<T>;
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<Envelope<T>> {
+  return requestEnvelope<T>(path, { ...options, method: "GET" });
+}
+
+/**
+ * Send a JSON POST body. The assistant query endpoint is the only write-like
+ * route; it is still read-only science: it runs allowlisted tools and returns
+ * a validated answer envelope.
+ */
+export async function apiPost<T>(
+  path: string,
+  body: unknown,
+  options: RequestOptions = {},
+): Promise<Envelope<T>> {
+  return requestEnvelope<T>(path, { ...options, method: "POST", body });
 }

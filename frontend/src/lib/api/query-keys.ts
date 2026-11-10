@@ -64,4 +64,9 @@ export const queryKeys = {
     sheet?: string;
     row?: number;
   }) => ["provenance", params] as const,
+  assistantStatus: (includeIndex: boolean) =>
+    ["assistant-status", includeIndex] as const,
+  assistantSuggestions: (limit: number) =>
+    ["assistant-suggestions", limit] as const,
+  assistantTools: ["assistant-tools"] as const,
 };

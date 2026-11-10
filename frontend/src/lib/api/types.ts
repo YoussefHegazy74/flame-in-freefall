@@ -1012,3 +1012,224 @@ export interface PairedValues {
   provenance: SourceReference[];
   reason: PairedValuesReason | null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Phase 5: grounded assistant                                         */
+/* ------------------------------------------------------------------ */
+
+export type AssistantEvidenceStatus =
+  | "fully_supported"
+  | "partially_supported"
+  | "insufficient_evidence"
+  | "unavailable_data"
+  | "conflicting_evidence";
+
+export type AssistantAnswerType =
+  | "factual"
+  | "numerical"
+  | "exploratory"
+  | "comparison"
+  | "methodology"
+  | "clarification_required";
+
+export type AssistantConfidence = "high" | "moderate" | "low";
+
+export type AssistantValueKind =
+  | "measured"
+  | "computed"
+  | "derived"
+  | "categorical"
+  | "raw"
+  | "not_applicable";
+
+export type AssistantClaimType =
+  | "numerical"
+  | "factual"
+  | "comparison"
+  | "limitation"
+  | "provenance";
+
+export type AssistantToolStatus = "ok" | "empty" | "rejected" | "failed";
+
+export type AssistantSeverity = "error" | "warning" | "info";
+
+export type AssistantEvidenceSourceType =
+  | "document"
+  | "dataset_card"
+  | "investigation"
+  | "publication"
+  | "citation"
+  | "tool_result";
+
+export type AssistantMode = "deterministic" | "provider" | "fallback";
+
+export interface AssistantQueryParams {
+  question: string;
+  conversation_id?: string | null;
+  accession?: string | null;
+  dataset_id?: string | null;
+  include_retrieval?: boolean;
+  max_tool_calls?: number;
+}
+
+export interface AssistantCitationReference {
+  citation_id: string;
+  citation_type: "file" | "row";
+  accession: string;
+  dataset_ids: string[];
+  file_name: string;
+  sheet: string | null;
+  row: number | null;
+  source_url: string | null;
+  sha256: string | null;
+  verification_status: string;
+  availability: string;
+  downloadable: boolean;
+  resolved: boolean;
+}
+
+export interface AssistantToolCall {
+  call_id: string;
+  tool: string;
+  arguments: Record<string, unknown>;
+  status: AssistantToolStatus;
+  duration_ms: number;
+  result_summary: string | null;
+  result_hash: string | null;
+  error: string | null;
+}
+
+export interface AssistantSupportingData {
+  data_id: string;
+  tool_call_id: string;
+  label: string;
+  value_kind: AssistantValueKind;
+  unit: string | null;
+  dataset_id: string | null;
+  accession: string | null;
+  summary: string;
+  values: Record<string, unknown>;
+  citation_ids: string[];
+}
+
+export interface AssistantClaim {
+  claim_id: string;
+  text: string;
+  claim_type: AssistantClaimType;
+  value: number | string | null;
+  unit: string | null;
+  value_kind: AssistantValueKind | null;
+  dataset_id: string | null;
+  accession: string | null;
+  tool_call_id: string | null;
+  citation_ids: string[];
+  supported: boolean;
+  validation_notes: string[];
+}
+
+export interface AssistantLimitation {
+  code: string;
+  message: string;
+  scope: string | null;
+  severity: AssistantSeverity;
+  citation_ids: string[];
+}
+
+export interface AssistantValidationCheck {
+  name: string;
+  passed: boolean;
+  detail: string | null;
+}
+
+export interface AssistantValidationReport {
+  passed: boolean;
+  citation_validation_passed: boolean;
+  claim_validation_passed: boolean;
+  checks: AssistantValidationCheck[];
+  errors: string[];
+  warnings: string[];
+}
+
+export interface AssistantEvidenceItem {
+  evidence_id: string;
+  source_type: AssistantEvidenceSourceType;
+  title: string;
+  snippet: string;
+  document_id: string | null;
+  source_reference: string | null;
+  accession: string | null;
+  dataset_id: string | null;
+  citation_id: string | null;
+  section: string | null;
+  content_hash: string | null;
+  index_version: string | null;
+  trusted_as_instruction: false;
+}
+
+export interface AssistantClarification {
+  question: string;
+  options: string[];
+  missing: string[];
+}
+
+export interface AssistantAnswer {
+  contract_version: string;
+  request_id: string;
+  conversation_id: string | null;
+  answer: string;
+  evidence_status: AssistantEvidenceStatus;
+  answer_type: AssistantAnswerType;
+  citations: AssistantCitationReference[];
+  supporting_data: AssistantSupportingData[];
+  claims: AssistantClaim[];
+  limitations: AssistantLimitation[];
+  tools_used: AssistantToolCall[];
+  evidence: AssistantEvidenceItem[];
+  confidence: AssistantConfidence;
+  confidence_basis: string;
+  dataset_version: string | null;
+  provider: string;
+  fallback_mode: boolean;
+  fallback_reason: string | null;
+  clarification: AssistantClarification | null;
+  validation: AssistantValidationReport;
+  generated_at: string;
+}
+
+export interface AssistantStatus {
+  enabled: boolean;
+  mode: AssistantMode;
+  provider: string;
+  model: string | null;
+  retrieval_enabled: boolean;
+  index_version: string | null;
+  contract_version: string;
+  fallback_mode: boolean;
+  fallback_reason: string | null;
+  tools_available: string[];
+  notes: string[];
+}
+
+export interface AssistantSuggestion {
+  question_id: string;
+  category: string;
+  question: string;
+  answer_type_hint: AssistantAnswerType;
+}
+
+export interface AssistantSuggestionsResponse {
+  suggestions: AssistantSuggestion[];
+  count: number;
+}
+
+export interface AssistantToolDescription {
+  name: string;
+  description: string;
+  category: string;
+  arguments_schema: Record<string, unknown>;
+}
+
+export interface AssistantToolsResponse {
+  tools: AssistantToolDescription[];
+  count: number;
+}

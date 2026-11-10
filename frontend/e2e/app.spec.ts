@@ -244,6 +244,74 @@ test.describe("comparison studio", () => {
   });
 });
 
+test.describe("grounded research assistant", () => {
+  test("answers a numerical question with deterministic tools and citations", async ({
+    page,
+  }) => {
+    await page.goto("/assistant");
+
+    await expect(
+      page.getByRole("heading", { name: "Research assistant" }),
+    ).toBeVisible();
+    await expect(page.getByText("Scientific transparency")).toBeVisible();
+    await expect(page.getByText("Numbers are tool results")).toBeVisible();
+    await expect(
+      page.getByText(/Not produced by this assistant: fire-risk scores/),
+    ).toBeVisible();
+
+    await page
+      .getByLabel("Your question about the curated NASA PSI data")
+      .fill("How many valid PSI-10 gas-flame records are available?");
+    await page.getByRole("button", { name: "Ask assistant" }).click();
+
+    await expect(
+      page.getByText(/PSI-10 has 256 valid included gas-flame records/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Answer" }),
+    ).toContainText("71 qualified rows are excluded by default");
+    await expect(
+      page.getByRole("complementary", { name: "Evidence panel" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Citations" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Supporting data" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Limitations" }),
+    ).toBeVisible();
+    await expect(page.getByText("gas_flame_statistics").first()).toBeVisible();
+    await expect(page.getByText("validated").first()).toBeVisible();
+
+    await page
+      .getByRole("button", {
+        name: /Open citation record for PSI-10_Experimental table/,
+      })
+      .first()
+      .click();
+    await expect(page.getByRole("dialog", { name: "Citation record" })).toBeVisible();
+    await expect(page.getByText("Source file", { exact: true })).toBeVisible();
+  });
+
+  test("withholds paired values for a conditional comparison", async ({ page }) => {
+    await page.goto("/assistant");
+
+    await page
+      .getByLabel("Your question about the curated NASA PSI data")
+      .fill("Can PSI-10 and PSI-159 oxygen measurements be compared?");
+    await page.getByRole("button", { name: "Ask assistant" }).click();
+
+    await expect(
+      page.getByText(/registered as conditionally comparable/),
+    ).toBeVisible();
+    await expect(page.getByText(/paired_values\.available is false/)).toBeVisible();
+    await expect(
+      page.getByText(/No mean difference, statistical test, or causal claim is produced/),
+    ).toBeVisible();
+    await expect(page.locator("figure")).toHaveCount(0);
+  });
+});
+
 test.describe("quality center", () => {
   test("keeps registry-wide and per-dataset warnings visible", async ({ page }) => {
     await page.goto("/quality");

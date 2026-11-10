@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Search,
   ShieldCheck,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -99,6 +100,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Analysis",
     items: [
       {
+        label: "Research Assistant",
+        href: "/assistant",
+        icon: Sparkles,
+        description: "Grounded answers with deterministic numbers and citations",
+      },
+      {
         label: "Comparison Studio",
         href: "/compare",
         icon: GitCompare,
@@ -149,6 +156,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   telemetry: "Telemetry",
   smoke: "Smoke",
   compare: "Comparison Studio",
+  assistant: "Research Assistant",
   quality: "Data Quality",
   provenance: "Provenance",
   publications: "Publications",

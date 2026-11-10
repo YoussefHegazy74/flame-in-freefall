@@ -2,7 +2,9 @@
 
 import {
   keepPreviousData,
+  useMutation,
   useQuery,
+  type UseMutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import { api } from "./endpoints";
@@ -25,6 +27,11 @@ import type {
 } from "./endpoints";
 import { queryKeys } from "./query-keys";
 import type {
+  AssistantAnswer,
+  AssistantQueryParams,
+  AssistantStatus,
+  AssistantSuggestionsResponse,
+  AssistantToolsResponse,
   Citation,
   ComparabilitySummary,
   ComparisonDecision,
@@ -431,6 +438,61 @@ export function useProvenance(
     queryFn: ({ signal }) => api.getProvenance(params, signal),
     enabled: Boolean(enabled && params.accession && params.file),
     staleTime: 60_000,
+    ...options,
+  });
+}
+
+// ----------------------------------------------------------------------
+// Phase 5 assistant. Only the query is a mutation; it is still read-only
+// science. Status, suggestions, and tools are ordinary bounded GETs.
+// ----------------------------------------------------------------------
+export function useAssistantStatus(
+  includeIndex = false,
+  options?: QueryOptions<AssistantStatus>,
+) {
+  return useQuery({
+    queryKey: queryKeys.assistantStatus(includeIndex),
+    queryFn: ({ signal }) =>
+      api.getAssistantStatus(includeIndex, signal),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    ...options,
+  });
+}
+
+export function useAssistantSuggestions(
+  limit = 9,
+  options?: QueryOptions<AssistantSuggestionsResponse>,
+) {
+  return useQuery({
+    queryKey: queryKeys.assistantSuggestions(limit),
+    queryFn: ({ signal }) => api.getAssistantSuggestions(limit, signal),
+    staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+export function useAssistantTools(options?: QueryOptions<AssistantToolsResponse>) {
+  return useQuery({
+    queryKey: queryKeys.assistantTools,
+    queryFn: ({ signal }) => api.getAssistantTools(signal),
+    staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+export function useAssistantQuery(
+  options?: Omit<
+    UseMutationOptions<
+      Envelope<AssistantAnswer>,
+      Error,
+      AssistantQueryParams
+    >,
+    "mutationFn"
+  >,
+) {
+  return useMutation({
+    mutationFn: (query: AssistantQueryParams) => api.queryAssistant(query),
     ...options,
   });
 }

@@ -145,6 +145,7 @@ export const VALUE_KIND_LABELS: Record<string, string> = {
   raw: "Raw signal",
   categorical: "Categorical",
   derived: "Derived",
+  not_applicable: "Not applicable",
 };
 
 export function valueKindLabel(value: string | null | undefined): string {

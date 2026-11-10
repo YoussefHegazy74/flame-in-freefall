@@ -1,5 +1,10 @@
-import { apiRequest, type QueryParams } from "./client";
+import { apiPost, apiRequest, type QueryParams } from "./client";
 import type {
+  AssistantAnswer,
+  AssistantQueryParams,
+  AssistantStatus,
+  AssistantSuggestionsResponse,
+  AssistantToolsResponse,
   Citation,
   ComparabilitySummary,
   ComparisonDecision,
@@ -481,6 +486,32 @@ export const api = {
         row: params.row,
       },
       signal,
+    });
+  },
+
+  getAssistantStatus(includeIndex = false, signal?: AbortSignal) {
+    return apiRequest<AssistantStatus>("/assistant/status", {
+      query: { include_index: includeIndex },
+      signal,
+      timeoutMs: 30_000,
+    });
+  },
+
+  getAssistantSuggestions(limit = 9, signal?: AbortSignal) {
+    return apiRequest<AssistantSuggestionsResponse>("/assistant/suggestions", {
+      query: { limit },
+      signal,
+    });
+  },
+
+  getAssistantTools(signal?: AbortSignal) {
+    return apiRequest<AssistantToolsResponse>("/assistant/tools", { signal });
+  },
+
+  queryAssistant(params: AssistantQueryParams, signal?: AbortSignal) {
+    return apiPost<AssistantAnswer>("/assistant/query", params, {
+      signal,
+      timeoutMs: 60_000,
     });
   },
 };
