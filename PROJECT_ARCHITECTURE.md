@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status:** Architecture baseline for the post-foundation phases. The repository currently contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service, and a Next.js frontend. It does not yet contain an assistant or a production data store.
+**Status:** Architecture baseline after Phase 4. The repository contains verified metadata, a curated acquisition manifest, a checksum-verifying downloader, parsers, 13 canonical Parquet tables, validation and quality reports, comparability and serving registries, a bounded DuckDB query layer, a read-only FastAPI service with citations and scientific metadata contracts, and a Next.js frontend that renders them. It does not yet contain an assistant, a paired-comparison executor, or a production data store.
 
 This document describes the target system and the boundaries between what exists now and what must be built next. It is intentionally explicit about provenance, missingness, and scientific limits, because those are product requirements, not implementation details.
 
@@ -71,26 +71,27 @@ This document describes the target system and the boundaries between what exists
 - `data/reports/acquisition_report.json`, `validation_report.json`, `dataset_quality_report.json`, and `processing_report.json`.
 - `src/data_pipeline/`: downloader, manifest, provenance, channels, parsers, Parquet schemas, parse orchestration, canonical builders, validation, quality, and CLI.
 - `data/fixtures/`: seven exact excerpts from authenticated NASA sources with checksums and source-row provenance.
-- `tests/`: 239 unit tests and 31 integration tests covering parsers, schemas, downloader safety, CLI routing, validation failure paths, comparability, serving states, DuckDB queries, API contracts, and full-data counts.
-- `src/analytics/`: comparability engine, serving engine, registry loaders, bounded DuckDB operations, API-ready service envelopes, typed errors, and logging.
+- `tests/`: 297 unit, contract, and integration tests covering parsers, schemas, downloader safety, CLI routing, validation failure paths, comparability, serving states, DuckDB queries, API contracts, Phase 4 metadata contracts, caching, rate limiting, and full-data counts.
+- `src/analytics/`: comparability engine, serving engine, registry loaders, bounded DuckDB operations, API-ready service envelopes, typed errors, logging, citations, dataset metadata, publications, facets, paired-value eligibility, and measurement integrity.
 - `data/metadata/comparability_registry.json`: 93 measurements and 60 pair-specific comparison rules.
 - `data/metadata/serving_registry.json`: 9 curated dataset states and 93 measurement states across four uses.
-- `backend/`: read-only FastAPI application with 23 paths, strict query validation, shared envelopes, request IDs, CORS, and OpenAPI.
-- `frontend/`: Next.js 16 App Router application with 14 routes, a centralized typed API client, TanStack Query hooks, lazy-loaded Recharts time-series panels, responsive navigation, and scientific state components.
-- `frontend/tests/` and `frontend/e2e/`: 41 Vitest/React Testing Library tests, 17 real-backend Playwright flows, and 4 axe WCAG scans.
+- `data/metadata/paired_alignment_registry.json`: deliberately empty alignment registry; no verified paired-comparison method is committed.
+- `backend/`: read-only FastAPI application with 31 paths, strict query validation, shared envelopes, request IDs, CORS, ETag caching, rate limiting, and OpenAPI.
+- `frontend/`: Next.js 16 App Router application with 16 routes, a centralized typed API client, TanStack Query hooks, lazy-loaded Recharts time-series and paired-scatter panels, responsive navigation, scientific state components, citation drawer, file browser, field dictionary, limitations panel, publications pages, and dynamic facets.
+- `frontend/tests/` and `frontend/e2e/`: 54 Vitest/React Testing Library tests, 24 real-backend Playwright flows, and 6 axe WCAG scans.
 - `scripts/build_phase2_registries.py`: deterministic registry generator with `--check`.
-- `docs/comparability.md`, `docs/serving-states.md`, `docs/query-contract.md`, `docs/api-implementation.md`, `docs/frontend-readiness.md`, `docs/known-limitations.md`: Phase 2 contracts, limitations, and frontend handoff.
+- `docs/comparability.md`, `docs/serving-states.md`, `docs/query-contract.md`, `docs/api-implementation.md`, `docs/frontend-readiness.md`, `docs/phase4-contracts.md`, `docs/comparison-alignment.md`, `docs/known-limitations.md`: contracts, methodology, limitations, and frontend handoff.
 - `DATA_SOURCES.md`: verified source inventory, per-record cards, comparability matrix, access limitations, verification log.
-- `DATA_DICTIONARY.md`: exact source headers, units, missingness, the implemented canonical schema, and Phase 2 registry fields.
+- `DATA_DICTIONARY.md`: exact source headers, units, missingness, the implemented canonical schema, and Phase 4 metadata contracts.
 - Architecture, roadmap, API contract, contribution guide, and decision records.
 
 ### 3.2 Not implemented yet
 
 - Grounded assistant and evaluation harness.
-- Citation, file-listing, field, publication, and facet endpoints from the broader target contract.
-- Citation drawer, file/publication browsing, and paired comparison values, which depend on those endpoints.
-- ETag/cache headers, rate limiting, and authentication.
+- A verified paired-comparison executor. The API exposes eligibility and withholds values.
+- Authentication or user accounts. The public read-only MVP does not need them.
 - CI/CD, deployment, observability, and production operations.
+- A production data store and external cache. Caching and rate limiting are process-local.
 
 The roadmap in `DEVELOPMENT_ROADMAP.md` defines the gates between these states.
 
@@ -338,12 +339,19 @@ Client
 
 The implemented service uses:
 
-- `backend/app.py`: app factory, routes, strict query route, error handlers, CORS, request IDs.
+- `backend/app.py`: app factory, routes, strict query route, error handlers, CORS, request IDs, ETag middleware, rate-limit middleware, structured request logging.
 - `backend/models.py`: Pydantic success and error envelopes.
-- `src/analytics/service.py`: API-ready shaping over registries, quality, and queries.
+- `backend/operations.py`: cache settings, ETag generation, conditional-request matching, and the process-local fixed-window rate limiter.
+- `src/analytics/service.py`: API-ready shaping over registries, quality, queries, and Phase 4 contracts.
 - `src/analytics/db.py`: named, bounded DuckDB operations.
 - `src/analytics/comparability.py` and `src/analytics/serving.py`: scientific decisions.
-- `data/metadata/*.json`: committed comparability and serving registries.
+- `src/analytics/citations.py`: stable file and row citation IDs, checksum and retrieval evidence, row verification.
+- `src/analytics/dataset_metadata.py`: curated file manifests, field dictionaries, source-column mappings, and scoped limitations.
+- `src/analytics/publications.py`: publication deduplication, conflict preservation, and verification status.
+- `src/analytics/facets.py`: facet counts and per-accession distributions from canonical gas-flame rows.
+- `src/analytics/paired.py`: paired-value eligibility, conditions, alignment requirements, and withholding reasons.
+- `src/analytics/integrity.py`: canonical-data presence checks for registry measurements.
+- `data/metadata/*.json`: committed comparability, serving, and paired-alignment registries.
 
 ### 8.1 Design rules
 
@@ -355,18 +363,22 @@ The implemented service uses:
 - **Units in every response.** A numeric value includes `unit` or `not stated`.
 - **Quality flags in every response.** Missingness, sentinels, calibration limits, and serving restrictions travel with the payload.
 - **Provenance in every data response.** Dataset version, source file, row or row range, checksum, and retrieval time.
-- **Stable error codes.** `invalid_query`, `not_found`, `unknown_measurement`, `range_too_large`, `validation_error`, `service_unavailable`, `query_timeout`, `query_error`, `internal_error`.
+- **Stable error codes.** `invalid_query`, `not_found`, `unknown_measurement`, `range_too_large`, `validation_error`, `rate_limited`, `service_unavailable`, `query_timeout`, `query_error`, `internal_error`.
 - **Scientific decisions are payloads.** `GET /compare` returns `200` with the comparability state, including `blocked` and `not_comparable`.
 - **No hidden aggregation.** The API returns bounded rows and series; it does not compute new scientific aggregates.
+- **No fabricated citations or publications.** Missing metadata is `null` with an explicit status, never inferred.
 
 ### 8.2 Caching and operations
 
 - CORS origins come from `FLAME_CORS_ORIGINS`.
 - `X-Request-ID` is echoed or generated and appears in the envelope.
 - Query timeout comes from `FLAME_QUERY_TIMEOUT_SECONDS` (default 10 s).
-- ETag/cache headers, rate limiting, and authentication are not implemented yet.
-- Catalog and dataset metadata are cacheable in a future layer with an ETag derived from the registry snapshot.
-- Telemetry series are cacheable by run, channel set, and time range once a cache layer exists.
+- Successful `GET` JSON responses except `/health` receive a strong `ETag` over a stable body representation that excludes `meta.request_id` and `meta.generated_at`.
+- `Cache-Control` defaults to `public, max-age=60, must-revalidate`; `FLAME_CACHE_ENABLED`, `FLAME_CACHE_MAX_AGE`, and `FLAME_CACHE_CONTROL` configure it.
+- `If-None-Match` returns `304` with the same validator. Errors and health responses use `no-store`.
+- Rate limiting is a process-local fixed window keyed by client IP: 600 requests per 60 seconds by default. `FLAME_RATE_LIMIT_ENABLED`, `FLAME_RATE_LIMIT_REQUESTS`, `FLAME_RATE_LIMIT_WINDOW_SECONDS`, and `FLAME_TRUST_PROXY` configure it.
+- Every request emits one JSON log line with `request_id`, `method`, `path`, `status`, and `duration_ms`.
+- Authentication is intentionally absent for the public read-only MVP. Rate limiting is not authentication; adding private data or write operations requires an authentication layer.
 
 ---
 
@@ -393,15 +405,17 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 | `/investigations` | Searchable, filterable, paginated investigation catalog. |
 | `/investigations/[accession]` | Investigation detail with curated datasets, measurements, warnings, and source references. |
 | `/datasets` | Curated dataset catalog with role, access, serving state, and quality. |
-| `/datasets/[datasetId]` | Dataset detail: measurements, units, calibration, serving decisions, provenance. |
-| `/experiments/gas-flame` | Gas-flame test explorer for PSI-10 and PSI-159 with accession-bound filters. |
+| `/datasets/[datasetId]` | Dataset detail: measurements, field dictionary, curated files, limitations, publications, units, calibration, serving decisions, provenance. |
+| `/experiments/gas-flame` | Gas-flame test explorer for PSI-10 and PSI-159 with accession-bound filters and backend facets. |
 | `/experiments/materials` | PSI-25 and PSI-26 material matrices with oxygen-ambiguity warnings. |
 | `/experiments/droplets` | PSI-69 droplet summary with the source-labeled burning-rate unit. |
 | `/telemetry` | SAFFIRE-III run and bounded time-series explorer. |
 | `/smoke` | SAME-R run and bounded time-series explorer. |
-| `/compare` | Backend-authoritative measurement comparison studio. |
+| `/compare` | Backend-authoritative measurement comparison studio with integrity and paired-value eligibility panels. |
 | `/quality` | Registry-wide and per-dataset quality, serving, and limitation center. |
-| `/provenance` | Exact source-file and row resolution. |
+| `/provenance` | Exact source-file and row resolution with file and row citation drawers. |
+| `/publications` | Deduplicated publication list with verification and missing-field status. |
+| `/publications/[publicationId]` | Publication detail with related investigations, DOI, and provenance. |
 | `/about` | Data sources, processing, comparability, quality, limitations, and citation policy. |
 | `/assistant` | Planned Phase 5; not implemented. |
 
@@ -415,8 +429,10 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 6. No "risk score" badge unless a documented, validated metric exists.
 7. Records with no `added` archive but a public experimental table show the verified table and an `experimental_table_only` badge; records with no public artifact show "No public files". Neither shows an empty chart that looks like zero data.
 8. The assistant panel, when built, shows `measured`, `computed`, `derived`, or `not available` for each claim.
-9. The citation drawer, when built, lists the accession, file, field, row/range, checksum, and retrieval date. It is blocked until the API exposes citations.
-10. The interface is keyboard accessible and meets WCAG 2.1 AA contrast and focus requirements. Four axe scans currently report no serious or critical violations.
+9. The citation drawer lists the accession, file, field, row/range, checksum, retrieval date, and verification status. It never shows a download link for an unavailable file.
+10. The interface is keyboard accessible and meets WCAG 2.1 AA contrast and focus requirements. Six axe scans currently report no serious or critical violations.
+11. The comparison studio renders a paired chart only when the backend returns `paired_values.available=true`, `alignment.verified=true`, and numeric points. Otherwise it explains the withholding reason.
+12. Dynamic facet counts come from the backend and preserve accession-specific units; the UI never merges PSI-10 atm with PSI-159 bar.
 
 ### 9.4 State boundaries
 
@@ -432,10 +448,10 @@ The `dev` and `build` scripts use the webpack builder explicitly.
 
 ### 9.6 Known frontend limits
 
-- No citation drawer, file list, publication list, field dictionary endpoint, or facet endpoint.
-- `/compare` returns a decision and reasons, not paired values, so no comparison chart is drawn.
-- No ETag, cache-control, or rate-limiting contract.
-- Visual regression and automated responsive-viewport tests remain open.
+- No assistant interface.
+- Paired comparison values are not produced from current canonical data; the chart remains conditional and is tested with isolated fixtures. The backend returns `paired_values.available=false`.
+- ETag/304 is handled by the browser cache; the frontend does not implement custom revalidation logic.
+- Visual regression tests remain open. Automated responsive-viewport coverage exists for the dataset metadata page and the main routes.
 - Turbopack is not used in the checked-in scripts; webpack is the supported build path for the current dependency layout.
 
 ---
@@ -746,6 +762,7 @@ A parser is done when:
 - **ADR 0001:** MVP dataset selection. See `docs/decisions/0001-mvp-dataset-selection.md`.
 - **ADR 0002:** Phase 1 pipeline contracts, sentinel policy, and canonical Parquet outputs. See `docs/decisions/0002-phase-1-pipeline-contracts.md`.
 - **ADR 0003:** Phase 2 comparability registry, serving states, bounded DuckDB layer, and read-only API. See `docs/decisions/0003-phase-2-comparability-serving-and-api.md`.
+- **Phase 4 metadata contracts:** citations are file-level by default and row-level on demand; dataset files are the curated manifest plus documented known-unavailable files; fields derive from the comparability registry and verified source columns; publications are deduplicated by DOI or normalized title with conflicts preserved; facets come from canonical rows; paired values are withheld without a verified alignment method. See `docs/phase4-contracts.md` and `docs/comparison-alignment.md`.
 - **Metadata in Git, raw data outside Git.** This keeps the repository reviewable and avoids committing terabytes.
 - **Summary tables first.** PSI-10 and PSI-159 are the initial gas-flame foundation; PSI-100 and PSI-101 are the initial telemetry/smoke foundation.
 - **No BASS spread-rate derivation in the MVP.** The test matrices do not contain a processed spread rate, and video computer vision is a separate program.
@@ -753,7 +770,7 @@ A parser is done when:
 
 ### 16.2 Open decisions
 
-1. **Charting library:** uPlot vs Plotly. Choose based on time-series performance, accessibility, and bundle size.
+1. **Charting library:** Recharts was selected for the frontend. A future high-density time-series view may add a second renderer only with an explicit accessibility and performance review.
 2. **Analytical store:** DuckDB over Parquet for the MVP; PostgreSQL for metadata. Decided for Phase 2: DuckDB read-only views with bounded named queries. Revisit if concurrent analytical load grows.
 3. **LLM provider:** provider-agnostic interface; no provider is required for the core product.
 4. **Authentication:** not needed for the public MVP; revisit if saved views or private annotations are added.
@@ -807,4 +824,44 @@ Verified Phase 2 result:
 - 270 tests pass: 239 unit, 31 integration.
 - No canonical value, unit, or quality flag changed.
 
-The frontend exploration layer is implemented against this API. Remaining work is the target-contract endpoint set (citations, files, fields, publications, facets), the citation drawer and paired comparison values that depend on it, and then the grounded insight layer.
+Phase 3 is complete when:
+
+1. Every implemented API capability has a typed frontend contract and a TanStack Query hook.
+2. The frontend renders backend serving, comparability, quality, calibration, and provenance decisions without recomputing them.
+3. Missing values, raw/uncalibrated channels, and blocked comparisons have explicit UI states.
+4. Series caps and `413` responses are surfaced, never hidden by silent downsampling.
+5. Navigation, keyboard access, focus handling, and mobile layout work across all routes.
+6. Unit/component tests, real-backend Playwright flows, and axe scans pass.
+7. The production build succeeds.
+8. The Phase 3 commit is pushed and the remote SHA is verified.
+
+Verified Phase 3 result:
+
+- 16 routes, 14 at the Phase 3 commit; 41 unit/component tests and 17 Playwright tests at delivery.
+- Centralized typed API client with envelope handling and normalized errors.
+- Lazy-loaded Recharts panels, scientific state badges, provenance blocks, and responsive navigation.
+- Production build passes; four axe scans report no serious or critical violations.
+
+Phase 4 is complete when:
+
+1. Citations, dataset files, fields, limitations, publications, and gas-flame facets are implemented as read-only contracts.
+2. Citations use stable IDs and verified checksums; unavailable files are never downloadable.
+3. Field metadata uses canonical names, verified source columns, units, value kinds, calibration, missingness, and comparability restrictions without invented descriptions.
+4. Limitations have stable IDs, scope, severity, affected operations, evidence, and resolution status.
+5. Publications are deduplicated, conflicts are preserved, and missing year/venue are returned as unavailable.
+6. Facets come from canonical rows, report exclusions, and preserve accession-specific units.
+7. `/compare` exposes integrity checks and withholds paired values unless a verified alignment method exists.
+8. ETag/`304`, `Cache-Control`, rate limiting, request IDs, and structured logs work and are configurable.
+9. The frontend renders all new contracts with loading, empty, error, blocked, and unavailable states.
+10. Backend, frontend, Playwright, axe, and build checks pass.
+
+Verified Phase 4 result:
+
+- 31 API paths and 297 backend tests.
+- 54 frontend unit/component tests, 24 Playwright tests, 6 axe scans.
+- 299 deduplicated publications, 235 with DOI, 64 without; year and venue unavailable.
+- 74 file-level citations plus on-demand row citations; PSI-98's two known 404 files remain unavailable.
+- Facet counts: PSI-10 327 total / 256 included / 71 excluded; PSI-159 333 / 333 / 0.
+- Paired values withheld with `no_verified_alignment` or `conditions_not_verified`.
+
+The next layer is the grounded insight layer. Remaining product work is a verified paired-comparison executor, deployment operations, and the assistant.

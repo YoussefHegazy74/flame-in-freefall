@@ -2,7 +2,7 @@
 
 **Project:** Flame in Freefall
 **Team:** AFAQ
-**Status date:** 2026-11-09
+**Status date:** 2026-11-10
 **Canonical dataset version:** `2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb`
 
 This page consolidates the limitations that affect comparisons and serving. It does not replace `DATA_SOURCES.md` or `DATA_DICTIONARY.md`; it points to the decisions those documents require.
@@ -22,6 +22,9 @@ The API encodes these limits as comparability states, serving states, quality fl
 | PSI-100 SAFFIRE-III | Some channels are raw and uncalibrated; timestamp reconciliation is unresolved. | Raw channels are not physical measurements; runs are never concatenated. |
 | PSI-101 SAME-R | `-999` sentinels exist; `DustTrakA` inactivity and material/aging joins are unresolved. | Sentinels are null with quality flags; no flame-spread rate or validated material join. |
 | PSI-25 BASS-II | `pressure_atm` is present but has no non-null values; the initial CO `-1` meaning is undefined. | Pressure is blocked; `-1` is preserved and flagged, not treated as a measurement. |
+| PSI-159 CFI-G | `pressure_initial_atm` is registry-marked available but has zero canonical values; `pressure_approx_bar` carries bar values. | Integrity reports `missing`; the bar field is not treated as atm and is not converted. |
+| PSI-10 ACME Flame Design | `pressure_approx_bar` is registry-marked available but has zero canonical values; `pressure_initial_atm` carries atm values. | Integrity reports `missing`; the atm field is not treated as bar and is not converted. |
+| NASA PSI publication registry | Year and venue are absent for the publication snapshot. | Returned as `null` with `field_status: "not_available_in_registry"`; never inferred from DOI, title, or ID. |
 | PSI-20 ACME BRE | Oxygen text anomalies include `3400%` and `2100%`. | Preserved raw; not interpreted as 34% or 21% without confirmation. |
 | PSI-21 ACME CLD Flame | MFC headers do not state a unit. | `not stated`; no conversion. |
 | PSI-25 / PSI-26 BASS / BASS-II | No published flame-spread-rate table was identified. | No spread-rate measurement, chart, or comparison. |
@@ -77,19 +80,27 @@ For registry-level `unit` and `unit_status`, use `/api/v1/measurements` or `/api
 
 ---
 
-## 6. API limitations after Phase 3
+## 6. API and platform limitations after Phase 4
 
-Not implemented yet:
+Implemented in Phase 4:
 
-- citation records and `/citations/{citation_id}`;
-- dataset file, field, limitation, and publication endpoints;
-- gas-flame facets;
-- paired comparison values (the comparison endpoint returns a decision and reasons only);
-- ETag/cache headers, rate limiting, and authentication;
-- embedded OpenAPI request/response examples;
-- assistant endpoints and any LLM/RAG layer.
+- file and row citations with stable IDs, checksums, retrieval dates, and provenance;
+- curated dataset files, field metadata, limitations, publications, and gas-flame facets;
+- comparison integrity checks and paired-value eligibility;
+- ETag/`304`, `Cache-Control`, configurable rate limiting, request IDs, and structured request logs;
+- frontend citation drawers, file browser, field dictionary, limitations panel, publications list/detail, dynamic facets, and comparison-integrity/paired-value panels.
 
-The frontend is implemented, but it deliberately omits the citation drawer, file/publication lists, and comparison chart because their API contracts do not exist. The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
+Still not implemented or deliberately limited:
+
+- no verified paired-comparison executor; `/compare` returns `paired_values.available=false` with `conditions_not_verified`, `no_verified_alignment`, `comparison_not_approved`, or `measurement_unavailable`;
+- no assistant endpoints or LLM/RAG layer;
+- no authentication; the API is public and read-only, and rate limiting is not authorization;
+- rate limiting is process-local and has no shared store;
+- no embedded OpenAPI request/response examples; examples live in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`;
+- the file browser exposes the curated manifest plus documented known-unavailable files, not the full public inventory;
+- no deployment, CI/CD, or production operations yet.
+
+The implemented material route is `/material/tests`; the target contract uses `/materials/tests`. The investigation catalog is `/investigations`; `/datasets` means curated datasets. These differences are recorded in `API_DOCUMENTATION.md` §1.1 and `docs/api-implementation.md`.
 
 ---
 
@@ -113,4 +124,6 @@ If a question needs a value that is not in the canonical tables, the correct res
 - `docs/serving-states.md` — dataset and measurement states by use.
 - `docs/query-contract.md` — DuckDB operations, bounds, and provenance.
 - `docs/api-implementation.md` — implemented API surface and gaps.
+- `docs/phase4-contracts.md` — citations, files, fields, limitations, publications, facets.
+- `docs/comparison-alignment.md` — paired-comparison eligibility and withholding rules.
 - `docs/frontend-readiness.md` — what the frontend may rely on and must not infer.

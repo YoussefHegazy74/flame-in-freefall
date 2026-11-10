@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
-**Status date:** 2026-11-09
+**Status date:** 2026-11-10
 
 This roadmap is sequenced by dependency, not by calendar. It does not assume a competition deadline, a team size, or a deployment budget. Each phase has an exit gate; a phase is not "done" because a demo works, but because its acceptance criteria and tests pass.
 
@@ -30,9 +30,9 @@ The guiding rule is simple: **science first, interface second, AI last.** A char
 | 0 | Scientific foundation and metadata registry | **Complete** (commit `b927bac`, pushed to `origin/main`) | Registry validates against live PSI; docs agree; initialization commit pushed |
 | 1 | Data acquisition and parser foundation | **Complete** (2026-11-09) | MVP files downloaded, checksummed, parsed, and tested on fixtures |
 | 2 | Scientific validation and canonical data | **Complete** (2026-11-09) | Canonical tables pass data-quality gates; units and limitations resolved or labeled |
-| 3 | Read-only API | **In progress** (core implemented 2026-11-09; contract gaps tracked in §6.5) | OpenAPI contract, provenance, pagination, and contract tests pass |
-| 4 | Frontend exploration experience | **In progress** (core delivered 2026-11-09; citation drawer and backend-dependent items open) | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
-| 5 | Grounded insight layer | Planned | Golden-set evaluation passes; numeric claims are 100% cited |
+| 3 | Read-only API | **Complete** (2026-11-10) | OpenAPI contract, provenance, pagination, cache, rate limiting, and contract tests pass |
+| 4 | Frontend exploration experience | **Complete** (2026-11-10) | Catalog, test explorer, telemetry/smoke views, citations, accessibility pass |
+| 5 | Grounded insight layer | Planned (next) | Golden-set evaluation passes; numeric claims are 100% cited |
 | 6 | Hardening and deployment | Planned | CI/CD, observability, security, backups, and runbook verified |
 | 7 | Future extensions | Deferred | Separate decision record and validation plan |
 
@@ -318,16 +318,17 @@ Expose canonical data with provenance, units, quality flags, and citations throu
 - [x] Scaffold FastAPI with Pydantic v2 and OpenAPI.
 - [x] Implement `GET /api/v1/health`.
 - [x] Implement catalog and dataset endpoints.
-- [ ] Implement field and limitation endpoints. (Target contract; not in the Phase 2 API.)
+- [x] Implement field and limitation endpoints.
 - [x] Implement gas-flame test query and detail endpoints.
 - [x] Implement telemetry run/series endpoints with time range and channel allowlist.
 - [x] Implement smoke run/series endpoints.
 - [x] Implement curated comparison endpoints.
-- [x] Implement provenance endpoints. (Citation records remain a target-contract gap.)
-- [ ] Implement assistant tool endpoints (internal or public, with auth).
+- [x] Implement provenance endpoints and file/row citation records.
+- [ ] Implement assistant tool endpoints (internal or public, with auth). Phase 5.
 - [x] Add pagination, filtering, and stable error codes.
-- [ ] Add ETag/cache headers.
-- [ ] Add OpenAPI examples. (The schema is published; request/response examples are not yet embedded.)
+- [x] Add ETag/`304`, `Cache-Control`, request IDs, and structured request logs.
+- [x] Add configurable fixed-window rate limiting.
+- [ ] Add embedded OpenAPI examples. Deferred; request and response examples are documented in `API_DOCUMENTATION.md`, `docs/api-implementation.md`, and `docs/phase4-contracts.md`.
 - [x] Add contract tests.
 
 ### 6.3 Acceptance criteria
@@ -350,28 +351,31 @@ Expose canonical data with provenance, units, quality flags, and citations throu
 - Invalid dataset/field tests.
 - Blocked-dataset tests.
 - Provenance resolution tests.
-- Cache-header tests.
+- Cache-header and conditional-request tests.
+- Rate-limit tests.
+- Citation integrity and row-verification tests.
 
-### 6.5 Phase 3 partial completion record (2026-11-09)
+### 6.5 Phase 3 completion record (2026-11-10)
 
-Implemented in the Phase 2 backend:
+Delivered across the Phase 2 API commit and the Phase 4 metadata-contract commit:
 
-- FastAPI app with 23 paths under `/api/v1`.
-- Health, meta, investigations, datasets, dataset quality, measurements, gas-flame, material, droplet, telemetry, smoke, comparability, compare, and provenance.
+- FastAPI app with 31 paths under `/api/v1`.
+- Health, meta, investigations, datasets, dataset quality, dataset files, dataset fields, dataset limitations, measurements, gas-flame, gas-flame facets, material, droplet, telemetry, smoke, comparability, compare, citations, citation detail, publications, publication detail, and provenance.
 - One success envelope and one error envelope.
 - Strict query allowlisting; unknown and repeated parameters rejected.
 - Pagination, series caps, `413 range_too_large`, and stable error codes.
-- Request IDs, environment-driven CORS, OpenAPI schema, and contract tests.
+- Request IDs, environment-driven CORS, OpenAPI schema, and 297 passing tests.
+- ETag/`304` for stable success responses, `Cache-Control: no-store` for errors, and health responses excluded from ETag generation.
+- Configurable fixed-window rate limiting with `429` and `Retry-After`.
+- Structured request logs with `request_id`, method, path, status, and duration.
+- File-level citations for the curated manifest and on-demand row citations verified against canonical tables.
 
-Still open before Phase 3 can be called complete:
+Still open:
 
-- Field, limitation, file, publication, citation, and facet endpoints.
-- ETag/cache headers and rate limiting.
-- Embedded OpenAPI examples.
-- Assistant endpoints.
-- The rate-limited contract test in §6.3 item 8.
+- Embedded OpenAPI request/response examples.
+- Assistant endpoints, which belong to Phase 5.
 
-The implemented route `/material/tests` should be reconciled with the target `/materials/tests` before frontend integration.
+The implemented route `/material/tests` remains the public path; it is documented as the material test list rather than renamed late in the cycle.
 
 ---
 
@@ -381,7 +385,7 @@ The implemented route `/material/tests` should be reconciled with the target `/m
 
 Build an honest, accessible interface for exploring the verified data. Do not add decorative dashboards or unsupported rankings.
 
-**Delivery status (2026-11-09):** the core frontend is implemented in `frontend/` and runs against the real API and canonical data. The citation drawer remains blocked on the missing citation endpoint. Files, publications, and field metadata are likewise absent from the API, so those detail sections state their unavailability rather than inventing content.
+**Delivery status (2026-11-10):** complete. The frontend is implemented in `frontend/` and runs against the real API and canonical data. It renders citations, curated files, field dictionaries, limitations, publications, dynamic facets, comparison integrity, and paired-value eligibility from backend contracts. It never invents missing metadata or a paired series.
 
 ### 7.2 Workstreams
 
@@ -389,17 +393,18 @@ Build an honest, accessible interface for exploring the verified data. Do not ad
 - [x] Implement the design system and accessibility tokens.
 - [x] Build the home page with project status and limitations.
 - [x] Build the dataset catalog with role and access badges.
-- [x] Build the dataset detail page with tables, provenance, and serving states. File and publication lists are absent because the API does not expose them.
-- [x] Build the gas-flame test explorer with filters and a data table.
+- [x] Build the dataset detail page with tables, provenance, serving states, file browser, field dictionary, limitations, and publications.
+- [x] Build the gas-flame test explorer with dynamic facets, filters, and a data table.
 - [x] Build the telemetry explorer with channel selection and time range.
 - [x] Build the smoke explorer.
-- [x] Build curated comparison views only for compatible fields.
+- [x] Build curated comparison views only for compatible fields, with integrity and paired-value panels.
 - [x] Build the methods/limitations page from `DATA_SOURCES.md` and `DATA_DICTIONARY.md`.
-- [ ] Build the citation drawer. Blocked: no citation endpoint and no paired comparison values.
-- [x] Add empty, loading, error, blocked, `experimental_table_only`, and `no_public_files` states.
+- [x] Build the citation drawer for files, rows, and provenance records.
+- [x] Build the publications list and detail routes.
+- [x] Add empty, loading, error, blocked, unavailable, `experimental_table_only`, and `no_public_files` states.
 - [x] Add keyboard navigation and screen-reader labels.
-- [x] Add responsive layouts.
-- [x] Add 41 unit/component tests, 17 real-backend Playwright flows, and 4 axe WCAG 2.1 A/AA scans.
+- [x] Add responsive layouts and automated mobile viewport coverage.
+- [x] Add 54 unit/component tests, 24 real-backend Playwright flows, and 6 axe WCAG 2.1 A/AA scans.
 
 ### 7.3 Acceptance criteria
 
@@ -412,8 +417,9 @@ Build an honest, accessible interface for exploring the verified data. Do not ad
 7. WCAG 2.1 AA checks pass for the main flows.
 8. The app works without the assistant.
 9. The app does not compute scientific aggregates that the API does not expose.
+10. A paired chart renders only when the backend returns a complete verified alignment contract.
 
-**Delivery check:** criteria 1–5 and 7–9 are implemented and covered by the Playwright suite. Criterion 6 remains open because the API exposes no citation, file, or publication endpoints.
+**Delivery check:** all criteria are implemented. Criterion 6 is covered by file and row citation drawers. Criterion 10 is covered by the `isChartReady` guard and by Playwright assertions that the chart is withheld for `conditions_not_verified`.
 
 ### 7.4 Tests
 
@@ -421,8 +427,9 @@ Build an honest, accessible interface for exploring the verified data. Do not ad
 - [x] End-to-end tests for catalog → dataset → chart → quality/provenance.
 - [x] Accessibility tests with axe.
 - [ ] Visual regression tests for key screens.
-- [ ] Responsive tests for mobile and desktop. Responsive layouts exist and were manually checked; automated viewport tests remain open.
+- [x] Responsive tests for mobile and desktop viewports.
 - [x] Error-state tests for blocked, `experimental_table_only`, and `no_public_files` datasets.
+- [x] Phase 4 tests for citations, files, fields, limitations, publications, facets, and paired-value withholding.
 
 ---
 
@@ -466,6 +473,19 @@ Add an assistant that answers questions from verified data and documents, with c
 - Citation-validator tests.
 - Provider-failure tests.
 - Latency and cost tests.
+
+### 8.5 Phase 5 entry recommendations
+
+Phase 5 can build on the Phase 4 contracts without changing them. Recommended order:
+
+1. **Freeze the answer contract first.** Define `answer`, `evidence_status`, `citations`, `limitations`, and `method` before choosing a model provider. Every numeric claim must reference a tool result and a `cit_f_` or `cit_r_` citation.
+2. **Build the retrieval index from verified artifacts only.** Use dataset cards, `DATA_DICTIONARY.md`, limitations, publications, and citation records. Do not index raw comments as instructions.
+3. **Wrap existing service methods as tools.** Catalog, test queries, telemetry, smoke, comparison, citation resolution, and provenance already exist. The assistant should select tools, never generate SQL or file paths.
+4. **Validate citations before returning an answer.** Resolve every citation ID through the citations endpoint and reject answers with unknown or mismatched file/row locators.
+5. **Treat paired values as unavailable unless the API says otherwise.** If `paired_values.available` is false, the assistant must state the reason and must not infer a comparison from separate summaries.
+6. **Add refusal tests for the known traps.** Missing values are not zero; PSI-10 atm is not PSI-159 bar; PSI-98's two telemetry files are unavailable; `experimental_table_only` answers are limited to the summary table.
+7. **Implement the deterministic fallback early.** Search, catalog answers, and citation lookup must work with the LLM disabled.
+8. **Keep the paired-comparison executor as a separate scientific milestone.** A verified alignment method with exact keys, value fields, and units must be committed before any series is computed. Until then, Phase 5 answers cite the withholding reason.
 
 ---
 
@@ -607,24 +627,26 @@ These are scientifically interesting but out of MVP scope. Each requires a separ
 
 - [x] Canonical tables pass data-quality gates.
 - [x] Units resolved or labeled `not stated`; unresolved unit ambiguities are flagged.
-- [ ] Comparability allowlist implemented.
-- [ ] Blocked-dataset state implemented.
+- [x] Comparability allowlist implemented.
+- [x] Blocked-dataset state implemented.
 - [x] Data-quality report reproducible.
 
 ### Milestone 3 — API
 
-- [ ] OpenAPI published.
-- [ ] Contract tests pass.
-- [ ] Provenance, units, quality flags, and citations in every response.
-- [ ] Bounded time-series queries.
+- [x] OpenAPI published.
+- [x] Contract tests pass.
+- [x] Provenance, units, quality flags, and citations in every response.
+- [x] Bounded time-series queries.
+- [x] Cache, rate limiting, request IDs, and structured logs.
 
 ### Milestone 4 — Frontend
 
-- [ ] Catalog, dataset detail, test explorer, telemetry, smoke, compare, methods.
-- [ ] Citation drawer.
-- [ ] Missingness and `experimental_table_only`/`no_public_files` states.
-- [ ] Accessibility checks pass.
-- [ ] No unsupported chart or ranking.
+- [x] Catalog, dataset detail, test explorer, telemetry, smoke, compare, methods.
+- [x] Citation drawer, file browser, field dictionary, limitations, and publications.
+- [x] Missingness and `experimental_table_only`/`no_public_files` states.
+- [x] Accessibility checks pass.
+- [x] No unsupported chart or ranking.
+- [x] Paired chart withheld unless the backend returns a verified alignment.
 
 ### Milestone 5 — Insight
 
@@ -685,11 +707,13 @@ A feature is done when:
 
 ## 15. Immediate next actions
 
-1. Implement the comparability allowlist and blocked-dataset state from Phase 2.
-2. Document DuckDB query patterns over the canonical Parquet tables.
-3. Add a serving-layer contract test that reads only processed tables, not raw files.
-4. Build the read-only API after the data gates are stable.
-5. Build the frontend after the API contract is stable.
-6. Add the grounded insight layer last, with citations and a golden-set evaluation.
+1. Build the Phase 5 golden question set and freeze the answer/citation contract.
+2. Index only verified artifacts: dataset cards, data dictionary, limitations, publications, and citation records.
+3. Wrap existing service methods as deterministic assistant tools; do not add raw SQL or filesystem access.
+4. Implement citation validation through the Phase 4 citation endpoints.
+5. Implement refusal behavior for missing values, unit mismatches, unavailable files, and unverified comparisons.
+6. Add the deterministic fallback and run the golden-set evaluation with the LLM disabled first.
+7. Treat the paired-comparison executor as a separate scientific milestone with its own alignment method and validation.
+8. Add Phase 6 CI/CD, deployment, observability, and production operations after Phase 5 passes.
 
-The order matters: the gas-flame tables establish the test-level schema; the telemetry and smoke tables establish the time-series schema; the material matrices establish the context schema. Building the UI before these contracts exist would force the data into the interface, which is the opposite of the project's principle.
+The order matters: the gas-flame tables establish the test-level schema; the telemetry and smoke tables establish the time-series schema; the material matrices establish the context schema. The interface and assistant are built only after these contracts exist, so the data never has to be forced into the UI or the answer.

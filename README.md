@@ -7,7 +7,7 @@
 
 Flame in Freefall is a data platform for exploring NASA's microgravity combustion research with spacecraft fire safety in mind. It starts from verified data in the NASA Physical Sciences Informatics (PSI) repository, preserves the original values, units, missingness, and provenance, and builds analysis and interface layers only after the scientific foundation is reviewable.
 
-This repository now includes **Phase 3: a working scientific frontend over the Phase 2 service**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two committed scientific registries, a read-only FastAPI service, and a Next.js exploration interface. The backend suite has **270 passing tests**; the frontend has **41 unit/component tests and 17 real-backend Playwright tests**. It does **not** yet contain the grounded assistant, and it does not claim results that have not been computed from source data.
+This repository now includes **Phase 4: scientific metadata and comparison contracts, integrated into the frontend**. It contains verified source documentation, a curated 72-file acquisition manifest, a checksum-verifying downloader, modular CSV/XLSX/XLS parsers, 13 canonical Parquet tables, machine-readable validation and quality reports, two decision registries plus an empty paired-alignment registry, a read-only FastAPI service with citations, file and field metadata, limitations, publications, facets, and comparison-integrity contracts, and a Next.js exploration interface. The backend suite has **297 passing tests**; the frontend has **54 unit/component tests and 24 real-backend Playwright tests**. It does **not** yet contain the grounded assistant, and it does not claim results that have not been computed from source data.
 
 > Phase numbering note: the delivery brief calls the frontend work Phase 3. The internal development roadmap tracks the same frontend work as Phase 4, after its Phase 3 read-only API. Both refer to the interface described in `frontend/README.md`.
 
@@ -84,7 +84,7 @@ Acquisition validation passed for 72 of 72 selected files. Canonical validation 
 
 ## Phase 2 results (2026-11-09)
 
-Phase 2 adds scientific state and a read-only service on top of the canonical tables. It does not change a canonical value, unit, or quality flag. This delivery milestone completes roadmap Phase 2 and the core of roadmap Phase 3; the remaining API contract gaps are tracked in `DEVELOPMENT_ROADMAP.md` §6.5.
+Phase 2 adds scientific state and a read-only service on top of the canonical tables. It does not change a canonical value, unit, or quality flag. This delivery milestone completed the registry and query foundation; the full API contract, cache/rate-limit operations, and frontend integration were delivered in Phases 3 and 4.
 
 | Phase 2 artifact | Result |
 |---|---|
@@ -114,11 +114,11 @@ The frontend is a read-only Next.js App Router application. It renders backend d
 |---|---|
 | Framework | Next.js 16.4.5, React 19.3.1, TypeScript 5.9.3, Tailwind CSS 4.3.5 |
 | Data layer | TanStack Query 5.107.1 with one centralized, typed API client |
-| Charts | Recharts 3.10.1, lazy-loaded, time-series panels only |
-| Routes | 14 required pages, including investigation/dataset detail and four experiment explorers |
-| Unit and component tests | 41 passing (Vitest + React Testing Library) |
-| End-to-end tests | 17 passing (Playwright against the real backend and canonical data) |
-| Accessibility | 4 axe WCAG 2.1 A/AA scans, 0 serious or critical violations |
+| Charts | Recharts 3.10.1, lazy-loaded time-series panels |
+| Routes | 14 at delivery, including investigation/dataset detail and four experiment explorers |
+| Unit and component tests | 41 passing at delivery (Vitest + React Testing Library) |
+| End-to-end tests | 17 passing at delivery (Playwright against the real backend and canonical data) |
+| Accessibility | 4 axe WCAG 2.1 A/AA scans at delivery, 0 serious or critical violations |
 | Production build | `npm run build` succeeds with explicit webpack builder |
 
 The interface keeps these scientific constraints visible:
@@ -130,7 +130,38 @@ The interface keeps these scientific constraints visible:
 - Comparison status comes from `/compare`; blocked comparisons render reasons and no chart, and conditional comparisons require explicit condition checkboxes.
 - No browser-side aggregation, interpolation, downsampling, unit conversion, risk score, or material ranking is performed.
 
-Frontend setup, architecture, and test commands are in `frontend/README.md`. The interface deliberately does not invent capabilities the API lacks: there is no citation drawer, file/publication browser, paired comparison chart, or assistant.
+Frontend setup, architecture, and test commands are in `frontend/README.md`. The interface deliberately does not invent capabilities the API lacks: the assistant and the paired-comparison executor remain unimplemented.
+
+---
+
+## Phase 4 results (2026-11-10)
+
+Phase 4 adds the scientific metadata contracts the frontend was missing and integrates them without changing Phase 1 canonical values or Phase 2 registry decisions.
+
+| Phase 4 artifact | Result |
+|---|---|
+| API paths | 31 under `/api/v1` |
+| Frontend routes | 16, including publications list/detail |
+| Citations | 74 curated file citations plus on-demand row citations |
+| Dataset files | Curated manifest with availability, checksum, and download status; PSI-98's two known 404 files remain unavailable |
+| Fields | 93 measurement-derived field records with units, value kinds, source columns, integrity, and comparability |
+| Limitations | Stable scoped records with evidence and affected operations |
+| Publications | 352 source records, 299 unique after dedupe, 235 with DOI, 64 without; year and venue unavailable |
+| Facets | PSI-10 327 total / 256 included / 71 excluded; PSI-159 333 / 333 / 0 |
+| Comparison | Integrity checks and paired-value eligibility; values withheld without a verified alignment method |
+| Operations | ETag/`304`, `Cache-Control`, configurable rate limiting, request IDs, structured logs |
+| Backend tests | 297 passing |
+| Frontend tests | 54 unit/component and 24 Playwright tests; 6 axe scans |
+
+Phase 4 keeps the scientific constraints explicit:
+
+- Citations use stable file and row IDs, verified checksums, retrieval dates, and provenance. A known 404 file is never downloadable.
+- Field metadata derives from the comparability registry and verified source-column mappings. Descriptions and methods are not invented.
+- Measurement integrity flags registry fields that have no canonical values and blocks misleading comparable decisions. PSI-159 `pressure_initial_atm` and PSI-10 `pressure_approx_bar` are surfaced as missing with unit-specific alternatives.
+- Publications preserve conflicting title/author variants and return missing year or venue as `null` with an explicit field status.
+- Facets are computed from canonical rows, report qualified-row exclusions, and never merge PSI-10 atm with PSI-159 bar.
+- `/compare` returns `paired_values.available=false` with `conditions_not_verified` or `no_verified_alignment`; the frontend renders a chart only for a future complete, verified contract.
+- The API is public and read-only with no authentication; rate limiting is an abuse control, not authentication.
 
 ---
 
@@ -191,7 +222,8 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   │   └── validation_report.json    Acquisition and canonical gate results
 │   ├── metadata/
 │   │   ├── comparability_registry.json  93 measurements and 60 comparison rules
-│   │   └── serving_registry.json     9 dataset states and 93 measurement states
+│   │   ├── serving_registry.json     9 dataset states and 93 measurement states
+│   │   └── paired_alignment_registry.json  Verified paired-comparison methods (empty)
 │   └── fixtures/
 │       ├── csv/                      Seven exact excerpts from NASA sources
 │       ├── fixtures_manifest.json    Source rows, checksums, and purpose
@@ -205,6 +237,8 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── serving-states.md             Dataset and measurement states by use
 │   ├── query-contract.md             DuckDB operations, bounds, timeout, provenance
 │   ├── api-implementation.md         Running service, routes, envelopes, errors
+│   ├── phase4-contracts.md           Citations, files, fields, limitations, publications, facets
+│   ├── comparison-alignment.md       Paired-comparison eligibility and withholding rules
 │   ├── frontend-readiness.md         What the frontend may rely on and must not infer
 │   ├── known-limitations.md          Consolidated scientific and API limitations
 │   ├── screenshots/phase3/           Captured views of the running frontend
@@ -239,10 +273,17 @@ BASS and BASS-II (PSI-25, PSI-26) publish test matrices and video, not a process
 │   ├── serving.py                    Serving-state engine
 │   ├── db.py                         Bounded read-only DuckDB operations
 │   ├── service.py                    API-ready envelopes over registries and queries
+│   ├── citations.py                  File and row citations with checksums and row verification
+│   ├── dataset_metadata.py           Curated files, field dictionaries, and limitations
+│   ├── publications.py               Publication deduplication and verification
+│   ├── facets.py                     Gas-flame facet counts and per-accession distributions
+│   ├── paired.py                     Paired-value eligibility and withholding
+│   ├── integrity.py                  Canonical-data presence checks
 │   ├── errors.py                     Typed analytics errors and HTTP mapping
 │   └── logging.py                    Structured logger helper
 ├── backend/
-│   ├── app.py                        FastAPI app, routes, strict query validation, CORS
+│   ├── app.py                        FastAPI app, routes, strict validation, CORS, cache, rate limit
+│   ├── operations.py                 ETag, conditional requests, and fixed-window rate limiter
 │   └── models.py                     Pydantic envelopes and error models
 ├── frontend/
 │   ├── src/app/                      Next.js App Router pages and route states
@@ -327,6 +368,8 @@ The metadata collector does **not** download experimental data files. The pipeli
 | What is the build order and what counts as done? | `DEVELOPMENT_ROADMAP.md` |
 | What will the API look like? | `API_DOCUMENTATION.md` |
 | What does the running API implement? | `docs/api-implementation.md` |
+| What are the Phase 4 citation/file/field/publication/facet contracts? | `docs/phase4-contracts.md` |
+| How are paired comparisons aligned or withheld? | `docs/comparison-alignment.md` |
 | How are comparisons decided? | `docs/comparability.md` |
 | When may a dataset be served? | `docs/serving-states.md` |
 | How does DuckDB query the canonical tables? | `docs/query-contract.md` |
@@ -390,15 +433,24 @@ These rules are binding for code, charts, prose, and assistant answers:
 - Delivered the overview, investigation catalog and detail, dataset catalog and detail, gas-flame, material, droplet, telemetry, smoke, comparison, quality, provenance, and methods pages.
 - Kept backend comparability and serving decisions authoritative; blocked comparisons render no chart, and conditional comparisons require explicit verified conditions.
 - Preserved run identity, time units, raw/calibrated status, sentinel handling, unit ambiguities, and series caps in every scientific view.
-- Added 41 unit/component tests, 17 real-backend Playwright flows, and 4 axe WCAG 2.1 A/AA scans.
+- Added 41 unit/component tests, 17 real-backend Playwright flows, and 4 axe WCAG 2.1 A/AA scans at delivery.
 - Verified the production build and documented the frontend architecture and known backend gaps.
 
-**Next (remaining API gaps, then Phase 5 and later)**
+**Done in Phase 4 (scientific metadata and comparison contracts)**
 
-1. Finish the remaining API gaps: citation records, file/field/publication endpoints, facets, ETag/cache headers, and rate limiting.
-2. Add the citation drawer, file/publication browsing, and paired comparison values once those contracts exist.
-3. Add the Phase 5 grounded insight layer last, with citations and a golden-set evaluation.
-4. Add Phase 6 CI/CD, deployment, and observability.
+- Added citations, dataset files, field dictionaries, limitations, publications, gas-flame facets, and paired-value eligibility to the read-only API.
+- Added measurement-integrity checks that surface registry fields with no canonical values and block misleading comparable decisions.
+- Added ETag/`304`, `Cache-Control`, configurable rate limiting, request IDs, and structured request logs.
+- Integrated the citation drawer, file browser, field dictionary, limitations panel, publications list/detail, dynamic facets, and comparison-integrity/paired-value panels into the frontend.
+- Added 27 backend tests and 13 frontend unit/component tests; extended Playwright to 24 flows and axe to 6 scans.
+- Documented the Phase 4 contracts, comparison alignment methodology, cache/rate-limit configuration, and known limitations.
+
+**Next (Phase 5 and later)**
+
+1. Add the Phase 5 grounded insight layer with citations and a golden-set evaluation.
+2. Add a verified paired-comparison executor only after a committed alignment method names exact keys, value fields, and units.
+3. Add Phase 6 CI/CD, deployment, observability, and production operations.
+4. Revisit authentication only if private data or write operations are added.
 
 The full sequence and exit gates are in `DEVELOPMENT_ROADMAP.md`.
 

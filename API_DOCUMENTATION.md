@@ -3,7 +3,7 @@
 **Project:** Flame in Freefall
 **Team:** AFAQ
 **API version:** `v1`
-**Status:** Read-only Phase 2 implementation exists under `backend/`. This document remains the target contract; the implemented surface, exact paths, and known gaps are recorded in `docs/api-implementation.md`. Endpoints below that are not implemented are marked in §1.1.
+**Status:** Read-only Phase 4 implementation exists under `backend/`. This document describes the implemented surface and the remaining target contract; exact paths, validation, and test coverage are recorded in `docs/api-implementation.md`, and Phase 4 response shapes and methodology are recorded in `docs/phase4-contracts.md` and `docs/comparison-alignment.md`.
 
 The local service is runnable with `uvicorn backend.app:app`. Do not call these endpoints against a production URL until a deployment exists and is listed in the release notes.
 
@@ -31,7 +31,7 @@ It does not expose:
 - computed risk scores, material rankings, or predictions;
 - any value that is not backed by a source row and a citation.
 
-### 1.1 Implementation status (Phase 2)
+### 1.1 Implementation status (Phase 4)
 
 Implemented and tested:
 
@@ -45,8 +45,12 @@ Implemented and tested:
 | `GET /api/v1/datasets/quality` | Quality summary for all curated datasets. |
 | `GET /api/v1/datasets/{dataset_id}` | One dataset, all four serving decisions, measurements. |
 | `GET /api/v1/datasets/{dataset_id}/quality` | Quality report slice. |
+| `GET /api/v1/datasets/{dataset_id}/files` | Curated file manifest with availability and download status. |
+| `GET /api/v1/datasets/{dataset_id}/fields` | Field dictionary derived from the comparability registry and verified source columns. |
+| `GET /api/v1/datasets/{dataset_id}/limitations` | Scoped limitations with evidence and affected operations. |
 | `GET /api/v1/measurements` | Measurement registry with serving states. |
 | `GET /api/v1/measurements/{measurement_id}` | One measurement, serving decision, rules. |
+| `GET /api/v1/gas-flame/facets` | Facet counts and per-accession distributions from canonical rows. |
 | `GET /api/v1/gas-flame/tests` | PSI-10/PSI-159 rows with filters. |
 | `GET /api/v1/gas-flame/tests/{observation_id}` | One gas-flame row. |
 | `GET /api/v1/material/tests` | PSI-25/PSI-26 rows with filters. |
@@ -58,17 +62,23 @@ Implemented and tested:
 | `GET /api/v1/smoke/runs/{run_id}` | Run metadata and channels. |
 | `GET /api/v1/smoke/runs/{run_id}/series` | Bounded smoke series. |
 | `GET /api/v1/comparability` | Comparability summary. |
-| `GET /api/v1/compare` | One comparison decision. |
+| `GET /api/v1/compare` | One comparison decision with integrity checks and paired-value eligibility. |
+| `GET /api/v1/citations` | File-level citation registry with filters. |
+| `GET /api/v1/citations/{citation_id}` | One file or row citation, including row verification. |
+| `GET /api/v1/publications` | Deduplicated publication registry with filters. |
+| `GET /api/v1/publications/{publication_id}` | One publication record with verification and field status. |
 | `GET /api/v1/provenance` | Source-file and optional row provenance. |
 
 Known differences from the target contract below:
 
-- The investigation catalog is `/investigations`, not `/datasets`; `/datasets` now means curated datasets.
+- The investigation catalog is `/investigations`, not `/datasets`; `/datasets` means curated datasets.
+- Dataset metadata paths use the curated `dataset_id` (for example `psi-10-gas-flame`), not the accession.
 - The material path is `/material/tests`, not `/materials/tests`.
-- `/datasets/{accession}/files`, `/fields`, `/limitations`, `/publications`, `/gas-flame/facets`, `/citations/{citation_id}`, and assistant endpoints are **not implemented**.
-- ETag/cache headers, rate limiting, and authentication are **not implemented**.
+- Publication records are served from `/publications` and `/publications/{publication_id}`; there is no `/datasets/{dataset_id}/publications` path. Filter `/publications?dataset_id=...` or `?accession=...` instead.
+- Assistant endpoints are **not implemented**.
 - A blocked or not-comparable decision is returned as HTTP `200` from `/compare`, with the decision in `data.status`.
 - The implemented success envelope always includes `data`, `meta`, `provenance`, and `quality`; `quality.status` uses the five values listed in §3.6.
+- Paired comparison values are deliberately withheld. `/compare` always returns `paired_values.available=false` in Phase 4 because no verified alignment method is registered. The frontend renders a chart only when a future backend returns a complete paired contract.
 
 Run the service and tests as described in `docs/api-implementation.md`.
 
@@ -108,12 +118,17 @@ The OpenAPI schema is the machine-readable source of truth for the implemented s
 | Identifier | Format | Example |
 |---|---|---|
 | `accession` | `PSI-<number>` | `PSI-159` |
+| `dataset_id` | lowercase slug | `psi-159-gas-flame` |
 | `run_id` | `<accession>::<file stem>` | `PSI-100::PSI-100_Raw Data_Raw telemetry file` |
 | `observation_id` | `sha256:<64 hex>` | `sha256:...` |
-| `citation_id` | `cite_<stable hash>` | `cite_...` |
-| `dataset_version` | Opaque version string | Assigned in Phase 2 |
+| `citation_id` (file) | `cit_f_<16 hex>` | `cit_f_21df4ec92db1eca0` |
+| `citation_id` (row) | `cit_r_<base64url>` | `cit_r_eyJhIjoiUFNJLTEwIi...` |
+| `publication_id` | `pub_<16 hex>` | `pub_0c1b7d7e064074d9` |
+| `limitation_id` | `lim_<scope>_<stable slug>` | `lim_d_psi_10_gas_flame_computed_tad_zst` |
+| `field_id` | `<dataset_id>.<canonical_name>` | `psi-10-gas-flame.oxygen_mole_fraction` |
+| `dataset_version` | 64-hex opaque version | `2a19f9f2e7dda7bb...` |
 
-Identifiers are opaque to clients. Do not parse them beyond the documented accession pattern.
+Identifiers are opaque to clients. Do not parse them beyond the documented accession pattern. Row citation IDs are reversible by the server only; clients must treat them as opaque keys.
 
 ### 3.3 Response envelope
 
@@ -142,7 +157,7 @@ Every successful response uses the same envelope:
 | `data` | object or array | The requested resource. |
 | `meta.request_id` | string | Correlation identifier for logs and support. |
 | `meta.registry_snapshot` | date | Date of the committed PSI metadata snapshot. |
-| `meta.dataset_version` | string or null | Canonical dataset version for data-bearing responses. The Phase 2 service reports the committed canonical version; the target contract allows `null` for metadata-only responses. |
+| `meta.dataset_version` | string or null | Canonical dataset version for data-bearing responses. The Phase 4 service reports the committed canonical version; metadata-only responses may use `null`. |
 | `meta.retrieved_at` | timestamp or null | Source retrieval time. `null` when the response is derived from the committed registry only. |
 | `meta.generated_at` | timestamp | Time the response was produced. |
 | `provenance` | array | Source references for the data in this response. |
@@ -245,10 +260,10 @@ Every field endpoint and every value-bearing response uses this shape:
 | 400 | `invalid_query` | Missing, malformed, or contradictory parameters. |
 | 404 | `not_found` | Accession, dataset, run, or observation does not exist. |
 | 404 | `unknown_measurement` | Measurement identifier is not in the comparability registry. |
-| 409 | `dataset_blocked` | Target-contract code; not emitted by the Phase 2 API. |
+| 409 | `dataset_blocked` | Reserved target-contract code; not emitted by the Phase 4 API. Blocked comparisons return `200` with `data.status`. |
 | 413 | `range_too_large` | Time range or page size exceeds the documented limit. |
 | 422 | `validation_error` | Query or request validation failed. |
-| 429 | `rate_limited` | Target-contract code; rate limiting is not implemented yet. |
+| 429 | `rate_limited` | The per-client request rate limit was exceeded. |
 | 500 | `internal_error` | Unhandled server error; no source details are leaked. |
 | 503 | `service_unavailable` | A required canonical table is absent. |
 | 503 | `query_timeout` | A bounded query exceeded its time budget. |
@@ -291,24 +306,48 @@ Pagination is offset-based in the MVP. Cursor pagination may be added for teleme
 
 ### 3.10 Caching
 
-- Metadata responses: `ETag` derived from the registry snapshot and resource path.
-- Test queries: `ETag` derived from dataset version and filter hash.
-- Telemetry series: `ETag` derived from run, channel set, and time range.
-- `Cache-Control: public, max-age=300` for catalog metadata; `private, no-store` for assistant responses.
-- Clients may send `If-None-Match`; the server returns `304` when unchanged.
+Caching is enabled by default and is process-local. It applies to successful `GET` JSON responses except `/health`:
+
+- `ETag` is a strong hash of a stable representation of the response body. `meta.request_id` and `meta.generated_at` are removed before hashing so repeated requests produce the same validator.
+- `Cache-Control: public, max-age=60, must-revalidate` by default.
+- Clients may send `If-None-Match`; the server returns `304 Not Modified` with the same `ETag` when the representation is unchanged.
+- Error responses use `Cache-Control: no-store`.
+- Health responses are excluded from ETag generation and always use `no-store`.
+- `X-Request-ID` and rate-limit headers are returned on every response, including `304`.
+
+Configuration:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `FLAME_CACHE_ENABLED` | `true` | Enable ETag generation and conditional requests. When `false`, responses use `no-store`. |
+| `FLAME_CACHE_MAX_AGE` | `60` | `max-age` seconds in the generated `Cache-Control` value. |
+| `FLAME_CACHE_CONTROL` | unset | Full override for the `Cache-Control` header value. |
 
 ### 3.11 Rate limits
 
-The MVP uses per-IP limits. Exact values are set at deployment and documented in the release notes. The API returns:
+The API is public and read-only. Rate limiting is an abuse control, **not authentication**. Limits are process-local fixed windows keyed by client IP; behind a reverse proxy, set `FLAME_TRUST_PROXY=true` to use the first `X-Forwarded-For` address.
+
+The API returns these headers on every response:
 
 ```text
 X-RateLimit-Limit: <n>
 X-RateLimit-Remaining: <n>
-X-RateLimit-Reset: <unix seconds>
+X-RateLimit-Reset: <seconds until the window resets>
 Retry-After: <seconds>   (on 429)
 ```
 
-The assistant endpoint has a stricter limit than the catalog.
+A rejected request returns HTTP `429` with `error.code = "rate_limited"` and `Cache-Control: no-store`.
+
+Configuration:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `FLAME_RATE_LIMIT_ENABLED` | `true` | Enable the limiter. |
+| `FLAME_RATE_LIMIT_REQUESTS` | `600` | Allowed requests per window per client. |
+| `FLAME_RATE_LIMIT_WINDOW_SECONDS` | `60` | Fixed window length in seconds. |
+| `FLAME_TRUST_PROXY` | `false` | Trust the first `X-Forwarded-For` value. |
+
+Authentication decision: the public MVP has no authentication or user accounts. All data is public NASA PSI material; write operations do not exist. A deployment that adds private data or write operations must add authentication before exposing those capabilities.
 
 ---
 
@@ -362,20 +401,13 @@ Returns the API version, registry snapshot, dataset versions, and counts.
 
 The counts are generated from the registry, not hard-coded in the API.
 
-### 4.2 Catalog
+### 4.2 Catalog and dataset metadata
 
-#### `GET /api/v1/datasets`
+#### `GET /api/v1/investigations`
 
-List the 24 combustion investigations.
+List the NASA PSI combustion investigations. This is the catalog endpoint; `/datasets` is the curated dataset registry.
 
-**Query parameters**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `role` | category | `primary`, `supporting`, `future`, `context`, `unreviewed`. |
-| `archive_status` | category | `available`, `experimental_table_only`, `no_public_files`. |
-| `q` | string | Case-insensitive search over accession, acronym, and title. |
-| `limit`, `offset` | integer | Pagination. |
+**Query parameters:** `role` (`primary`, `supporting`, `future`, `context`, `unreviewed`), `q` (accession, acronym, or title), `limit`, `offset`.
 
 **Response `200`**
 
@@ -387,14 +419,11 @@ List the 24 combustion investigations.
       "acronym": "ACME CFI-G",
       "title": "Advanced Combustion via Microgravity Experiments / Cool Flames Investigation with Gases",
       "doi": "10.60555/cyt1-kh64",
-      "role": "primary",
+      "mvp_role": "primary",
       "archive_status": "available",
       "file_count": 3756,
       "experimental_table_count": 2,
-      "experimental_table_only_count": 0,
-      "registered_total_gb_decimal": 2085.59,
-      "tabular_file_count": 2,
-      "limitations_count": 9
+      "registered_total_gb_decimal": 2085.59
     }
   ],
   "meta": {
@@ -403,157 +432,304 @@ List the 24 combustion investigations.
 }
 ```
 
-`archive_status` is `available` when `file_count > 0`, `experimental_table_only` when `file_count == 0` and `experimental_table_count > 0`, and `no_public_files` when both are zero. `file_count` counts only `added` files; experimental tables are counted separately.
+#### `GET /api/v1/investigations/{accession}`
 
-#### `GET /api/v1/datasets/{accession}`
+Full investigation card, including its curated datasets. Unknown accessions return `404 not_found`.
 
-Full record card.
+#### `GET /api/v1/datasets`
 
-**Response `200`**
+List the curated datasets. **Query parameters:** `family`, `accession`, `state`, `use` (`exploration`, `quantitative_comparison`, `time_series`, `provenance`), `limit`, `offset`.
+
+The response is an array of dataset summaries with `dataset_id`, `accession`, `display_name`, `experiment_family`, `canonical_tables`, `download_status`, `measurement_file_status`, `access_scope`, `base_state`, `use_states`, `measurement_count`, and reasons/restrictions.
+
+#### `GET /api/v1/datasets/{dataset_id}`
+
+Full curated dataset record. The `dataset_id` is a slug such as `psi-10-gas-flame`, not an accession.
+
+**Response `200`** (abbreviated real record)
 
 ```json
 {
   "data": {
-    "accession": "PSI-159",
-    "acronym": "ACME CFI-G",
-    "title": "Advanced Combustion via Microgravity Experiments / Cool Flames Investigation with Gases",
-    "doi": "10.60555/cyt1-kh64",
-    "research_area": "Combustion Science",
-    "sub_research_area": "Flames of Gaseous Fuels",
-    "project_type": "Microgravity Investigation",
-    "start_date": null,
-    "end_date": null,
-    "version": 1,
-    "public": true,
-    "restricted": false,
-    "file_count": 3756,
-    "removed_file_count": 0,
-    "experimental_table_count": 2,
-    "experimental_table_only_count": 0,
-    "archive_status": "available",
-    "registered_total_bytes": 2085592429259,
-    "registered_total_gb_decimal": 2085.59,
-    "role": "primary",
-    "rationale": "The largest gas-flame summary dataset in the combustion collection...",
-    "limitations": [
-      "The inverse CSV contains 861 trailing blank rows; 154 rows contain data...",
-      "TFP is a categorical Yes/No field, not a numeric temperature..."
+    "dataset_id": "psi-10-gas-flame",
+    "accession": "PSI-10",
+    "display_name": "PSI-10 ACME Flame Design gas-flame tests",
+    "experiment_family": "gas_flame",
+    "canonical_tables": ["gas_flame_test"],
+    "download_status": "available",
+    "measurement_file_status": "available",
+    "access_scope": "experimental_summary_table",
+    "base_state": "available_with_warnings",
+    "use_states": {
+      "exploration": "available_with_warnings",
+      "quantitative_comparison": "restricted",
+      "time_series": "blocked",
+      "provenance": "available"
+    },
+    "measurement_count": 11,
+    "reasons": [
+      {
+        "code": "ramped_condition_rows",
+        "message": "69 PSI-10 rows carry RAMP, RAMPED, or LOW O2 qualifiers in numeric columns; they are not fixed set points."
+      }
     ],
-    "access_notes": "Both experimental tables and the ISA-Tab metadata package downloaded and inspected on 2026-11-08.",
-    "experimental_tables": [],
-    "publications": [],
-    "files_url": "/api/v1/datasets/PSI-159/files"
+    "restrictions": [
+      "Do not aggregate ramped rows as fixed conditions.",
+      "Do not treat Tad or Zst as measured temperatures or mixture fractions."
+    ],
+    "source_references": [
+      {
+        "kind": "nasa_psi_file",
+        "accession": "PSI-10",
+        "file_name": "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+        "sha256": "4a663292bd3f65201943cc71bd661a70383639276a9176f64105b285bf0b6deb",
+        "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-10/download?file=PSI-10_Experimental%20table_Flame%20Design_Normal%20Flame.csv"
+      }
+    ],
+    "serving": {}
   }
 }
 ```
 
-Values shown are illustrative of the schema. The API must return the exact registry values, not this abbreviated example.
+#### `GET /api/v1/datasets/{dataset_id}/files`
 
-**Errors**
-
-- `404 not_found` — unknown accession.
-- `503 service_unavailable` — registry unavailable.
-
-#### `GET /api/v1/datasets/{accession}/files`
-
-Paginated file manifest.
+Curated file manifest. Only files selected by the download manifest are listed, plus known-unavailable files that are explicitly documented. The endpoint never exposes filesystem paths.
 
 **Query parameters**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `format` | string | Extension such as `.csv`, `.xlsx`, `.zip`. |
-| `category` | string | Source subcategory. |
-| `access_status` | category | `available`, `listed_404`, `not_attempted`. |
+| `kind` | string | Curated file kind such as `experimental_table` or `raw_data`. |
+| `availability` | category | `available` or `unavailable`. |
 | `limit`, `offset` | integer | Pagination. |
 
-**Response `200`**
+**Response `200`** (real PSI-98 excerpt)
 
 ```json
 {
-  "data": [
-    {
-      "file_name": "PSI-159_Experimental table_CFI-G_Normal Flames.csv",
-      "file_size_bytes": 22166,
-      "format": ".csv",
-      "category": "Experimental Data",
-      "restricted": false,
-      "visible": true,
-      "version": 1,
-      "sha256": "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a",
-      "retrieved_at": "2026-11-08T00:00:00Z",
-      "access_status": "available"
-    }
-  ]
-}
-```
-
-`sha256` is `null` until the file is downloaded and checked. This endpoint lists `added` archive files only. Experimental tables are returned through the dataset detail `experimental_tables` array, because a table may exist without being in `added`.
-
-#### `GET /api/v1/datasets/{accession}/fields`
-
-Field dictionary for the dataset's tabular artifacts.
-
-**Response `200`**
-
-```json
-{
-  "data": [
-    {
-      "raw_name": "Peak burner T (C )",
-      "canonical_name": "peak_burner_temp_c",
-      "type": "float",
-      "unit": "°C",
-      "computed": false,
-      "missingness": ["sentinel_dash"],
-      "description": "Measured peak burner temperature.",
-      "source": {
-        "accession": "PSI-159",
-        "file": "PSI-159_Experimental table_CFI-G_Normal Flames.csv"
+  "data": {
+    "dataset_id": "psi-98-metadata",
+    "accession": "PSI-98",
+    "display_name": "PSI-98 SAFFIRE-I metadata and unavailable telemetry",
+    "files": [
+      {
+        "file_id": "cit_f_2a9f8d907458d052",
+        "citation_id": "cit_f_2a9f8d907458d052",
+        "file_name": "PSI-98_Experimental table_SAFFIRE-1.csv",
+        "accession": "PSI-98",
+        "dataset_ids": ["psi-98-metadata"],
+        "kind": "experimental_table",
+        "priority": "supporting",
+        "purpose": "Public experimental summary table. The exact source table is preserved; no archive files are implied for experimental_table_only records.",
+        "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-98/download?file=PSI-98_Experimental%20table_SAFFIRE-1.csv",
+        "availability": "available",
+        "downloadable": true,
+        "availability_reason": null,
+        "download": {
+          "status": "downloaded",
+          "http_status": 200,
+          "bytes": 469,
+          "retrieved_at": "2026-11-08T22:19:13Z",
+          "sha256": "c01f29c62455f0a3b512290ab85e5687ecded326733189f002f580368402308d",
+          "checksum_match": true
+        },
+        "verification": {
+          "status": "verified",
+          "checks": [
+            "manifest_checksum_recorded",
+            "retrieved_checksum_recorded",
+            "checksum_matches_manifest",
+            "acquisition_status_confirmed"
+          ]
+        },
+        "provenance": [
+          {
+            "kind": "nasa_psi_file",
+            "accession": "PSI-98",
+            "file_name": "PSI-98_Experimental table_SAFFIRE-1.csv",
+            "sha256": "c01f29c62455f0a3b512290ab85e5687ecded326733189f002f580368402308d",
+            "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-98/download?file=PSI-98_Experimental%20table_SAFFIRE-1.csv"
+          }
+        ]
       }
-    }
-  ]
+    ],
+    "summary": {
+      "curated_files": 3,
+      "available_files": 1,
+      "unavailable_files": 2,
+      "downloadable_files": 1,
+      "known_unavailable_files": 2,
+      "experimental_tables": 1
+    },
+    "inventory": {
+      "public_inventory_file_count": 74,
+      "curated_file_count": 3,
+      "not_selected_file_count": 71,
+      "public_experimental_table_count": 1,
+      "archive_status": "available",
+      "note": "Only curated files are listed. The public inventory count is shown for context; unselected archive files are not exposed."
+    },
+    "page": {"limit": 50, "offset": 0, "total": 3, "has_more": false}
+  }
 }
 ```
 
-#### `GET /api/v1/datasets/{accession}/limitations`
+Unavailable files have `availability: "unavailable"`, `downloadable: false`, `download.status: "known_unavailable"`, `download.http_status: 404`, `download.sha256: null`, and `verification.status: "unavailable"`. Clients must not render a download link for them. PSI-98's two known 404 files remain listed and unavailable by design.
 
-Curated limitations, with source references where applicable.
+#### `GET /api/v1/datasets/{dataset_id}/fields`
+
+Field dictionary derived from the 93 comparability measurements, verified source-column mappings, and canonical-data integrity checks. Descriptions are never invented: when the source does not document a method, `measurement_method` says so.
+
+**Query parameters:** `value_kind`, `physical_quantity`, `comparison_status`, `limit`, `offset`.
+
+**Response `200`** (real excerpt)
 
 ```json
 {
-  "data": [
-    {
-      "limitation": "The Cool flame? column is blank in 171 of 179 normal-flame rows; blank must not be interpreted as 'no cool flame'.",
-      "scope": "field",
-      "field": "Cool flame?",
-      "source": {
-        "accession": "PSI-159",
-        "file": "PSI-159_Experimental table_CFI-G_Normal Flames.csv"
+  "data": {
+    "dataset_id": "psi-10-gas-flame",
+    "accession": "PSI-10",
+    "display_name": "PSI-10 ACME Flame Design gas-flame tests",
+    "fields": [
+      {
+        "field_id": "psi-10-gas-flame.adiabatic_flame_temp_k",
+        "measurement_id": "psi-10-gas-flame.adiabatic_flame_temp_k",
+        "dataset_id": "psi-10-gas-flame",
+        "accession": "PSI-10",
+        "canonical_name": "adiabatic_flame_temp_k",
+        "parameter": "adiabatic_flame_temp_k",
+        "description": "Adiabatic flame temperature computed by the source.",
+        "physical_quantity": "adiabatic_flame_temperature",
+        "unit": "K",
+        "unit_status": "stated",
+        "value_kind": "computed",
+        "measurement_method": "Source-computed field (Tad (K)).",
+        "calibration": {"status": "not_applicable", "note": null},
+        "missingness": {
+          "availability": "available",
+          "restrictions": ["computed_source_field", "method_not_documented", "ramped_condition_rows"],
+          "canonical_presence": {
+            "measurement_id": "psi-10-gas-flame.adiabatic_flame_temp_k",
+            "checked": true,
+            "status": "available",
+            "reason": null,
+            "table": "gas_flame_test",
+            "field": "adiabatic_flame_temp_k",
+            "accession": "PSI-10",
+            "total_rows": 327,
+            "non_null_count": 256,
+            "alternatives": []
+          },
+          "policy": "Missing values are never zero; qualifiers and sentinels are preserved as documented in DATA_DICTIONARY.md."
+        },
+        "integrity": {
+          "measurement_id": "psi-10-gas-flame.adiabatic_flame_temp_k",
+          "checked": true,
+          "status": "available",
+          "reason": null,
+          "table": "gas_flame_test",
+          "field": "adiabatic_flame_temp_k",
+          "accession": "PSI-10",
+          "total_rows": 327,
+          "non_null_count": 256,
+          "alternatives": []
+        },
+        "alternatives": [],
+        "flags": ["computed_source_field", "method_not_documented", "ramped_condition_rows"],
+        "comparability": {
+          "status": "blocked",
+          "compatible_datasets": [],
+          "incompatible_datasets": ["psi-10-gas-flame", "psi-159-gas-flame"],
+          "rules": []
+        },
+        "source_columns": [
+          {
+            "raw_column": "Tad (K)",
+            "source_file": "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+            "applies_to": "Normal flame rows"
+          }
+        ],
+        "source_references": [],
+        "serving_state": "available_with_warnings",
+        "use_states": {
+          "exploration": "available_with_warnings",
+          "quantitative_comparison": "restricted",
+          "time_series": "blocked",
+          "provenance": "available"
+        }
       }
-    }
-  ]
+    ],
+    "summary": {
+      "field_count": 11,
+      "with_verified_source_column": 11,
+      "with_canonical_values": 9,
+      "without_canonical_values": 2,
+      "presence_not_checked": 0,
+      "value_kinds": {"computed": 2, "measured": 9},
+      "comparison_statuses": {"blocked": 2, "not_comparable": 9}
+    },
+    "page": {"limit": 50, "offset": 0, "total": 11, "has_more": false}
+  }
 }
 ```
 
-#### `GET /api/v1/datasets/{accession}/publications`
+`integrity.status` is `available`, `missing`, `not_checked`, or `no_canonical_tables`. A registry field marked `available` that has zero canonical values is reported as `missing` and receives an alternative where one exists. Missing is never zero.
 
-Publication metadata attached to the PSI record.
+#### `GET /api/v1/datasets/{dataset_id}/limitations`
+
+Scoped limitations with stable IDs, severity, evidence, affected operations, and resolution status.
+
+**Query parameters:** `scope`, `category`, `severity`, `status`, `limit`, `offset`.
+
+**Response `200`** (real excerpt)
 
 ```json
 {
-  "data": [
-    {
-      "title": "Cool flames in microgravity...",
-      "doi": "10.0000/example",
-      "author_list": "...",
-      "status": "Published"
-    }
-  ]
+  "data": {
+    "dataset_id": "psi-10-gas-flame",
+    "accession": "PSI-10",
+    "display_name": "PSI-10 ACME Flame Design gas-flame tests",
+    "limitations": [
+      {
+        "limitation_id": "lim_d_psi_10_gas_flame_computed_tad_zst",
+        "scope": "dataset",
+        "scope_id": "psi-10-gas-flame",
+        "dataset_id": "psi-10-gas-flame",
+        "accession": "PSI-10",
+        "category": "value_kind",
+        "severity": "warning",
+        "code": "computed_tad_zst",
+        "explanation": "Tad (K) and Zst are computed by the source, not measured.",
+        "affected_operations": ["exploration", "quantitative_comparison", "time_series"],
+        "evidence": [
+          {
+            "kind": "nasa_psi_file",
+            "accession": "PSI-10",
+            "file_name": "PSI-10_Experimental table_Flame Design_Normal Flame.csv",
+            "sha256": "4a663292bd3f65201943cc71bd661a70383639276a9176f64105b285bf0b6deb",
+            "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-10/download?file=PSI-10_Experimental%20table_Flame%20Design_Normal%20Flame.csv"
+          }
+        ],
+        "resolution_status": "documented",
+        "resolution_note": "Recorded as a dataset-level serving limitation."
+      }
+    ],
+    "summary": {
+      "total": 5,
+      "by_scope": {"dataset": 4, "field": 1},
+      "by_severity": {"warning": 4, "error": 1},
+      "by_status": {"documented": 5}
+    },
+    "page": {"limit": 50, "offset": 0, "total": 5, "has_more": false}
+  }
 }
 ```
 
-The API returns only publications present in the PSI detail record. It does not invent missing bibliographic fields.
+Limitations include serving restrictions, registry quality issues, unavailable files, and measurement-integrity findings. Fields already marked `missing` in the registry are not duplicated as integrity limitations.
+
+#### Dataset publications
+
+There is no `/datasets/{dataset_id}/publications` route. Use `GET /api/v1/publications?dataset_id=<dataset_id>` or `?accession=<accession>`; see §4.8.
 
 ### 4.3 Gas-flame tests
 
@@ -825,7 +1001,7 @@ Same contract as telemetry, with `elapsed_test_time_s` as the time axis and an a
 
 ### 4.6 Material test matrices (PSI-25, PSI-26)
 
-#### `GET /api/v1/materials/tests`
+#### `GET /api/v1/material/tests`
 
 Query BASS/BASS-II test-matrix rows.
 
@@ -871,80 +1047,204 @@ Query BASS/BASS-II test-matrix rows.
 
 #### `GET /api/v1/comparability`
 
-Returns the machine-readable comparability matrix.
+Returns the comparability registry summary, state definitions, and rules.
 
 ```json
 {
   "data": {
-    "fields": [
-      {
-        "concept": "oxygen_mole_fraction",
-        "datasets": ["PSI-10", "PSI-159"],
-        "compatible": true,
-        "unit": "mole fraction",
-        "conversion": "none",
-        "notes": "Both are mole fractions. Percent by volume requires an explicit x100 conversion."
+    "registry_version": "1.0.0",
+    "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+    "default_policy": {
+      "status": "not_comparable",
+      "justification": "No explicit comparison rule means no approved comparison. A matching column name, unit, or experiment family is not sufficient evidence.",
+      "engine_behavior": "Return not_comparable with a no_explicit_rule reason and never infer a comparison."
+    },
+    "state_definitions": {
+      "comparable": {
+        "definition": "The two measurements refer to the same physical quantity, use compatible units and value kinds, have no unresolved calibration or metadata restriction, and require no unverified condition.",
+        "engine_behavior": "Returned only when every required condition is verified."
       },
-      {
-        "concept": "flame_spread_rate",
-        "datasets": ["PSI-25", "PSI-26"],
-        "compatible": false,
-        "reason": "No processed spread-rate table was identified in the public PSI record."
+      "conditionally_comparable": {
+        "definition": "The measurements can be compared only after one or more explicit conditions are verified.",
+        "engine_behavior": "Returned when a rule exists but at least one required condition has not been supplied or verified."
+      },
+      "not_comparable": {
+        "definition": "The measurements do not share a valid comparison basis.",
+        "engine_behavior": "Returned for explicit not-comparable rules and by default when no rule exists."
+      },
+      "blocked": {
+        "definition": "The measurements might share a physical basis, but a hard integrity constraint prevents comparison.",
+        "engine_behavior": "Returned for explicit blocked rules and for hard unit, value-kind, calibration, availability, or quantity conflicts."
+      },
+      "insufficient_metadata": {
+        "definition": "The available metadata is not sufficient to decide whether a comparison is valid.",
+        "engine_behavior": "Returned instead of guessing."
       }
-    ]
+    }
   }
 }
 ```
 
 #### `GET /api/v1/compare`
 
-Curated comparison only. The request names a concept, not arbitrary columns.
+Compare two measurement identifiers. The request names registry measurements, not arbitrary columns.
 
 **Query parameters**
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `concept` | string | Yes | Allowlisted concept such as `oxygen_mole_fraction` or `adiabatic_flame_temp_k`. |
-| `datasets` | comma-separated string | Yes | Two or more allowlisted accessions. |
-| `filters` | JSON string | No | Allowlisted filters per dataset. |
+| `left` | string | Yes | Left measurement identifier, for example `psi-10-gas-flame.oxygen_mole_fraction`. |
+| `right` | string | Yes | Right measurement identifier. |
+| `conditions` | JSON string | No | Object mapping condition keys to `true`, `false`, or `null`. Unknown keys are rejected. |
 
-**Response `200`**
+**Response `200`** (real excerpt, conditions supplied)
 
 ```json
 {
   "data": {
-    "concept": "oxygen_mole_fraction",
-    "unit": "mole fraction",
-    "series": [
+    "left": {
+      "measurement_id": "psi-10-gas-flame.oxygen_mole_fraction",
+      "dataset_id": "psi-10-gas-flame",
+      "accession": "PSI-10",
+      "experiment_family": "gas_flame",
+      "parameter": "oxygen_mole_fraction",
+      "canonical_field": "oxygen_mole_fraction",
+      "physical_quantity": "oxygen_mole_fraction",
+      "unit": "mole fraction",
+      "unit_status": "stated",
+      "value_kind": "measured",
+      "calibration_status": "not_applicable",
+      "availability": "available",
+      "comparison_status": "conditionally_comparable",
+      "quality_restrictions": ["ramped_condition_rows", "low_oxygen_rows"]
+    },
+    "right": {
+      "measurement_id": "psi-159-gas-flame.oxygen_mole_fraction",
+      "dataset_id": "psi-159-gas-flame",
+      "accession": "PSI-159",
+      "experiment_family": "gas_flame",
+      "parameter": "oxygen_mole_fraction",
+      "canonical_field": "oxygen_mole_fraction",
+      "physical_quantity": "oxygen_mole_fraction",
+      "unit": "mole fraction",
+      "unit_status": "stated",
+      "value_kind": "measured",
+      "calibration_status": "not_applicable",
+      "availability": "available",
+      "comparison_status": "conditionally_comparable",
+      "quality_restrictions": []
+    },
+    "status": "comparable",
+    "rule_id": "psi10-psi159-oxygen",
+    "reasons": [
       {
-        "accession": "PSI-10",
-        "field": "XO2 (init)",
-        "n": 207,
-        "missing": 0,
-        "values": [0.207128374]
-      },
-      {
-        "accession": "PSI-159",
-        "field": " XO2 before test",
-        "n": 179,
-        "missing": 0,
-        "values": [0.3939]
+        "code": "conditions_verified",
+        "message": "Every required comparison condition is verified."
       }
     ],
-    "method": "Raw source values, no aggregation, no interpolation.",
-    "limitations": [
-      "PSI-10 and PSI-159 test different fuels and burner configurations; a shared axis is not a causal comparison."
-    ]
+    "required_conditions": [
+      {
+        "key": "same_oxygen_basis",
+        "description": "Both values are oxygen mole fraction, not percent or partial pressure.",
+        "satisfied": true
+      },
+      {
+        "key": "flame_configuration_documented",
+        "description": "Normal or inverse configuration is known for both rows.",
+        "satisfied": true
+      }
+    ],
+    "warnings": [],
+    "scientific_justification": "Both fields are controlled oxygen mole fractions in gas-flame experiments. Comparison is allowed only when both rows use the same oxygen basis and the normal or inverse configuration is known.",
+    "source_references": [],
+    "registry_version": "1.0.0",
+    "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+    "integrity": {
+      "status": "passed",
+      "checks": [
+        {
+          "measurement_id": "psi-10-gas-flame.oxygen_mole_fraction",
+          "checked": true,
+          "status": "available",
+          "reason": null,
+          "table": "gas_flame_test",
+          "field": "oxygen_mole_fraction",
+          "accession": "PSI-10",
+          "total_rows": 327,
+          "non_null_count": 109,
+          "alternatives": []
+        }
+      ],
+      "failures": [],
+      "not_checked": [],
+      "messages": []
+    },
+    "paired_values": {
+      "available": false,
+      "status": "unavailable",
+      "alignment": {
+        "method_id": null,
+        "verified": false,
+        "keys": [],
+        "value_fields": {},
+        "unit_policy": null
+      },
+      "conditions": {
+        "supplied": {
+          "same_oxygen_basis": true,
+          "flame_configuration_documented": true
+        },
+        "required": [
+          {"key": "same_oxygen_basis", "satisfied": true},
+          {"key": "flame_configuration_documented", "satisfied": true}
+        ]
+      },
+      "observations": [],
+      "series": [],
+      "exclusions": [],
+      "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+      "provenance": [],
+      "reason": {
+        "code": "no_verified_alignment",
+        "message": "The comparison is approved, but no verified record-level alignment method is registered for this rule. The API does not pair by row number, interpolate, normalize silently, or convert ambiguous units.",
+        "rule_id": "psi10-psi159-oxygen",
+        "required_alignment": {
+          "keys": [],
+          "note": "A committed method must name exact alignment keys and value fields."
+        }
+      }
+    }
+  },
+  "meta": {
+    "request_id": "req_ff3be139e25c3efa76024fe5",
+    "registry_snapshot": "2026-11-08",
+    "dataset_version": "2a19f9f2e7dda7bb41d6d83c3c1a4b3b616c1d91849f7edb2e749f89708934cb",
+    "registry_version": "1.0.0",
+    "retrieved_at": null,
+    "generated_at": "2026-11-09T18:56:19.801219Z",
+    "page": null,
+    "left": "psi-10-gas-flame.oxygen_mole_fraction",
+    "right": "psi-159-gas-flame.oxygen_mole_fraction",
+    "paired_values_available": false,
+    "integrity_status": "passed"
   }
 }
 ```
 
+**Paired-value rules**
+
+- `paired_values.available` is `false` unless a committed alignment method names exact keys and value fields, both sides pass integrity checks, all required conditions are verified, and every observation can be traced to real source rows.
+- The API never pairs by arbitrary row number, interpolates, silently normalizes, or converts ambiguous units.
+- When conditions are missing, `paired_values.reason.code` is `conditions_not_verified`; when the decision is approved but no alignment method exists, it is `no_verified_alignment`.
+- `series` is empty unless a future executor produces chart-ready paired observations. Clients must not synthesize a paired series from unpaired left/right values.
+- PSI-10 pressure is in atm and PSI-159 pressure is in bar; the API reports them per accession and never merges them.
+
 **Errors**
 
-- `400 invalid_query` — concept not allowlisted, incompatible datasets, or a filter not allowed for the concept.
-- `409 dataset_blocked` — one dataset failed validation.
+- `400 invalid_query` — unknown measurement, malformed conditions, or unknown condition keys.
+- `404 unknown_measurement` — measurement identifier is not in the comparability registry.
 
-### 4.8 Provenance and citations
+### 4.8 Provenance, citations, and publications
 
 #### `GET /api/v1/provenance`
 
@@ -961,26 +1261,197 @@ Resolve a source reference.
     "sha256": "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a",
     "retrieved_at": "2026-11-08T00:00:00Z",
     "bytes": 22166,
-    "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-159/download?file=..."
+    "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-159/download?file=...",
+    "citation_id": "cit_f_...",
+    "file_citation_id": "cit_f_...",
+    "row_citation_ids": ["cit_r_..."]
+  }
+}
+```
+
+A file that is not in the canonical file metadata returns `404 not_found`; the API does not substitute a fuzzy match.
+
+#### `GET /api/v1/citations`
+
+List file-level citations derived from the download manifest and acquisition report. **Query parameters:** `accession`, `dataset_id`, `kind`, `verification_status`, `availability`, `limit`, `offset`.
+
+```json
+{
+  "data": [
+    {
+      "citation_id": "cit_f_21df4ec92db1eca0",
+      "kind": "file",
+      "accession": "PSI-10",
+      "dataset_ids": ["psi-10-gas-flame"],
+      "file": {
+        "name": "PSI-10_Experimental table_Flame Design_Inverse Flame.csv",
+        "kind": "experimental_table",
+        "manifest_dataset": "gas_flame_test",
+        "priority": "primary",
+        "purpose": "Public experimental summary table. The exact source table is preserved; no archive files are implied for experimental_table_only records.",
+        "in_added": true
+      },
+      "locator": {"type": "file", "sheet": null, "row": null},
+      "source": {
+        "kind": "nasa_psi_file",
+        "accession": "PSI-10",
+        "file_name": "PSI-10_Experimental table_Flame Design_Inverse Flame.csv",
+        "sha256": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+        "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-10/download?file=PSI-10_Experimental%20table_Flame%20Design_Inverse%20Flame.csv"
+      },
+      "retrieval": {
+        "retrieved_at": "2026-11-08T22:14:49Z",
+        "http_status": null,
+        "download_status": "already_present",
+        "bytes": 17314,
+        "expected_bytes": 17314,
+        "checksum_expected": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+        "checksum_actual": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+        "checksum_match": true
+      },
+      "verification": {
+        "status": "verified",
+        "checks": [
+          "manifest_checksum_recorded",
+          "retrieved_checksum_recorded",
+          "checksum_matches_manifest",
+          "acquisition_status_confirmed"
+        ]
+      },
+      "availability": {"status": "available", "downloadable": true, "reason": null},
+      "provenance": []
+    }
+  ],
+  "meta": {
+    "page": {"limit": 50, "offset": 0, "total": 74, "has_more": true}
   }
 }
 ```
 
 #### `GET /api/v1/citations/{citation_id}`
 
+Returns one file or row citation. Row citations are created on demand from an exact accession, file, sheet, and 1-based row; they decode to that locator and include `row_verification`.
+
 ```json
 {
   "data": {
-    "citation_id": "cite_...",
-    "kind": "dataset",
-    "accession": "PSI-159",
-    "title": "Advanced Combustion via Microgravity Experiments / Cool Flames Investigation with Gases",
-    "doi": "10.60555/cyt1-kh64",
-    "url": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-159",
-    "retrieved_at": "2026-11-08T00:00:00Z"
+    "citation_id": "cit_r_eyJhIjoiUFNJLTEwIiwiZiI6IlBTSS0xMF9FeHBlcmltZW50YWwgdGFibGVfRmxhbWUgRGVzaWduX0ludmVyc2UgRmxhbWUuY3N2IiwiciI6MSwicyI6bnVsbH0",
+    "kind": "row",
+    "accession": "PSI-10",
+    "dataset_ids": ["psi-10-gas-flame"],
+    "file": {
+      "name": "PSI-10_Experimental table_Flame Design_Inverse Flame.csv",
+      "kind": "experimental_table",
+      "manifest_dataset": "gas_flame_test",
+      "priority": "primary",
+      "purpose": "Public experimental summary table. The exact source table is preserved; no archive files are implied for experimental_table_only records.",
+      "in_added": true
+    },
+    "locator": {"type": "row", "sheet": null, "row": 1, "row_range": [1, 1]},
+    "source": {
+      "kind": "nasa_psi_file",
+      "accession": "PSI-10",
+      "file_name": "PSI-10_Experimental table_Flame Design_Inverse Flame.csv",
+      "sha256": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+      "source_url": "https://psi.nasa.gov/geode-py/ws/studies/PSI-10/download?file=PSI-10_Experimental%20table_Flame%20Design_Inverse%20Flame.csv"
+    },
+    "retrieval": {
+      "retrieved_at": "2026-11-08T22:14:49Z",
+      "http_status": null,
+      "download_status": "already_present",
+      "bytes": 17314,
+      "expected_bytes": 17314,
+      "checksum_expected": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+      "checksum_actual": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4",
+      "checksum_match": true
+    },
+    "verification": {"status": "verified", "checks": ["canonical_row_located"]},
+    "availability": {"status": "available", "downloadable": true, "reason": null},
+    "row_verification": {
+      "row_verified": true,
+      "row_tables": ["gas_flame_test", "experimental_table_cell", "source_row"],
+      "warnings": []
+    },
+    "provenance": []
   }
 }
 ```
+
+Citation IDs are stable and deterministic. File IDs are `cit_f_<hex>`; row IDs are `cit_r_<base64url>` and are treated as opaque by clients. A citation is derived only from verified metadata; unknown or unavailable files do not receive a fabricated checksum.
+
+#### `GET /api/v1/publications`
+
+List deduplicated publications from the NASA PSI investigation registry. **Query parameters:** `accession`, `dataset_id` (resolved to its accession; conflicting `accession` and `dataset_id` return `400`), `q`, `year`, `status`, `limit`, `offset`.
+
+```json
+{
+  "data": {
+    "publications": [
+      {
+        "publication_id": "pub_0c1b7d7e064074d9",
+        "title": "A  Mechanistic Study of Soret Diffusion in Hydrogen-Air Flames",
+        "title_variants": [],
+        "authors": ["Yang Fan", "Law C.K", "Sung C.J", "Zhang Huiqiang"],
+        "authors_raw": "Yang Fan, Law C.K., Sung C.J., Zhang Huiqiang",
+        "authors_raw_variants": [],
+        "author_parse": "source_comma_or_and_delimited",
+        "doi": "10.2514/6.2009-988",
+        "doi_url": "https://doi.org/10.2514/6.2009-988",
+        "year": null,
+        "venue": null,
+        "status": "published",
+        "related_investigations": [
+          {
+            "accession": "PSI-23",
+            "title": "Advanced Combustion via Microgravity Experiments-Structure and Response of Spherical Diffusion Flames",
+            "doi": "10.60555/k57n-p030",
+            "acronym": "ACME s-Flame"
+          }
+        ],
+        "source_references": [
+          {
+            "kind": "psi_investigation_registry",
+            "path": "data/registry/psi_combustion_investigations.json",
+            "accession": "PSI-23",
+            "field": "publications"
+          }
+        ],
+        "verification": {
+          "status": "registry_verified",
+          "source": "data/registry/psi_combustion_investigations.json",
+          "snapshot_date": "2026-11-08",
+          "verified_fields": ["title", "authors", "doi", "status"],
+          "unavailable_fields": ["year", "venue"],
+          "conflicts": {"title_variants": [], "authors_raw_variants": []}
+        },
+        "field_status": {
+          "title": "source_provided",
+          "authors": "source_provided",
+          "doi": "source_provided",
+          "year": "not_available_in_registry",
+          "venue": "not_available_in_registry",
+          "status": "source_provided"
+        }
+      }
+    ],
+    "page": {"limit": 50, "offset": 0, "total": 299, "has_more": true},
+    "summary": {
+      "publication_count": 299,
+      "with_doi": 235,
+      "without_doi": 64,
+      "year_available": false,
+      "venue_available": false,
+      "note": "Year and venue are not present in the NASA PSI registry and are returned as unavailable."
+    }
+  }
+}
+```
+
+Publication deduplication uses DOI when present, otherwise normalized title. Conflicts are preserved as `title_variants` and `authors_raw_variants`; they are never silently resolved. Missing year or venue is returned as `null` with an explicit `field_status`, never inferred from the DOI or title.
+
+#### `GET /api/v1/publications/{publication_id}`
+
+Returns one publication with the same shape as a list item. Unknown IDs return `404 not_found`.
 
 ### 4.9 Assistant (optional)
 
@@ -1103,49 +1574,54 @@ No implicit interpolation, smoothing, or resampling. A future decimation method 
 
 | Field | Type | Notes |
 |---|---|---|
-| `concept` | string | Allowlisted concept. |
-| `unit` | string | Shared unit after explicit conversion. |
-| `series` | array | Per-dataset field, n, missing, values. |
-| `method` | string | Exact operation. |
-| `limitations` | array | Why the comparison is or is not causal. |
+| `left`, `right` | object | Measurement metadata: ID, dataset, accession, family, quantity, unit, value kind, calibration, availability, comparison status, restrictions. |
+| `status` | category | `comparable`, `conditionally_comparable`, `not_comparable`, `blocked`, `insufficient_metadata`. |
+| `rule_id` | string or null | Committed comparability rule that produced the decision. |
+| `reasons` | array | Stable code and message for the decision. |
+| `required_conditions` | array | Condition key, description, and satisfaction state. |
+| `scientific_justification` | string | Why the comparison is or is not valid. |
+| `integrity` | object | Canonical-data presence checks, failures, and messages. |
+| `paired_values` | object | Alignment, conditions, observations, series, exclusions, provenance, and a reason when unavailable. |
+| `dataset_version` | string | Canonical version used for the decision. |
 
-A comparison is not a correlation claim. The response must not include a correlation coefficient unless it was computed and its method, n, and uncertainty are documented.
+A comparison is not a correlation claim. The response must not include a correlation coefficient unless it was computed and its method, n, and uncertainty are documented. Paired observations are returned only when a verified alignment method exists; otherwise `paired_values.available` is `false` and `series` is empty.
 
 ---
 
 ## 6. Validation and blocking
 
-The API serves a dataset version only after the Phase 2 gates pass. If a gate fails:
+The API serves a dataset version only after the Phase 1 gates pass. If a gate fails:
 
 - the version is marked `blocked`;
-- `GET /api/v1/datasets/{accession}` returns `quality.status = "blocked"`;
+- `GET /api/v1/datasets/{dataset_id}` returns a blocked serving state;
 - data endpoints return `409 dataset_blocked`;
 - the UI shows the last known good version with a stale badge, or an explicit error;
 - the failure is logged with the source file, row, field, expected value, and actual value.
 
-The API never serves partially validated data as `verified`.
+The API never serves partially validated data as `verified`. Blocked comparisons are decisions, not transport failures: `/compare` returns `200` with `data.status = "blocked"` and the reasons.
 
 ---
 
 ## 7. Security
 
-- Public read-only role; no write endpoints.
+- Public read-only role; no write endpoints and no authentication in the MVP.
+- Rate limiting is an abuse control, not authentication.
 - Allowlisted datasets, fields, channels, and concepts.
 - Parameterized queries only.
 - No arbitrary SQL, table names, file paths, or URLs.
 - Request size limits and bounded time ranges.
-- CORS allowlist per environment.
-- Rate limiting per IP; stricter for the assistant.
+- CORS allowlist per environment (`FLAME_CORS_ORIGINS`).
 - Secrets injected at runtime; never in responses or logs.
 - Free-text fields escaped in the UI and delimited in prompts.
 - No directory traversal in provenance or file metadata endpoints.
 - `source_url` values are generated from the accession and file name; they are not accepted from the client.
+- Citation IDs are generated server-side; unknown or unverified files receive no fabricated checksum.
 
 ---
 
 ## 8. Testing contract
 
-Phase 3 is complete when:
+Phase 4 is complete when:
 
 1. The OpenAPI schema validates.
 2. Every endpoint has contract tests for success, empty, invalid, blocked, and rate-limited cases.
@@ -1153,24 +1629,32 @@ Phase 3 is complete when:
 4. Time-range limits return `413`, not a silent downsample.
 5. Every data response includes provenance and quality flags.
 6. Every numeric value includes a unit or `not stated`.
-7. Unknown datasets, fields, channels, and concepts return `404` or `400` with a stable code.
+7. Unknown datasets, fields, channels, measurements, and publications return `404` or `400` with a stable code.
 8. `TFP` is categorical in the schema and cannot be requested as a numeric temperature.
 9. PSI-100 exports remain separate runs.
 10. `experimental_table_only` datasets return their verified summary table with `quality.status = "experimental_table_only"`; records with no public artifacts return `quality.status = "not_available"`. Neither returns fabricated data.
-11. The assistant golden set passes with 100% citation coverage for numeric claims.
+11. Citation integrity tests confirm stable IDs, checksum linkage, row verification, and no download link for unavailable files.
+12. Dataset field tests confirm canonical names, verified source columns, units, value kinds, missingness, and integrity alternatives.
+13. Limitation tests confirm stable IDs, scopes, affected operations, evidence, and resolution status.
+14. Publication tests confirm deduplication, DOI/title keys, preserved conflicts, and `null` year/venue with explicit field status.
+15. Facet tests confirm counts come from canonical rows, qualified-row exclusion is reported, and PSI-10 atm / PSI-159 bar are never merged.
+16. Comparison tests confirm the authoritative decision is used, invalid pairings return no series, and `paired_values.available=false` without a verified alignment.
+17. Cache tests confirm ETag stability, `304` behavior, `no-store` on errors, and health exclusion.
+18. Rate-limit tests confirm `429`, `Retry-After`, and rate headers.
+19. The assistant golden set passes with 100% citation coverage for numeric claims, if the assistant is enabled.
 
 ---
 
 ## 9. Open questions
 
-These are unresolved until Phase 2/3:
+Resolved in Phase 4:
 
-1. **Dataset version format.** Proposed: `sha256` prefix over sorted source checksums plus parser/schema/config versions. Confirm before publishing.
-2. **Telemetry decimation.** The MVP returns `413` for oversized ranges. If a `minmax` method is added, its bucket rule and point count must be documented and tested.
+1. **Dataset version format.** A 64-hex version derived from the canonical build is used; it is returned as `meta.dataset_version` and in provenance.
+2. **Telemetry decimation.** The MVP returns `413` for oversized ranges. A future `minmax` method must document its bucket rule and point count.
 3. **Authentication.** Not required for the public read-only MVP. Revisit if saved views or private annotations are added.
-4. **Assistant exposure.** The assistant may be internal-only for the demo. The public API contract is written so it can be disabled without breaking the catalog.
+4. **Assistant exposure.** Not implemented. The contract remains so it can be added without breaking the catalog.
 5. **Deployment URLs.** Not assigned. Do not hard-code a production host in the repository.
-6. **Rate-limit values.** Set at deployment based on capacity; document in release notes.
+6. **Rate-limit values.** Defaults are 600 requests per 60 seconds per client; deployment may override them with environment variables.
 
 ---
 

@@ -4,7 +4,7 @@
 **Team:** AFAQ
 **Challenge:** Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data
 **Snapshot date:** 2026-11-08
-**Status:** Source-verified dictionary and implemented canonical schema (parser version 1.0.1). The 13 canonical Parquet tables are built; the API and frontend are not implemented in this milestone.
+**Status:** Source-verified dictionary and implemented canonical schema (parser version 1.0.1). The 13 canonical Parquet tables are built; the Phase 4 read-only API and Next.js frontend are implemented against them. This dictionary remains the field-level contract.
 
 This document defines every field used by the MVP, the original header text, the unit or absence of a unit, the missing-value conventions, and the canonical name. It is the contract between the data pipeline, the API, and the interface. If a field is not defined here, it must not be displayed as a measured quantity.
 
@@ -407,12 +407,14 @@ Any computed statistic, rate, comparison, or aggregate.
 
 ### 3.8 `citation`
 
-One row per source or publication used in an answer.
+The Phase 1 canonical build does not contain a standalone `citation` Parquet table. Phase 4 exposes citations through the read-only API, derived from the download manifest, acquisition report, and canonical row provenance. The API contract is documented in §10.1 and `docs/phase4-contracts.md`.
+
+A future persisted citation table would use this shape:
 
 | Column | Type | Description |
 |---|---|---|
 | `citation_id` | string, PK | Deterministic identifier. |
-| `kind` | category | `dataset`, `file`, `publication`, `readme`, `program_page`. |
+| `kind` | category | `file`, `row`, `publication`, `document`. |
 | `accession` | string, nullable | PSI accession. |
 | `title` | string | Citation title. |
 | `doi` | string, nullable | DOI. |
@@ -1452,3 +1454,168 @@ The generator reads the committed catalog definitions and source references. It 
 - `docs/frontend-readiness.md`
 - `docs/known-limitations.md`
 - `docs/decisions/0003-phase-2-comparability-serving-and-api.md`
+
+---
+
+## 10. Phase 4 metadata contracts
+
+Phase 4 adds read-only API contracts for citations, curated files, field metadata, limitations, publications, facets, and paired-value eligibility. These contracts derive from committed registries, the download manifest, the acquisition report, canonical Parquet tables, and verified NASA metadata. They do not add scientific values.
+
+### 10.1 Citations
+
+A citation identifies an exact source file or an exact source row.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `citation_id` | string | Stable ID. File: `cit_f_<16 hex>`. Row: `cit_r_<base64url>`. |
+| `kind` | category | `file` or `row`. |
+| `accession` | string | PSI accession. |
+| `dataset_ids` | array | Curated datasets that use the file. |
+| `file` | object | Exact file name, kind, manifest dataset, priority, purpose, and whether it is in `added`. |
+| `locator` | object | `type`, `sheet`, `row`, and `row_range` for row citations. |
+| `source` | object | NASA source URL, file name, and SHA-256 when available. |
+| `retrieval` | object | Retrieval time, HTTP status, download status, bytes, expected bytes, checksum fields. |
+| `verification` | object | Verification status and named checks. |
+| `availability` | object | `available` or `unavailable`, `downloadable`, and a reason. |
+| `row_verification` | object or null | Row citations only: whether the row is in canonical tables and which tables. |
+| `provenance` | array | Envelope provenance entries for the citation. |
+
+Rules:
+
+- File citations are generated from the curated download manifest and acquisition report.
+- Row citations are created on demand from an exact accession, file, sheet, and 1-based row; the server verifies that the row exists in a canonical table.
+- A known 404 file has `availability.status: "unavailable"`, `downloadable: false`, `download.http_status: 404`, and `download.sha256: null`. It is never presented as downloadable.
+- Citation IDs are deterministic for the same file or row locator. Clients treat them as opaque.
+- No citation is generated for an unverified file, and no checksum is invented.
+
+### 10.2 Dataset files
+
+The file browser uses the curated download manifest, not the full public inventory. It lists:
+
+- files selected by the manifest, with their availability and checksum;
+- documented known-unavailable files that are part of the curated record, such as PSI-98's two HTTP 404 telemetry XLSX files.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `file_id`, `citation_id` | string | Stable file identifier and citation ID. |
+| `file_name` | string | Exact source file name. No filesystem path. |
+| `accession`, `dataset_ids` | string, array | PSI accession and curated datasets. |
+| `kind`, `priority`, `purpose` | category, category, string | Manifest role and documented purpose. |
+| `source_url` | string | Public NASA download endpoint. |
+| `availability`, `downloadable`, `availability_reason` | category, boolean, string | Serving state and reason. |
+| `download` | object | Status, HTTP status, bytes, retrieval time, SHA-256, checksum match. |
+| `verification` | object | Status and named checks. |
+| `provenance` | array | Source references. |
+
+The response also includes `summary` (curated, available, unavailable, downloadable, known-unavailable, experimental tables) and `inventory` (public inventory counts, curated counts, not-selected counts, archive status, and a note). Inventory counts provide context; unselected archive files are not exposed.
+
+### 10.3 Field metadata
+
+Field metadata is derived from the 93 comparability measurements plus verified source-column mappings from parser constants, `experimental_table_schemas.json`, this dictionary, and `src/data_pipeline/channels.py`.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `field_id`, `measurement_id` | string | `<dataset_id>.<canonical_name>` and registry measurement ID. |
+| `canonical_name`, `parameter` | string | Stable canonical field name. |
+| `description` | string | Source-grounded description. Never invented. |
+| `physical_quantity` | string | Registry physical quantity. |
+| `unit`, `unit_status` | string, category | Unit label and whether it is stated, ambiguous, or not stated. |
+| `value_kind` | category | `measured`, `computed`, `derived`, or `categorical`. |
+| `measurement_method` | string | Source method note or an explicit "not documented" statement. |
+| `calibration` | object | Calibration status and note. |
+| `missingness` | object | Availability, restrictions, canonical presence, and policy. |
+| `integrity` | object | Canonical presence check: checked, status, reason, table, field, row counts, alternatives. |
+| `alternatives` | array | Other registry fields that carry the same quantity when the primary field is empty. |
+| `flags` | array | Stable restriction codes. |
+| `comparability` | object | Status, compatible/incompatible datasets, and rules. |
+| `source_columns` | array | Verified raw column, source file, and row scope. |
+| `source_references` | array | NASA files and documents. |
+| `serving_state`, `use_states` | category, object | Backend serving decisions. |
+
+Integrity statuses:
+
+| Status | Meaning |
+|---|---|
+| `available` | The registry field has canonical values. |
+| `missing` | The registry marks the field available, but the canonical table has zero non-null values. |
+| `not_checked` | Presence was not checked, for example because the measurement is not a canonical table field. |
+| `no_canonical_tables` | The dataset has no canonical tables, such as PSI-98 metadata-only. |
+
+When a field is `missing`, `alternatives` may name a field that carries the same quantity in a different unit or column. For example, PSI-159 `pressure_initial_atm` is empty while `pressure_approx_bar` carries bar values; PSI-10 `pressure_approx_bar` is empty while `pressure_initial_atm` carries atm values. The API reports this conflict; it does not convert or merge the units.
+
+### 10.4 Limitations
+
+Limitations are stable, scoped records with evidence.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `limitation_id` | string | Stable ID such as `lim_d_psi_10_gas_flame_computed_tad_zst`. |
+| `scope`, `scope_id` | category, string | `dataset`, `measurement`, `field`, `file`, or `publication`, and the affected resource. |
+| `dataset_id`, `accession` | string | Owning dataset and accession. |
+| `category` | category | `data_quality`, `availability`, `value_kind`, `calibration`, `unit`, `serving`, `provenance`, or `integrity`. |
+| `severity` | category | `info`, `warning`, or `error`. |
+| `code` | string | Stable reason code. |
+| `explanation` | string | Source-grounded explanation. |
+| `affected_operations` | array | Uses affected by the limitation. |
+| `evidence` | array | NASA files, registry paths, quality report sections, or documents. |
+| `resolution_status` | category | `documented`, `mitigated`, `open`, or `resolved`. |
+| `resolution_note` | string or null | What was done, if anything. |
+
+Limitations include serving restrictions, registry quality issues, unavailable files, and measurement-integrity findings. Fields already marked `missing` in the registry are not duplicated as integrity limitations.
+
+### 10.5 Publications
+
+Publications come from the NASA PSI investigation registry. The API returns only verified bibliographic fields.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `publication_id` | string | Stable `pub_<16 hex>` ID. |
+| `title`, `title_variants` | string, array | Source title and any conflicting variants. |
+| `authors`, `authors_raw`, `authors_raw_variants` | array, string, array | Parsed authors, exact source string, and conflicting variants. |
+| `author_parse` | string | Parse method, for example `source_comma_or_and_delimited`. |
+| `doi`, `doi_url` | string or null | DOI and resolver URL when present. |
+| `year`, `venue` | integer/string or null | Present only when the source registry provides them. |
+| `status` | category | Source status, for example `published`. |
+| `related_investigations` | array | Accession, title, DOI, and acronym. |
+| `source_references` | array | Registry path, accession, and field. |
+| `verification` | object | Status, source, snapshot date, verified fields, unavailable fields, conflicts. |
+| `field_status` | object | Per-field status such as `source_provided` or `not_available_in_registry`. |
+
+Deduplication uses DOI when present, otherwise normalized title. Conflicts are preserved as `title_variants` and `authors_raw_variants`, not silently resolved. Year and venue are `null` with `field_status: "not_available_in_registry"` in the current snapshot; they are never inferred from the DOI, title, or publication ID.
+
+### 10.6 Gas-flame facets
+
+Facets are computed from canonical `gas_flame_test` rows.
+
+- `accessions` reports total, included, and excluded qualified rows per accession.
+- `flame_type`, `fuel`, `hot_ignition`, `extinction_mode`, and `tfp` report exact source values and counts, with a per-accession breakdown. Case variants are preserved.
+- `pressure` is reported per accession with its own unit and histogram. PSI-10 uses `pressure_initial_atm` in atm; PSI-159 uses `pressure_approx_bar` in bar. Values are never converted or merged.
+- `oxygen` and `oxygen_initial` report the canonical field, unit, counts, missing counts, range, and per-accession histograms.
+- `include_qualified` and `excluded_qualified_rows` state whether ramped/low-oxygen rows were included.
+- `notes` explains exclusions, case variants, missingness, and unit handling.
+
+Default behavior matches the list endpoint: qualified rows are excluded, and the excluded count is reported.
+
+### 10.7 Comparison integrity and paired values
+
+`/compare` adds two scientific controls:
+
+- `integrity` reports canonical-data presence for both measurements: status, checks, failures, not-checked entries, and messages. A registry field with no canonical values is `missing`; a metadata-only dataset is `no_canonical_tables`.
+- `paired_values` reports eligibility, conditions, alignment, observations, series, exclusions, dataset version, provenance, and a reason when unavailable.
+
+Paired values are withheld unless all of the following hold:
+
+1. The comparability decision is approved for record-level pairing.
+2. Every required condition is verified.
+3. Both measurements pass integrity checks.
+4. A committed alignment method names exact keys and value fields.
+5. Every paired observation maps to real source records with units and provenance.
+
+The API never pairs by arbitrary row number, interpolates, silently normalizes, converts ambiguous units, or compares measured and computed values without an explicit rule. When no verified alignment exists, `paired_values.available` is `false`, `series` is empty, and `reason.code` is `no_verified_alignment` or `conditions_not_verified`. See `docs/comparison-alignment.md`.
+
+### 10.8 Related Phase 4 documents
+
+- `docs/phase4-contracts.md`
+- `docs/comparison-alignment.md`
+- `API_DOCUMENTATION.md` §4.2, §4.7, §4.8
+- `docs/api-implementation.md`

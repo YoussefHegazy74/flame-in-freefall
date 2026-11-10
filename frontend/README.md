@@ -1,7 +1,7 @@
 # Flame in Freefall — Frontend
 
 Scientific data exploration interface for the Flame in Freefall platform. It is a
-read-only Next.js application over the Phase 2 FastAPI service and the canonical
+read-only Next.js application over the Phase 4 FastAPI service and the canonical
 NASA PSI data. It renders backend decisions; it does not reimplement
 comparability, serving-state, calibration, or quality logic.
 
@@ -87,15 +87,17 @@ running. Set `PLAYWRIGHT_BASE_URL` to target a different frontend origin.
 | `/investigations` | Searchable, filterable, paginated investigation catalog |
 | `/investigations/[accession]` | Investigation detail with datasets, measurements, warnings, and source references |
 | `/datasets` | Curated dataset catalog with role, access, serving state, and quality |
-| `/datasets/[datasetId]` | Dataset detail: measurements, units, calibration, serving decisions, provenance |
-| `/experiments/gas-flame` | PSI-10 / PSI-159 test explorer with accession-bound filters |
+| `/datasets/[datasetId]` | Dataset detail: measurements, files, field dictionary, limitations, publications, provenance |
+| `/experiments/gas-flame` | PSI-10 / PSI-159 test explorer with dynamic facets and accession-bound filters |
 | `/experiments/materials` | PSI-25 / PSI-26 material matrices with oxygen-ambiguity warning |
 | `/experiments/droplets` | PSI-69 droplet summary with labeled burning-rate unit |
 | `/telemetry` | PSI-100 SAFFIRE-III run and bounded time-series explorer |
 | `/smoke` | PSI-101 SAME-R run and bounded time-series explorer |
-| `/compare` | Backend-authoritative measurement comparison studio |
+| `/compare` | Backend-authoritative comparison studio with integrity and paired-value eligibility |
 | `/quality` | Registry-wide and per-dataset quality, serving, and limitation center |
-| `/provenance` | Exact source-file and row resolution |
+| `/provenance` | Exact source-file and row resolution with citation drawers |
+| `/publications` | Verified publication list with accession and dataset filters |
+| `/publications/[publicationId]` | Publication detail with source references and field status |
 | `/about` | Methods, data processing, comparability, quality, and limitations |
 
 Filters that matter to reproducibility are synchronized to the URL. Browser
@@ -110,8 +112,8 @@ src/
 ├── app/                 App Router pages, layout, loading/error/not-found
 ├── components/
 │   ├── layout/          Sidebar, topbar, breadcrumbs, shell, footer
-│   ├── scientific/      Domain components: badges, warnings, provenance, records
-│   ├── charts/          Lazy-loaded Recharts time-series panels
+│   ├── scientific/      Domain components: badges, warnings, citations, files, fields, publications
+│   ├── charts/          Lazy-loaded Recharts time-series and paired-scatter panels
 │   └── ui/              Buttons, cards, filters, pagination, states, disclosure
 └── lib/
     ├── api/             Client, endpoint functions, query keys, TanStack hooks, types
@@ -134,21 +136,31 @@ src/
   request ID, and details.
 - **URL state.** Filters use `use-url-state.ts`; URL parameters are the source
   of truth for shareable views.
-- **Charts.** `lazy-time-series-chart.tsx` loads the chart module on demand.
-  Recharts is used only for justified time-series panels.
+- **Charts.** `lazy-time-series-chart.tsx` loads the time-series chart module on
+  demand. `lazy-paired-scatter-chart.tsx` loads the paired chart only when the
+  backend returns a complete verified contract. Recharts is used only for
+  justified scientific panels.
+- **Phase 4 panels.** Citation, file, field, limitation, publication, facet,
+  comparison-integrity, and paired-value components live in
+  `src/components/scientific/`; they render backend metadata and states rather
+  than deriving them.
 
 ### API capabilities the frontend relies on
 
 - `GET /meta`, `/investigations`, `/investigations/{accession}`
 - `GET /datasets`, `/datasets/{dataset_id}`, `/datasets/quality`,
   `/datasets/{dataset_id}/quality`
+- `GET /datasets/{dataset_id}/files`, `/fields`, `/limitations`
 - `GET /measurements`, `/measurements/{measurement_id}`
-- `GET /gas-flame/tests`, `/gas-flame/tests/{observation_id}`
+- `GET /gas-flame/tests`, `/gas-flame/tests/{observation_id}`,
+  `/gas-flame/facets`
 - `GET /material/tests`, `/droplet/tests`
 - `GET /telemetry/runs`, `/telemetry/runs/{run_id}`,
   `/telemetry/runs/{run_id}/series`
 - `GET /smoke/runs`, `/smoke/runs/{run_id}`, `/smoke/runs/{run_id}/series`
 - `GET /comparability`, `/compare`, `/provenance`
+- `GET /citations`, `/citations/{citation_id}`
+- `GET /publications`, `/publications/{publication_id}`
 
 ---
 
@@ -174,6 +186,12 @@ src/
   `conditionally_comparable`, `not_comparable`, `blocked`, and
   `insufficient_metadata` each render differently. Blocked comparisons render
   no chart.
+- Comparison integrity checks are rendered from `data.integrity`; a registry
+  field with no canonical values blocks a misleading comparison.
+- Paired values render only when `paired_values.available`, `alignment.verified`,
+  and numeric points all pass the client guard. When withheld, the panel shows
+  `reason.code`, the required alignment keys, and exclusions. No series is
+  derived from separate summaries.
 - Conditions are sent as explicit `cond_<key>=true` URL state and a JSON
   `conditions` request parameter. The frontend never assumes a condition is
   satisfied.
@@ -181,23 +199,34 @@ src/
   channels, and SAME-R `-999` sentinels remain visible in the relevant pages.
 - Charts include title, y unit, x time unit, source dataset, limitations, and
   an accessible text description.
+- Citation IDs are resolved through `/citations/{citation_id}`; the client does
+  not parse or construct them. Unavailable files never render a download link.
+- Field integrity statuses (`available`, `missing`, `not_checked`,
+  `no_canonical_tables`) are shown explicitly. Missing registry fields are never
+  rendered as zero.
+- Publications show only source-provided fields. Missing year and venue display
+  as "Not available in registry"; conflicting title and author variants are
+  preserved.
+- Gas-flame facets come from `/gas-flame/facets`, report excluded qualified rows,
+  and keep PSI-10 atm and PSI-159 bar separate.
 
 ### Deliberate omissions
 
-- No comparison chart is drawn for `/compare`, because the API returns a
-  decision and reasons, not paired values.
+- No paired chart is drawn unless the backend returns a complete verified
+  alignment contract. The current API withholds values.
 - No aggregate, rate, risk score, or ranking is computed in the browser.
 - No material safety claim is made.
-- No source citation, file, publication, or field endpoint is invented. Where
-  the backend does not expose a capability, the interface says so.
+- No full public-file inventory is exposed; the file browser uses the curated
+  manifest plus documented known-unavailable files.
+- No assistant UI is present; Phase 5 is not implemented.
 
 ---
 
 ## Testing
 
 ```bash
-npm test                 # 41 unit/component tests
-npm run test:e2e         # 17 Playwright flows, including 4 axe scans
+npm test                 # 54 unit/component tests
+npm run test:e2e         # 24 Playwright flows, including 6 axe scans
 npm run typecheck
 npm run lint
 npm run build
@@ -205,10 +234,12 @@ npm run build
 
 The Playwright suite runs against the real backend and real canonical data. It
 covers dashboard metrics, investigation search and role filtering, dataset
-serving states, accession-bound gas-flame filters, telemetry run identity and
-units, `413` guidance, smoke run identity and sentinels, conditional and blocked
-comparisons, quality warnings, provenance resolution and 404 handling, and
-serious/critical WCAG A/AA axe scans.
+serving states and Phase 4 metadata panels, accession-bound gas-flame filters
+and dynamic facets, telemetry run identity and units, `413` guidance, smoke run
+identity and sentinels, conditional and blocked comparisons, paired-value
+withholding, citation drawers, publication list/detail, provenance resolution
+and 404 handling, mobile viewport behavior, and serious/critical WCAG A/AA axe
+scans.
 
 ---
 
@@ -216,12 +247,15 @@ serious/critical WCAG A/AA axe scans.
 
 These are documented, not worked around with fabricated data:
 
-- No citation, file-listing, field, publication, or facet endpoints.
-- `/compare` returns a decision, not paired measurement values.
-- No ETag, cache-control, or rate-limiting contract.
-- No assistant endpoints.
+- No verified paired-comparison executor. `/compare` returns eligibility and a
+  withholding reason; observations and series are empty.
+- No assistant endpoints; Phase 5 is not implemented.
+- Rate limiting is process-local and has no shared store.
+- The API is public and read-only with no authentication.
 - `/material/tests` is the implemented route; the broader target contract names
   `/materials/tests`.
+- Embedded OpenAPI request/response examples are not present; examples live in
+  the documentation.
 
-See `../docs/frontend-readiness.md` and `../DEVELOPMENT_ROADMAP.md` §6.5 for the
-backend extension list.
+See `../docs/frontend-readiness.md`, `../docs/phase4-contracts.md`,
+`../docs/comparison-alignment.md`, and `../DEVELOPMENT_ROADMAP.md`.
