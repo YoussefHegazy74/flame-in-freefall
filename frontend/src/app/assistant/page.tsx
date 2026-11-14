@@ -145,13 +145,13 @@ export default function AssistantPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Phase 5 · grounded assistant"
+        eyebrow="FLAREX · Grounded research assistant"
         title="Research assistant"
         description={
           <>
             Ask about the curated NASA PSI combustion data. Numerical values come
             from deterministic backend tools, and every released citation resolves
-            through the Phase 4 citation registry. The assistant is not a source of
+            through the verified citation registry. The assistant is not a source of
             truth and does not replace the explorers.
           </>
         }
@@ -258,7 +258,7 @@ export default function AssistantPage() {
             </p>
           </div>
         </div>
-        <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-amber-100">
+        <p className="mt-3 rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-amber-100">
           Not produced by this assistant: fire-risk scores, material rankings,
           spacecraft fire-safety guarantees, causal claims from correlation, or
           fabricated measurements, publications, authors, DOIs, and URLs.
@@ -412,7 +412,7 @@ export default function AssistantPage() {
             </button>
           </div>
           {formError ? (
-            <p role="alert" className="mt-2 rounded-lg border border-rose-400/25 bg-rose-400/5 p-2 text-[11px] text-rose-100">
+            <p role="alert" className="mt-2 rounded-lg border border-rose-400/25 bg-danger-soft p-2 text-[11px] text-rose-100">
               {formError}
             </p>
           ) : null}

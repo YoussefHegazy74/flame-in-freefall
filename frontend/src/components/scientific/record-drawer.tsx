@@ -38,7 +38,7 @@ export function RecordDrawer({
   return (
     <div className="fixed inset-0 z-[70] flex justify-end">
       <div
-        className="absolute inset-0 bg-void/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -46,26 +46,26 @@ export function RecordDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="record-drawer-title"
-        className="relative flex h-full w-full max-w-2xl flex-col border-l border-navy-600 bg-navy-950 shadow-2xl"
+        className="relative flex h-full w-full max-w-2xl flex-col border-l border-border bg-background shadow-2xl"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-navy-700 px-5 py-4">
+        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
           <div className="min-w-0">
-            <h2 id="record-drawer-title" className="text-base font-semibold text-ink-50">
+            <h2 id="record-drawer-title" className="text-base font-semibold text-foreground">
               {title}
             </h2>
-            {subtitle ? <div className="mt-1 text-xs text-ink-400">{subtitle}</div> : null}
+            {subtitle ? <div className="mt-1 text-xs text-muted">{subtitle}</div> : null}
           </div>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-navy-600 bg-navy-900 p-2 text-ink-300 hover:text-ink-50 focus-ring"
+            className="rounded-lg border border-border bg-surface p-2 text-muted transition-colors hover:bg-surface-2 hover:text-foreground focus-ring"
             aria-label="Close record detail"
           >
             <X className="size-4" aria-hidden="true" />
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
       </section>
     </div>
   );

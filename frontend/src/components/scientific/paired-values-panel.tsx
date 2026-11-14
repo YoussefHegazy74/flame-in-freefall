@@ -40,7 +40,7 @@ function PresenceRow({ check }: { check: CanonicalPresence }) {
         </p>
       ) : null}
       {check.alternatives.length > 0 ? (
-        <div className="mt-1.5 rounded border border-amber-400/20 bg-amber-400/5 p-2">
+        <div className="mt-1.5 rounded border border-amber-400/20 bg-warning-soft p-2">
           <p className="flex items-center gap-1 text-[10px] font-medium text-amber-100">
             <AlertTriangle className="size-3" aria-hidden="true" />
             Documented alternative — not automatically substituted
@@ -91,7 +91,7 @@ export function ComparisonIntegrityPanel({ integrity }: { integrity: ComparisonI
           {integrity.messages.map((message) => (
             <li
               key={message}
-              className="flex items-start gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/5 p-2 text-[11px] leading-relaxed text-amber-100"
+              className="flex items-start gap-1.5 rounded-lg border border-amber-400/20 bg-warning-soft p-2 text-[11px] leading-relaxed text-amber-100"
             >
               <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
               {message}
@@ -130,7 +130,7 @@ export function ComparisonIntegrityPanel({ integrity }: { integrity: ComparisonI
             </ul>
           )}
           {integrity.failures.length > 0 ? (
-            <div className="mt-3 rounded-lg border border-rose-400/20 bg-rose-400/5 p-2.5">
+            <div className="mt-3 rounded-lg border border-rose-400/20 bg-danger-soft p-2.5">
               <p className="text-[10px] font-medium text-rose-100">
                 {formatCount(integrity.failures.length)} failed check
                 {integrity.failures.length === 1 ? "" : "s"}
@@ -275,7 +275,7 @@ export function PairedValuesPanel({
       ) : null}
 
       {!chartReady ? (
-        <div className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/5 p-4">
+        <div className="mt-4 rounded-xl border border-rose-400/20 bg-danger-soft p-4">
           <div className="flex items-start gap-2.5">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-rose-300" aria-hidden="true" />
             <div>
@@ -420,7 +420,7 @@ export function PairedValuesPanel({
           <SourceReferenceList references={paired.provenance} />
         </Disclosure>
       ) : (
-        <p className="mt-4 flex items-start gap-1.5 rounded-lg border border-amber-400/15 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+        <p className="mt-4 flex items-start gap-1.5 rounded-lg border border-amber-400/15 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
           <Info className="mt-0.5 size-3.5 shrink-0 text-amber-300" aria-hidden="true" />
           No paired-value provenance was returned. Do not infer a source for these values.
         </p>

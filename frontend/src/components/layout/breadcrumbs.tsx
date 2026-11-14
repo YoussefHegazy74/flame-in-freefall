@@ -12,8 +12,8 @@ export function Breadcrumbs({ className }: { className?: string }) {
 
   if (segments.length === 0) {
     return (
-      <nav aria-label="Breadcrumb" className={cn("text-xs text-ink-400", className)}>
-        <span className="font-medium text-ink-200">Overview</span>
+      <nav aria-label="Breadcrumb" className={cn("text-xs text-muted", className)}>
+        <span className="font-medium text-foreground">Overview</span>
       </nav>
     );
   }
@@ -30,12 +30,12 @@ export function Breadcrumbs({ className }: { className?: string }) {
   });
 
   return (
-    <nav aria-label="Breadcrumb" className={cn("min-w-0 text-xs text-ink-400", className)}>
+    <nav aria-label="Breadcrumb" className={cn("min-w-0 text-xs text-muted", className)}>
       <ol className="flex min-w-0 items-center gap-1.5">
         <li>
           <Link
             href="/"
-            className="inline-flex items-center gap-1 rounded text-ink-400 hover:text-cyan-300 focus-ring"
+            className="inline-flex items-center gap-1 rounded text-muted hover:text-accent-strong focus-ring"
             aria-label="Overview"
           >
             <Home className="size-3.5" aria-hidden="true" />
@@ -44,11 +44,11 @@ export function Breadcrumbs({ className }: { className?: string }) {
         </li>
         {crumbs.map((crumb) => (
           <li key={crumb.href} className="flex min-w-0 items-center gap-1.5">
-            <ChevronRight className="size-3 shrink-0 text-ink-600" aria-hidden="true" />
+            <ChevronRight className="size-3 shrink-0 text-muted-2" aria-hidden="true" />
             {crumb.last ? (
               <span
                 aria-current="page"
-                className="max-w-[11rem] truncate font-medium text-ink-200 sm:max-w-[18rem]"
+                className="max-w-[11rem] truncate font-medium text-foreground sm:max-w-[18rem]"
                 title={crumb.label}
               >
                 {crumb.label}
@@ -56,7 +56,7 @@ export function Breadcrumbs({ className }: { className?: string }) {
             ) : (
               <Link
                 href={crumb.href}
-                className="max-w-[10rem] truncate rounded text-ink-400 hover:text-cyan-300 focus-ring"
+                className="max-w-[10rem] truncate rounded text-muted hover:text-accent-strong focus-ring"
                 title={crumb.label}
               >
                 {crumb.label}

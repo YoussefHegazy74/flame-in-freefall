@@ -136,7 +136,7 @@ export default function DatasetDetailPage() {
               ))}
             </ul>
           </div>
-          <div className="mt-4 rounded-lg border border-cyan-400/15 bg-cyan-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+          <div className="mt-4 rounded-lg border border-cyan-400/15 bg-accent-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
             The API serves named queries only. This page does not expose raw files, arbitrary SQL,
             or browser-side transformations.
           </div>
@@ -176,7 +176,7 @@ export default function DatasetDetailPage() {
                   <li className="text-[11px] text-ink-400">No dataset-level restrictions were returned.</li>
                 ) : (
                   record.restrictions.map((restriction) => (
-                    <li key={restriction} className="flex items-start gap-1.5 rounded-lg border border-amber-400/15 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+                    <li key={restriction} className="flex items-start gap-1.5 rounded-lg border border-amber-400/15 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
                       <AlertTriangle className="mt-0.5 size-3 shrink-0 text-amber-300" aria-hidden="true" />
                       {restriction}
                     </li>

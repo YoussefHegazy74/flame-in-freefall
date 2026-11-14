@@ -181,7 +181,7 @@ function TelemetryContent() {
         }
       />
 
-      <section className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3.5">
+      <section className="rounded-xl border border-cyan-400/20 bg-accent-soft p-3.5">
         <div className="flex items-start gap-2.5">
           <Info className="mt-0.5 size-4 shrink-0 text-cyan-300" aria-hidden="true" />
           <p className="text-[11px] leading-relaxed text-ink-300">
@@ -298,7 +298,7 @@ function TelemetryContent() {
                   </div>
                 </dl>
                 {runData.notes ? (
-                  <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-amber-100">
+                  <p className="mt-3 rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-amber-100">
                     {runData.notes}
                   </p>
                 ) : null}
@@ -507,7 +507,7 @@ function RunCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={`surface-flat p-4 text-left transition-colors focus-ring ${
-        selected ? "border-cyan-400/40 bg-cyan-400/5" : "hover:border-navy-500/70"
+        selected ? "border-cyan-400/40 bg-accent-soft" : "hover:border-navy-500/70"
       }`}
     >
       <div className="flex items-start justify-between gap-2">

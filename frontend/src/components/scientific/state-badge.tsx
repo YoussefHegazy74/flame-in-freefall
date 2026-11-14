@@ -21,11 +21,11 @@ import {
 import { cn } from "@/lib/utils";
 
 const SERVING_STYLES: Record<ServingState, string> = {
-  available: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
-  available_with_warnings: "border-amber-400/25 bg-amber-400/10 text-amber-300",
-  restricted: "border-ember-400/25 bg-ember-400/10 text-ember-300",
-  blocked: "border-rose-400/25 bg-rose-400/10 text-rose-300",
-  metadata_only: "border-navy-600 bg-navy-800/80 text-ink-300",
+  available: "border-success/20 bg-success-soft text-success",
+  available_with_warnings: "border-warning/20 bg-warning-soft text-warning",
+  restricted: "border-warning/20 bg-warning-soft text-warning",
+  blocked: "border-danger/20 bg-danger-soft text-danger",
+  metadata_only: "border-border bg-surface-2 text-muted",
 };
 
 const SERVING_ICONS: Record<ServingState, typeof CheckCircle2> = {
@@ -63,11 +63,11 @@ export function ServingStateBadge({
 }
 
 const COMPARISON_STYLES: Record<ComparisonStatus, string> = {
-  comparable: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
-  conditionally_comparable: "border-cyan-400/25 bg-cyan-400/10 text-cyan-300",
-  not_comparable: "border-ember-400/25 bg-ember-400/10 text-ember-300",
-  blocked: "border-rose-400/25 bg-rose-400/10 text-rose-300",
-  insufficient_metadata: "border-violet-400/25 bg-violet-400/10 text-violet-400",
+  comparable: "border-success/20 bg-success-soft text-success",
+  conditionally_comparable: "border-accent/20 bg-accent-soft text-accent-strong",
+  not_comparable: "border-warning/20 bg-warning-soft text-warning",
+  blocked: "border-danger/20 bg-danger-soft text-danger",
+  insufficient_metadata: "border-info/20 bg-info-soft text-info",
 };
 
 const COMPARISON_ICONS: Record<ComparisonStatus, typeof CheckCircle2> = {
@@ -105,11 +105,11 @@ export function ComparisonStateBadge({
 }
 
 const QUALITY_STYLES: Record<QualityStatus, string> = {
-  verified: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
-  partial: "border-amber-400/25 bg-amber-400/10 text-amber-300",
-  blocked: "border-rose-400/25 bg-rose-400/10 text-rose-300",
-  experimental_table_only: "border-violet-400/25 bg-violet-400/10 text-violet-400",
-  not_available: "border-navy-600 bg-navy-800/80 text-ink-300",
+  verified: "border-success/20 bg-success-soft text-success",
+  partial: "border-warning/20 bg-warning-soft text-warning",
+  blocked: "border-danger/20 bg-danger-soft text-danger",
+  experimental_table_only: "border-info/20 bg-info-soft text-info",
+  not_available: "border-border bg-surface-2 text-muted",
 };
 
 const QUALITY_ICONS: Record<QualityStatus, typeof CheckCircle2> = {

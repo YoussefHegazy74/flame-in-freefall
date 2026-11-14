@@ -140,7 +140,7 @@ function CompareContent() {
         }
       />
 
-      <section className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-3.5">
+      <section className="rounded-xl border border-amber-400/25 bg-warning-soft p-3.5">
         <div className="flex items-start gap-2.5">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden="true" />
           <div className="text-[11px] leading-relaxed text-ink-300">
@@ -296,7 +296,7 @@ function CompareContent() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-accent-soft p-4">
             <p className="flex items-center gap-2 text-xs font-semibold text-cyan-100">
               <Info className="size-3.5" aria-hidden="true" />
               Default policy: {COMPARISON_LABELS[summary.default_policy.status]}

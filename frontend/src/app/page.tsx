@@ -98,7 +98,8 @@ export default function OverviewPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Phase 3 · Scientific evidence explorer"
+        variant="hero"
+        eyebrow="FLAREX · Microgravity Combustion Intelligence"
         title="NASA microgravity combustion, without invented certainty."
         description={
           <>
@@ -134,14 +135,14 @@ export default function OverviewPage() {
         }
       />
 
-      <section aria-label="Platform warning" className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-4">
+      <section aria-label="Platform warning" className="rounded-xl border border-warning/20 bg-warning-soft p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-300" aria-hidden="true" />
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
           <div>
-            <p className="text-sm font-semibold text-amber-100">
+            <p className="text-sm font-semibold text-foreground">
               This is an evidence explorer, not a measurement product.
             </p>
-            <p className="mt-1 max-w-4xl text-xs leading-relaxed text-ink-300">
+            <p className="mt-1 max-w-4xl text-xs leading-relaxed text-muted sm:text-sm">
               Missing values are not zero. Computed fields are not measurements. Blocked
               comparisons are not shown as if they were valid. Interpretations are Team AFAQ&apos;s
               own; NASA does not endorse this platform.
@@ -332,7 +333,7 @@ export default function OverviewPage() {
 
       <section aria-labelledby="known-limitations" className="surface p-5">
         <div className="flex items-start gap-3">
-          <span className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-2 text-amber-300">
+          <span className="rounded-xl border border-amber-400/25 bg-warning-soft p-2 text-amber-300">
             <AlertTriangle className="size-5" aria-hidden="true" />
           </span>
           <div>

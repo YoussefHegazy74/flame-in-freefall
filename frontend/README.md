@@ -1,8 +1,8 @@
-# Flame in Freefall — Frontend
+# FLAREX — Frontend
 
-Scientific data exploration interface for the Flame in Freefall platform. It is a
-read-only Next.js application over the Phase 5–6 FastAPI service and the
-canonical NASA PSI data. It renders backend decisions; it does not reimplement
+Scientific data exploration interface for **FLAREX — Microgravity Combustion
+Intelligence**. It is a read-only Next.js application over the Phase 5–6 FastAPI
+service and the canonical NASA PSI data. It renders backend decisions; it does not reimplement
 comparability, serving-state, calibration, or quality logic. Phase 6 adds a
 standalone production build, container configuration, security headers, and
 provider-usage transparency.
@@ -25,6 +25,22 @@ provider-usage transparency.
 
 All versions are pinned in `package.json`. `npm run dev` and `npm run build`
 use the webpack builder explicitly.
+
+## Brand
+
+**FLAREX** is the product name. The official tagline is **Microgravity
+Combustion Intelligence**. The custom orbit-and-flame mark is implemented in
+`src/components/brand/flarex-mark.tsx`; public logo assets are in
+`public/flarex-mark.svg` and `public/flarex-logo.svg`. The repository slug and
+internal package identifiers remain `flame-in-freefall` for continuity and are
+not user-facing.
+
+## Design system
+
+The visual system is documented in [`DESIGN_GUIDELINES.md`](DESIGN_GUIDELINES.md).
+It defines the light/dark palette, semantic tokens, gradients, typography,
+spacing, glass header behavior, reusable components, and accessibility rules.
+New UI work should use the semantic tokens and primitives described there.
 
 ---
 

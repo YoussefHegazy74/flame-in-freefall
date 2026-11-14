@@ -25,12 +25,12 @@ export function Pagination({
   return (
     <nav
       aria-label="Pagination"
-      className="flex flex-col gap-3 border-t border-navy-700/70 px-1 pt-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 border-t border-border px-1 pt-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p className="text-xs text-ink-400" aria-live="polite">
-        Showing <span className="text-ink-200">{formatCount(start)}</span>–
-        <span className="text-ink-200">{formatCount(end)}</span> of{" "}
-        <span className="text-ink-200">{formatCount(total)}</span> {label}
+      <p className="text-xs text-muted" aria-live="polite">
+        Showing <span className="text-foreground">{formatCount(start)}</span>–
+        <span className="text-foreground">{formatCount(end)}</span> of{" "}
+        <span className="text-foreground">{formatCount(total)}</span> {label}
       </p>
       <div className="flex items-center gap-2">
         <button
@@ -43,7 +43,7 @@ export function Pagination({
           <ChevronLeft className="size-3.5" aria-hidden="true" />
           Previous
         </button>
-        <span className="min-w-20 text-center font-mono text-[11px] text-ink-400">
+        <span className="min-w-20 text-center font-mono text-[11px] text-muted">
           {page} / {pages}
         </span>
         <button

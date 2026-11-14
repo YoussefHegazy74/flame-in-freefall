@@ -97,7 +97,7 @@ export function PublicationCard({
       </dl>
 
       {hasConflicts ? (
-        <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-amber-100">
+        <div className="mt-3 rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-amber-100">
           The registry contains conflicting metadata variants. They are preserved below rather than
           silently resolved.
           {publication.verification.conflicts.title_variants.length > 0 ? (

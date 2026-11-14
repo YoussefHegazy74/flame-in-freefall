@@ -293,7 +293,7 @@ function CitationDetail({ citation }: { citation: Citation }) {
           {citation.row_verification.warnings.length > 0 ? (
             <ul className="mt-2 space-y-1.5">
               {citation.row_verification.warnings.map((warning) => (
-                <li key={warning} className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2 text-[11px] text-amber-100">
+                <li key={warning} className="rounded-lg border border-amber-400/20 bg-warning-soft p-2 text-[11px] text-amber-100">
                   {warning}
                 </li>
               ))}
@@ -322,13 +322,13 @@ function CitationDetail({ citation }: { citation: Citation }) {
             href={sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-200 hover:bg-emerald-400/15 focus-ring"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-success-soft px-2.5 py-1.5 text-[11px] font-medium text-emerald-200 hover:bg-success-soft focus-ring"
           >
             <Download className="size-3.5" aria-hidden="true" />
             Download NASA source file
           </a>
         ) : (
-          <p className="mt-2 rounded-lg border border-rose-400/20 bg-rose-400/5 p-2 text-[11px] text-rose-100">
+          <p className="mt-2 rounded-lg border border-rose-400/20 bg-danger-soft p-2 text-[11px] text-rose-100">
             This citation has no downloadable file. No substitute URL is provided.
           </p>
         )}

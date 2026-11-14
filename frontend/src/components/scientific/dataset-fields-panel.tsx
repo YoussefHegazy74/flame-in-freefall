@@ -62,7 +62,7 @@ function FieldCard({ field }: { field: DatasetField }) {
           {field.flags.map((flag) => (
             <li
               key={flag}
-              className="rounded border border-amber-400/20 bg-amber-400/5 px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
+              className="rounded border border-amber-400/20 bg-warning-soft px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
             >
               {flag}
             </li>
@@ -102,7 +102,7 @@ function FieldCard({ field }: { field: DatasetField }) {
       </div>
 
       {field.alternatives.length > 0 ? (
-        <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5">
+        <div className="mt-3 rounded-lg border border-amber-400/20 bg-warning-soft p-2.5">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-100">
             <AlertTriangle className="size-3.5" aria-hidden="true" />
             Documented alternative, not an automatic substitute
@@ -335,7 +335,7 @@ export function DatasetFieldsPanel({ datasetId }: { datasetId: string }) {
       )}
 
       {data ? (
-        <p className="mt-4 rounded-lg border border-cyan-400/15 bg-cyan-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+        <p className="mt-4 rounded-lg border border-cyan-400/15 bg-accent-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
           {formatCount(data.summary.with_verified_source_column)} of{" "}
           {formatCount(data.summary.field_count)} fields have a verified source-column mapping.
           Missing canonical values are reported explicitly; they are never zero-filled.

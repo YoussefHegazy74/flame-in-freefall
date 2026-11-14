@@ -14,7 +14,7 @@ import type { PairedSeries } from "@/lib/api/types";
 import { formatNumber } from "@/lib/format";
 import { ChartFrame } from "@/components/scientific/chart-frame";
 
-const COLORS = ["#4fd8ec", "#f2a04a", "#43d39a", "#b3a4ff", "#edc15d", "#f27575"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-6)"];
 
 interface ChartRow {
   x: number;
@@ -71,19 +71,19 @@ export function PairedScatterChart({
       <div className="h-80 w-full" data-testid="paired-scatter-chart">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 12, bottom: 28, left: 8 }}>
-            <CartesianGrid stroke="#1d3348" strokeDasharray="3 3" />
+            <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
             <XAxis
               type="number"
               dataKey="x"
               name={leftLabel}
               unit={` ${xUnit}`}
-              tick={{ fill: "#8aa0b4", fontSize: 10 }}
-              stroke="#3a5670"
+              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+              stroke="var(--chart-grid)"
               label={{
                 value: `${leftLabel} (${xUnit})`,
                 position: "insideBottom",
                 offset: -16,
-                fill: "#8aa0b4",
+                fill: "var(--chart-axis)",
                 fontSize: 10,
               }}
             />
@@ -92,31 +92,31 @@ export function PairedScatterChart({
               dataKey="y"
               name={rightLabel}
               unit={` ${yUnit}`}
-              tick={{ fill: "#8aa0b4", fontSize: 10 }}
-              stroke="#3a5670"
+              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+              stroke="var(--chart-grid)"
               width={64}
               label={{
                 value: `${rightLabel} (${yUnit})`,
                 angle: -90,
                 position: "insideLeft",
-                fill: "#8aa0b4",
+                fill: "var(--chart-axis)",
                 fontSize: 10,
               }}
             />
             <Tooltip
               cursor={{ strokeDasharray: "3 3" }}
               contentStyle={{
-                background: "#0a1624",
-                border: "1px solid #2a4359",
+                background: "var(--chart-tooltip-bg)",
+                border: "1px solid var(--chart-tooltip-border)",
                 borderRadius: 8,
                 fontSize: 11,
-                color: "#dbe7f1",
+                color: "var(--chart-tooltip-text)",
               }}
               formatter={(value, name) => [formatNumber(Number(value)), String(name)]}
               labelFormatter={() => ""}
             />
             {series.length > 1 ? (
-              <Legend wrapperStyle={{ fontSize: 10, color: "#8aa0b4" }} />
+              <Legend wrapperStyle={{ fontSize: 10, color: "var(--chart-axis)" }} />
             ) : null}
             {series.map((item, index) => (
               <Scatter

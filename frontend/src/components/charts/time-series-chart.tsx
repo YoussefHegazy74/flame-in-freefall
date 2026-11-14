@@ -17,14 +17,14 @@ import { ChartFrame } from "@/components/scientific/chart-frame";
 import { Disclosure } from "@/components/ui/disclosure";
 
 const COLORS = [
-  "#4fd8ec",
-  "#f2a04a",
-  "#43d39a",
-  "#b3a4ff",
-  "#edc15d",
-  "#f27575",
-  "#8ceaf6",
-  "#f7d98b",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
+  "var(--chart-7)",
+  "var(--chart-8)",
 ];
 
 interface SeriesGroup {
@@ -90,7 +90,7 @@ export function TimeSeriesChart({
 
   if (groups.length === 0) {
     return (
-      <div className="surface p-5 text-sm text-ink-300">
+      <div className="surface p-5 text-sm text-muted">
         No plottable channels were returned. No chart is drawn.
       </div>
     );
@@ -118,7 +118,7 @@ export function TimeSeriesChart({
             warnings={warning ? [warning] : []}
             source={
               <span>
-                <span className="mono text-ink-300">{runId}</span>
+                <span className="mono text-muted">{runId}</span>
                 <br />
                 Source file: <span className="mono">{sourceFile}</span>
                 {retrievedAt ? <> · retrieved {retrievedAt}</> : null}
@@ -130,7 +130,7 @@ export function TimeSeriesChart({
                       href={sourceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-cyan-300 hover:text-cyan-200 focus-ring"
+                      className="text-accent-strong hover:text-accent focus-ring"
                     >
                       NASA source
                     </a>
@@ -154,39 +154,39 @@ export function TimeSeriesChart({
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={points} margin={{ top: showLegend ? 34 : 10, right: 18, bottom: 30, left: 12 }}>
-                  <CartesianGrid stroke="#162844" strokeDasharray="3 4" />
+                  <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 4" />
                   <XAxis
                     dataKey={type.timeKey}
                     type="number"
                     domain={["dataMin", "dataMax"]}
-                    tick={{ fill: "#8499b7", fontSize: 10 }}
+                    tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
                     tickFormatter={(value: number) => formatNumber(value, { maximumSignificantDigits: 4 })}
                     label={{
                       value: `Time (${type.timeUnit})`,
                       position: "insideBottom",
                       offset: -14,
-                      fill: "#8499b7",
+                      fill: "var(--chart-axis)",
                       fontSize: 10,
                     }}
                   />
                   <YAxis
-                    tick={{ fill: "#8499b7", fontSize: 10 }}
+                    tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
                     tickFormatter={(value: number) => formatNumber(value, { maximumSignificantDigits: 4 })}
                     width={64}
                     label={{
                       value: group.unit === "not stated" ? "signal (unit not stated)" : group.unit,
                       angle: -90,
                       position: "insideLeft",
-                      fill: "#8499b7",
+                      fill: "var(--chart-axis)",
                       fontSize: 10,
                     }}
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "#081120",
-                      border: "1px solid #22395c",
+                      background: "var(--chart-tooltip-bg)",
+                      border: "1px solid var(--chart-tooltip-border)",
                       borderRadius: 10,
-                      color: "#e7effb",
+                      color: "var(--chart-tooltip-text)",
                       fontSize: 11,
                     }}
                     labelFormatter={(value) =>
@@ -204,9 +204,9 @@ export function TimeSeriesChart({
                       verticalAlign="top"
                       align="right"
                       height={24}
-                      wrapperStyle={{ fontSize: 10, color: "#a9bad3", paddingBottom: 8 }}
+                      wrapperStyle={{ fontSize: 10, color: "var(--chart-axis)", paddingBottom: 8 }}
                       formatter={(value) => (
-                        <span style={{ color: "#a9bad3" }}>{String(value)}</span>
+                        <span style={{ color: "var(--chart-axis)" }}>{String(value)}</span>
                       )}
                     />
                   ) : null}

@@ -175,7 +175,7 @@ function QualityContent() {
         }
       />
 
-      <section className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-3.5">
+      <section className="rounded-xl border border-amber-400/25 bg-warning-soft p-3.5">
         <div className="flex items-start gap-2.5">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden="true" />
           <div className="text-[11px] leading-relaxed text-ink-300">
@@ -281,7 +281,7 @@ function QualityContent() {
                     key={record.dataset_id}
                     className={
                       record.dataset_id === datasetFilter
-                        ? "bg-cyan-400/5"
+                        ? "bg-accent-soft"
                         : "hover:bg-navy-800/35"
                     }
                   >

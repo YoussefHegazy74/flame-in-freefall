@@ -116,7 +116,7 @@ export function ChannelPicker({
           returned data.
         </p>
       ) : (
-        <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
+        <div className="max-h-96 space-y-3 overflow-y-auto pr-1" tabIndex={0} aria-label="Channel list">
           {groups.map((group) => (
             <fieldset key={group.key} className="rounded-xl border border-navy-700/60 bg-navy-950/35 p-3">
               <legend className="flex flex-wrap items-center gap-2 px-1">
@@ -136,7 +136,7 @@ export function ChannelPicker({
                         className={cn(
                           "flex cursor-pointer items-start gap-2 rounded-lg border p-2 transition-colors",
                           checked
-                            ? "border-cyan-400/30 bg-cyan-400/5"
+                            ? "border-cyan-400/30 bg-accent-soft"
                             : "border-transparent hover:border-navy-600 hover:bg-navy-900/60",
                           (disabled || disabledByLimit) && "cursor-not-allowed opacity-60",
                         )}

@@ -76,7 +76,7 @@ function ConditionChecklist({
 }) {
   if (conditions.length === 0) return null;
   return (
-    <fieldset className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+    <fieldset className="rounded-xl border border-cyan-400/20 bg-accent-soft p-4">
       <legend className="px-1 text-xs font-semibold text-cyan-200">
         Required conditions
       </legend>
@@ -215,7 +215,7 @@ export function ComparisonDecisionPanel({
           {decision.warnings.length > 0 ? (
             <ul className="mt-2 space-y-2">
               {decision.warnings.map((warning) => (
-                <li key={warning} className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-xs leading-relaxed text-amber-100">
+                <li key={warning} className="rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-xs leading-relaxed text-amber-100">
                   {warning}
                 </li>
               ))}
@@ -225,7 +225,7 @@ export function ComparisonDecisionPanel({
           )}
         </div>
 
-        <div className={cn("rounded-xl border p-4", noChart ? "border-rose-400/20 bg-rose-400/5" : "border-emerald-400/20 bg-emerald-400/5")}>
+        <div className={cn("rounded-xl border p-4", noChart ? "border-rose-400/20 bg-danger-soft" : "border-emerald-400/20 bg-success-soft")}>
           <div className="flex items-start gap-2.5">
             {noChart ? (
               <ShieldAlert className="mt-0.5 size-4 shrink-0 text-rose-300" aria-hidden="true" />

@@ -158,7 +158,7 @@ function PublicationsContent() {
       </FilterBar>
 
       {summary ? (
-        <p className="rounded-lg border border-cyan-400/15 bg-cyan-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+        <p className="rounded-lg border border-cyan-400/15 bg-accent-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
           {summary.note}
         </p>
       ) : null}

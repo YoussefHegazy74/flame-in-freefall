@@ -29,10 +29,10 @@ export function MeasurementTable({
       </thead>
       <tbody>
         {measurements.map((measurement) => (
-          <tr key={measurement.measurement_id} className="hover:bg-navy-800/35">
+          <tr key={measurement.measurement_id} className="hover:bg-surface-2/35">
             <td className={TD_CLASS}>
-              <p className="font-medium text-ink-100">{fieldLabel(measurement.parameter)}</p>
-              <p className="mt-0.5 break-all font-mono text-[10px] text-ink-500">
+              <p className="font-medium text-foreground">{fieldLabel(measurement.parameter)}</p>
+              <p className="mt-0.5 break-all font-mono text-[10px] text-muted-2">
                 {measurement.measurement_id}
               </p>
             </td>
@@ -40,7 +40,7 @@ export function MeasurementTable({
               <td className={TD_CLASS}>
                 <Link
                   href={`/datasets/${encodeURIComponent(measurement.dataset_id)}`}
-                  className="text-cyan-300 hover:text-cyan-200 focus-ring"
+                  className="text-accent-strong hover:text-accent-strong focus-ring"
                 >
                   {measurement.dataset_id}
                 </Link>
@@ -64,20 +64,20 @@ export function MeasurementTable({
                   {measurement.quality_restrictions.map((restriction) => (
                     <li
                       key={restriction}
-                      className="rounded border border-navy-600 bg-navy-800/70 px-1.5 py-0.5 font-mono text-[10px] text-ink-300"
+                      className="rounded border border-border-strong bg-surface-2/70 px-1.5 py-0.5 font-mono text-[10px] text-muted"
                     >
                       {restriction}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <span className="text-ink-500">—</span>
+                <span className="text-muted-2">—</span>
               )}
             </td>
             <td className={TD_CLASS}>
               <Link
                 href={`/compare?left=${encodeURIComponent(measurement.measurement_id)}`}
-                className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-cyan-300 hover:text-cyan-200 focus-ring"
+                className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-accent-strong hover:text-accent-strong focus-ring"
                 aria-label={`Compare ${measurement.measurement_id} in Comparison Studio`}
               >
                 <GitCompare className="size-3" aria-hidden="true" />

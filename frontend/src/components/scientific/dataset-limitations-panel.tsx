@@ -47,7 +47,7 @@ function LimitationCard({ limitation }: { limitation: Limitation }) {
             {limitation.affected_operations.map((operation) => (
               <li
                 key={operation}
-                className="rounded border border-amber-400/20 bg-amber-400/5 px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
+                className="rounded border border-amber-400/20 bg-warning-soft px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
               >
                 {labelForUse(operation)}
               </li>
@@ -205,7 +205,7 @@ export function DatasetLimitationsPanel({
       )}
 
       {data ? (
-        <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-400/15 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+        <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-400/15 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-300" aria-hidden="true" />
           <span>
             {formatCount(data.summary.by_scope.dataset ?? 0)} dataset-scoped and{" "}

@@ -36,7 +36,7 @@ export function UnitLabel({
     <span
       className={cn(
         "font-mono text-[11px]",
-        ambiguous ? "text-amber-300" : "text-ink-300",
+        ambiguous ? "text-warning" : "text-muted",
         className,
       )}
       title={status ? `unit_status: ${status}` : undefined}

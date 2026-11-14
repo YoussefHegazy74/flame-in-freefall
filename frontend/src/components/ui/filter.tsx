@@ -15,18 +15,19 @@ export function FilterBar({
   label?: string;
 }) {
   return (
-    <section
-      aria-label={label}
-      className={cn("surface-flat p-4", className)}
-    >
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
-      {actions ? <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-navy-700/60 pt-3">{actions}</div> : null}
+    <section aria-label={label} className={cn("surface-flat p-4 sm:p-5", className)}>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
+      {actions ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+          {actions}
+        </div>
+      ) : null}
     </section>
   );
 }
 
 const CONTROL_CLASS =
-  "h-9 w-full rounded-lg border border-navy-700 bg-navy-950/70 px-2.5 text-xs text-ink-100 placeholder:text-ink-500 focus:border-cyan-400/60 focus-ring";
+  "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-2 transition-colors focus:border-accent focus-ring";
 
 export function TextFilter({
   id,
@@ -57,13 +58,13 @@ export function TextFilter({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-[11px] font-medium text-ink-300">
+      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-text-soft">
         {label}
       </label>
       <div className="relative">
         {type === "search" ? (
           <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-500"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-2"
             aria-hidden="true"
           />
         ) : null}
@@ -78,10 +79,10 @@ export function TextFilter({
           disabled={disabled}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={cn(CONTROL_CLASS, type === "search" && "pl-8", disabled && "opacity-50")}
+          className={cn(CONTROL_CLASS, type === "search" && "pl-9", disabled && "opacity-50")}
         />
       </div>
-      {hint ? <p className="mt-1 text-[10px] leading-relaxed text-ink-500">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -107,7 +108,7 @@ export function SelectFilter({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-[11px] font-medium text-ink-300">
+      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-text-soft">
         {label}
       </label>
       <select
@@ -124,7 +125,7 @@ export function SelectFilter({
           </option>
         ))}
       </select>
-      {hint ? <p className="mt-1 text-[10px] leading-relaxed text-ink-500">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -143,19 +144,19 @@ export function CheckboxFilter({
   hint?: string;
 }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-navy-700/70 bg-navy-950/50 p-2.5">
+    <div className="flex items-start gap-2.5 rounded-lg border border-border bg-background p-3">
       <input
         id={id}
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-0.5 size-4 rounded border-navy-500 bg-navy-900 text-cyan-400 focus:ring-cyan-400"
+        className="mt-0.5 size-4 rounded border-border-strong bg-background accent-accent focus:ring-accent"
       />
       <div>
-        <label htmlFor={id} className="cursor-pointer text-[11px] font-medium text-ink-200">
+        <label htmlFor={id} className="cursor-pointer text-xs font-medium text-text-soft">
           {label}
         </label>
-        {hint ? <p className="mt-0.5 text-[10px] leading-relaxed text-ink-500">{hint}</p> : null}
+        {hint ? <p className="mt-0.5 text-[11px] leading-relaxed text-muted">{hint}</p> : null}
       </div>
     </div>
   );
@@ -173,7 +174,7 @@ export function FilterActions({
   return (
     <>
       {resultLabel ? (
-        <p className="text-[11px] text-ink-400" aria-live="polite">
+        <p className="text-xs text-muted" aria-live="polite">
           {resultLabel}
         </p>
       ) : null}

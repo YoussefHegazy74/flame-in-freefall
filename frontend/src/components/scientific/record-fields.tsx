@@ -26,7 +26,7 @@ export function RowQualityFlags({
       {flags.map((flag, index) => (
         <li
           key={`${flagText(flag)}-${index}`}
-          className="rounded border border-amber-400/20 bg-amber-400/5 px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
+          className="rounded border border-amber-400/20 bg-warning-soft px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
           title={typeof flag === "string" ? flag : `${flag.raw_field} · token: ${flag.token ?? "null"}`}
         >
           {typeof flag === "string" ? flag : `${flag.field}=${flag.flag}`}

@@ -8,6 +8,7 @@ interface PageHeaderProps {
   actions?: ReactNode;
   meta?: ReactNode;
   className?: string;
+  variant?: "default" | "hero";
 }
 
 export function PageHeader({
@@ -17,24 +18,45 @@ export function PageHeader({
   actions,
   meta,
   className,
+  variant = "default",
 }: PageHeaderProps) {
+  const hero = variant === "hero";
+
   return (
-    <header className={cn("mb-7 border-b border-navy-700/60 pb-6", className)}>
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <header
+      className={cn(
+        "mb-8",
+        hero ? "page-hero p-6 sm:p-8 lg:p-10" : "pb-1",
+        className,
+      )}
+    >
+      <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
-          {eyebrow ? <p className="kicker mb-2">{eyebrow}</p> : null}
-          <h1 className="text-balance text-2xl font-semibold tracking-tight text-ink-50 sm:text-3xl">
+          {eyebrow ? <p className="kicker mb-3">{eyebrow}</p> : null}
+          <h1
+            className={cn(
+              "text-balance font-semibold tracking-[-0.02em]",
+              hero
+                ? "hero-title text-3xl leading-[1.08] sm:text-4xl lg:text-5xl"
+                : "text-2xl leading-tight text-foreground sm:text-3xl lg:text-4xl",
+            )}
+          >
             {title}
           </h1>
           {description ? (
-            <div className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-300">
+            <div
+              className={cn(
+                "mt-3 max-w-2xl text-sm leading-relaxed text-muted",
+                hero && "sm:text-base",
+              )}
+            >
               {description}
             </div>
           ) : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
-      {meta ? <div className="mt-4 flex flex-wrap items-center gap-2">{meta}</div> : null}
+      {meta ? <div className="relative z-10 mt-5 flex flex-wrap items-center gap-2">{meta}</div> : null}
     </header>
   );
 }

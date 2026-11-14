@@ -165,7 +165,7 @@ function GasFlameContent() {
         }
       />
 
-      <section className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-3.5">
+      <section className="rounded-xl border border-amber-400/25 bg-warning-soft p-3.5">
         <div className="flex items-start gap-2.5">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden="true" />
           <p className="text-[11px] leading-relaxed text-ink-300">
@@ -180,7 +180,7 @@ function GasFlameContent() {
       {facetData ? (
         <GasFlameFacetsPanel facets={facetData} />
       ) : facets.isError ? (
-        <p className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-[11px] text-amber-100">
+        <p className="rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-[11px] text-amber-100">
           Facet coverage could not be loaded. The row table below is unaffected; no facet values
           are inferred locally.
         </p>

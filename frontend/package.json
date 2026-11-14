@@ -2,7 +2,7 @@
   "name": "flame-in-freefall-frontend",
   "version": "3.0.0",
   "private": true,
-  "description": "Scientific data exploration frontend for Flame in Freefall",
+  "description": "FLAREX — Microgravity Combustion Intelligence. Scientific data exploration frontend.",
   "scripts": {
     "dev": "next dev --webpack --hostname localhost --port 3000",
     "build": "next build --webpack",

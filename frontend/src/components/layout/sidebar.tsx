@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Flame, Menu, X, ExternalLink, PanelLeftClose } from "lucide-react";
+import { Menu, X, ExternalLink } from "lucide-react";
 import { NAV_GROUPS } from "@/lib/navigation";
+import { FlarexBrand } from "@/components/brand/flarex-brand";
 import { API_DOCS_URL } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
@@ -20,68 +21,68 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previous;
+      document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
-
-  const close = () => {
-    onClose();
-  };
+  }, [open, onClose]);
 
   return (
     <>
       <div
         aria-hidden="true"
-        onClick={close}
+        onClick={onClose}
         className={cn(
-          "fixed inset-0 z-40 bg-void/80 backdrop-blur-sm transition-opacity lg:hidden",
+          "fixed inset-0 z-40 bg-black/45 backdrop-blur-sm transition-opacity duration-200 lg:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
       <aside
         aria-label="Primary navigation"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-navy-700/80 bg-navy-950/98 shadow-2xl transition-transform duration-200 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col border-r border-border bg-surface shadow-xl transition-transform duration-200",
+          "lg:top-16 lg:z-30 lg:h-[calc(100vh-4rem)] lg:translate-x-0 lg:shadow-none",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between border-b border-navy-700/80 px-5 py-5">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 lg:hidden">
           <Link
             href="/"
-            onClick={close}
-            className="group flex items-center gap-3 rounded-lg focus-ring"
+            onClick={onClose}
+            className="group flex min-w-0 items-center rounded-lg focus-ring"
           >
-            <span className="relative flex size-10 items-center justify-center rounded-xl border border-ember-400/30 bg-gradient-to-br from-ember-400/20 to-cyan-500/10 shadow-glow">
-              <Flame className="size-5 text-ember-300" aria-hidden="true" />
-              <span className="absolute -right-1 -top-1 size-2 rounded-full bg-cyan-400" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold tracking-tight text-ink-50">
-                Flame in Freefall
-              </span>
-              <span className="block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-400">
-                NASA PSI evidence explorer
-              </span>
-            </span>
+            <FlarexBrand taglineClassName="whitespace-normal text-[8px] tracking-[0.08em]" />
           </Link>
           <button
             type="button"
-            onClick={close}
-            className="rounded-lg p-2 text-ink-300 hover:bg-navy-800 hover:text-ink-50 focus-ring lg:hidden"
+            onClick={onClose}
+            className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-foreground focus-ring"
             aria-label="Close navigation"
           >
             <X className="size-5" aria-hidden="true" />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Sections">
+        <div className="hidden items-center justify-between px-5 pb-1 pt-5 lg:flex">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+            Navigation
+          </p>
+          <span className="rounded-full border border-border bg-background px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-muted">
+            v1
+          </span>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Sections">
           {NAV_GROUPS.map((group) => (
-            <div key={group.label} className="mb-5">
-              <p className="px-3 pb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">
+            <div key={group.label} className="mb-5 last:mb-2">
+              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-2">
                 {group.label}
               </p>
-              <ul className="space-y-0.5">
+              <ul className="space-y-1">
                 {group.items.map((item) => {
                   const active =
                     item.href === "/"
@@ -92,27 +93,32 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        onClick={close}
+                        onClick={onClose}
                         aria-current={active ? "page" : undefined}
                         title={item.description}
                         className={cn(
-                          "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus-ring",
+                          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors focus-ring",
                           active
-                            ? "border border-cyan-400/20 bg-cyan-400/10 text-cyan-200"
-                            : "border border-transparent text-ink-300 hover:bg-navy-800/80 hover:text-ink-50",
+                            ? "bg-accent-soft text-accent-strong"
+                            : "text-muted hover:bg-surface-2 hover:text-foreground",
                         )}
                       >
+                        {active ? (
+                          <span
+                            className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-accent"
+                            aria-hidden="true"
+                          />
+                        ) : null}
                         <Icon
                           className={cn(
                             "size-4 shrink-0",
-                            active ? "text-cyan-300" : "text-ink-500 group-hover:text-ink-300",
+                            active
+                              ? "text-accent-strong"
+                              : "text-muted-2 group-hover:text-muted",
                           )}
                           aria-hidden="true"
                         />
                         <span className="truncate">{item.label}</span>
-                        {active ? (
-                          <span className="ml-auto size-1.5 rounded-full bg-cyan-300" aria-hidden="true" />
-                        ) : null}
                       </Link>
                     </li>
                   );
@@ -122,41 +128,30 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-navy-700/80 p-4">
-          <div className="rounded-xl border border-navy-700/70 bg-navy-900/70 p-3">
-            <div className="flex items-center gap-2">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+        <div className="border-t border-border p-3">
+          <a
+            href={API_DOCS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 transition-colors hover:border-border-strong hover:bg-surface-2 focus-ring"
+          >
+            <span className="mt-0.5 rounded-md bg-accent-soft p-1.5 text-accent-strong">
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </span>
+            <span>
+              <span className="block text-xs font-semibold text-foreground">
+                Scientific API
               </span>
-              <p className="text-xs font-medium text-ink-200">Read-only scientific API</p>
-            </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-ink-400">
-              Comparability and serving states are decided by the backend, never the browser.
-            </p>
-            <a
-              href={API_DOCS_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-medium text-cyan-300 hover:text-cyan-200 focus-ring"
-            >
-              Open API reference
-              <ExternalLink className="size-3" aria-hidden="true" />
-            </a>
-          </div>
+              <span className="mt-0.5 block text-[10px] leading-relaxed text-muted">
+                Read-only endpoints, schemas, and examples.
+              </span>
+            </span>
+          </a>
           <div className="mt-3 flex items-center justify-between px-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-500">
+            <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted">
               Team AFAQ
             </p>
-            <button
-              type="button"
-              onClick={close}
-              className="hidden rounded p-1 text-ink-500 hover:text-ink-200 focus-ring lg:block"
-              aria-label="Collapse navigation"
-              title="Navigation is fixed on desktop"
-            >
-              <PanelLeftClose className="size-4" aria-hidden="true" />
-            </button>
+            <p className="text-[10px] text-muted-2">2026</p>
           </div>
         </div>
       </aside>
@@ -169,10 +164,10 @@ export function MobileNavButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-navy-700 bg-navy-900 p-2 text-ink-200 hover:border-navy-600 hover:text-ink-50 focus-ring lg:hidden"
+      className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-foreground focus-ring lg:hidden"
       aria-label="Open navigation"
     >
-      <Menu className="size-5" aria-hidden="true" />
+      <Menu className="size-4.5" aria-hidden="true" />
     </button>
   );
 }

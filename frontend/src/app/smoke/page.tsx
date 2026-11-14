@@ -194,7 +194,7 @@ function SmokeContent() {
         }
       />
 
-      <section className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-3.5">
+      <section className="rounded-xl border border-amber-400/25 bg-warning-soft p-3.5">
         <div className="flex items-start gap-2.5">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden="true" />
           <div className="text-[11px] leading-relaxed text-ink-300">
@@ -349,7 +349,7 @@ function SmokeContent() {
                   </div>
                 </dl>
                 {runData.notes ? (
-                  <p className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-[11px] leading-relaxed text-amber-100">
+                  <p className="mt-3 rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-[11px] leading-relaxed text-amber-100">
                     {runData.notes}
                   </p>
                 ) : null}

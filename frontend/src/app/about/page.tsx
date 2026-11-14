@@ -110,8 +110,8 @@ export default function AboutPage() {
         title="Methods, limitations, and attribution"
         description={
           <>
-            This platform is a read-only evidence explorer over curated NASA Physical Sciences
-            Informatics combustion experiments. The backend decides what may be served, compared,
+            FLAREX — Microgravity Combustion Intelligence — is a read-only evidence explorer over
+            curated NASA Physical Sciences Informatics combustion experiments. The backend decides what may be served, compared,
             and charted. This page documents those decisions, the scientific rules the interface
             enforces, and the limitations that remain.
           </>
@@ -135,7 +135,7 @@ export default function AboutPage() {
         }
         meta={
           <>
-            <Badge tone="cyan">Phase 3</Badge>
+            <Badge tone="cyan">Release 7</Badge>
             <Badge tone="neutral">Read-only</Badge>
             <Badge tone="emerald">Registry {metaData?.registry_version ?? "—"}</Badge>
             <Badge tone="outline">Snapshot {metaData?.registry_snapshot ?? "—"}</Badge>
@@ -150,7 +150,7 @@ export default function AboutPage() {
         </h2>
         <div className="mt-3 space-y-3 text-sm leading-relaxed text-ink-300">
           <p>
-            Flame in Freefall is an independent evidence explorer built by Team AFAQ. It surfaces a
+            FLAREX is an independent evidence explorer built by Team AFAQ. It surfaces a
             curated subset of NASA PSI investigations concerned with microgravity combustion:
             gas-flame tests, material flammability matrices, droplet tests, SAFFIRE-III telemetry,
             SAME-R smoke runs, and a legacy smoke event log.
@@ -340,7 +340,7 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
-        <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+        <div className="mt-3 rounded-lg border border-cyan-400/20 bg-accent-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
           The comparison endpoint returns a decision and measurement metadata, not paired values.
           The interface therefore does not render a shared comparison chart.
         </div>
@@ -361,7 +361,7 @@ export default function AboutPage() {
           {LIMITATIONS.map((item) => (
             <article
               key={item.title}
-              className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4"
+              className="rounded-xl border border-amber-400/20 bg-warning-soft p-4"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="amber">{item.accession}</Badge>
@@ -462,10 +462,10 @@ export default function AboutPage() {
           <p>
             The registry, quality warnings, comparability rules, and serving decisions are products
             of this project&apos;s Phase 1 and Phase 2 work. They are documented in the repository and
-            exposed through the API. This interface is a Phase 3 client of that backend.
+            exposed through the API. This interface is the current release client of that backend.
           </p>
           <p>
-            Built by Team AFAQ. The platform is read-only and does not collect user data beyond
+            FLAREX is built by Team AFAQ. The platform is read-only and does not collect user data beyond
             standard server request logs.
           </p>
         </div>

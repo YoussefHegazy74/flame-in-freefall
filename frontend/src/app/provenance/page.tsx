@@ -175,7 +175,7 @@ function ProvenanceContent() {
         }
       />
 
-      <section className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3.5">
+      <section className="rounded-xl border border-cyan-400/20 bg-accent-soft p-3.5">
         <div className="flex items-start gap-2.5">
           <Info className="mt-0.5 size-4 shrink-0 text-cyan-300" aria-hidden="true" />
           <div className="text-[11px] leading-relaxed text-ink-300">
@@ -428,7 +428,7 @@ function ProvenanceContent() {
                     {result.warnings.map((warning) => (
                       <li
                         key={warning}
-                        className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5 text-xs leading-relaxed text-amber-100"
+                        className="rounded-lg border border-amber-400/20 bg-warning-soft p-2.5 text-xs leading-relaxed text-amber-100"
                       >
                         {warning}
                       </li>

@@ -59,13 +59,13 @@ function FileCard({
               href={sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-200 hover:bg-emerald-400/15 focus-ring"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-success-soft px-2.5 py-1.5 text-[11px] font-medium text-emerald-200 hover:bg-success-soft focus-ring"
             >
               <Download className="size-3.5" aria-hidden="true" />
               Download
             </a>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/20 bg-rose-400/5 px-2.5 py-1.5 text-[11px] text-rose-200">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/20 bg-danger-soft px-2.5 py-1.5 text-[11px] text-rose-200">
               <AlertTriangle className="size-3.5" aria-hidden="true" />
               Not downloadable
             </span>
@@ -75,7 +75,7 @@ function FileCard({
       </div>
 
       {file.availability_reason ? (
-        <p className="mt-2 rounded-lg border border-rose-400/20 bg-rose-400/5 p-2 text-[11px] leading-relaxed text-rose-100">
+        <p className="mt-2 rounded-lg border border-rose-400/20 bg-danger-soft p-2 text-[11px] leading-relaxed text-rose-100">
           {file.availability_reason}
         </p>
       ) : null}
@@ -241,7 +241,7 @@ export function DatasetFilesPanel({
       )}
 
       {data ? (
-        <p className="mt-4 rounded-lg border border-cyan-400/15 bg-cyan-400/5 p-2.5 text-[11px] leading-relaxed text-ink-300">
+        <p className="mt-4 rounded-lg border border-cyan-400/15 bg-accent-soft p-2.5 text-[11px] leading-relaxed text-ink-300">
           Public inventory: {data.inventory.public_inventory_file_count} files;{" "}
           {data.inventory.curated_file_count} curated; {data.inventory.not_selected_file_count} not
           selected and not exposed. {data.inventory.note}

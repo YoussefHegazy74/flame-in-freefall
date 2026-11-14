@@ -1,10 +1,14 @@
 "use client";
 
-import { Search, Wifi, WifiOff, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { BookOpen, Loader2, Search, Wifi, WifiOff, X } from "lucide-react";
 import { useHealth } from "@/lib/api/hooks";
+import { API_DOCS_URL } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { FlarexBrand } from "@/components/brand/flarex-brand";
 import { Breadcrumbs } from "./breadcrumbs";
 import { MobileNavButton } from "./sidebar";
 
@@ -12,7 +16,16 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
   const router = useRouter();
   const health = useHealth();
   const [query, setQuery] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -26,6 +39,7 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
         event.preventDefault();
         inputRef.current?.focus();
       }
+      if (event.key === "Escape") setMobileSearchOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -34,6 +48,7 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = query.trim();
+    setMobileSearchOpen(false);
     router.push(trimmed ? `/investigations?q=${encodeURIComponent(trimmed)}` : "/investigations");
   };
 
@@ -41,22 +56,35 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
   const datasetVersion = health.data?.data.dataset_version;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-navy-700/70 bg-void/85 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-10">
+    <header
+      className={cn(
+        "site-header sticky top-0 z-40 w-full",
+        scrolled && "site-header-scrolled",
+      )}
+    >
+      <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-2 px-4 sm:px-6 lg:px-8">
         <MobileNavButton onClick={onOpenNav} />
-        <Breadcrumbs className="hidden md:block" />
+
+        <Link
+          href="/"
+          className="group flex shrink-0 items-center rounded-lg focus-ring"
+        >
+          <FlarexBrand taglineClassName="max-xl:hidden" />
+        </Link>
+
+        <Breadcrumbs className="ml-4 hidden max-w-[18rem] xl:block" />
 
         <form
           role="search"
           onSubmit={submit}
-          className="order-last flex w-full min-w-0 items-center gap-2 sm:order-none sm:ml-auto sm:w-auto"
+          className="ml-auto hidden w-full max-w-xs items-center gap-2 md:flex lg:max-w-sm"
         >
           <label htmlFor="global-search" className="sr-only">
             Search investigations
           </label>
-          <div className="relative min-w-0 flex-1 sm:w-64">
+          <div className="relative min-w-0 flex-1">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-500"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-2"
               aria-hidden="true"
             />
             <input
@@ -66,51 +94,105 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search investigations…"
-              className="h-9 w-full rounded-lg border border-navy-700 bg-navy-900/80 pl-9 pr-12 text-sm text-ink-100 placeholder:text-ink-500 focus:border-cyan-400/60 focus-ring"
+              className="h-9 w-full rounded-lg border border-border bg-surface/80 pl-9 pr-12 text-sm text-foreground placeholder:text-muted-2 transition-colors focus:border-accent focus:bg-background focus-ring"
             />
-            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-navy-600 bg-navy-800 px-1.5 py-0.5 font-mono text-[10px] text-ink-500 sm:block">
+            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-2 lg:block">
               /
             </kbd>
           </div>
         </form>
 
-        <div
-          className={cn(
-            "flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-[11px] font-medium",
-            apiState === "online" && "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
-            apiState === "offline" && "border-rose-400/25 bg-rose-400/10 text-rose-300",
-            apiState === "checking" && "border-navy-600 bg-navy-800/70 text-ink-300",
-          )}
-          role="status"
-          aria-live="polite"
-          title={
-            datasetVersion
-              ? `API online. Dataset ${datasetVersion}`
-              : "Checking the read-only FastAPI backend"
-          }
-        >
-          {apiState === "checking" ? (
-            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-          ) : apiState === "online" ? (
-            <Wifi className="size-3.5" aria-hidden="true" />
-          ) : (
-            <WifiOff className="size-3.5" aria-hidden="true" />
-          )}
-          <span className="hidden sm:inline">
-            {apiState === "online"
-              ? "API online"
-              : apiState === "offline"
-                ? "API offline"
-                : "Checking API"}
-          </span>
-          <span className="sm:hidden">
-            {apiState === "online" ? "Online" : apiState === "offline" ? "Offline" : "…"}
-          </span>
+        <div className="ml-auto flex items-center gap-1.5 md:ml-2">
+          <button
+            type="button"
+            onClick={() => setMobileSearchOpen((value) => !value)}
+            className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-foreground focus-ring md:hidden"
+            aria-label={mobileSearchOpen ? "Close search" : "Open search"}
+            aria-expanded={mobileSearchOpen}
+          >
+            {mobileSearchOpen ? (
+              <X className="size-4" aria-hidden="true" />
+            ) : (
+              <Search className="size-4" aria-hidden="true" />
+            )}
+          </button>
+
+          <div
+            className={cn(
+              "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:flex",
+              apiState === "online" && "border-success/20 bg-success-soft text-success",
+              apiState === "offline" && "border-danger/20 bg-danger-soft text-danger",
+              apiState === "checking" && "border-border bg-surface-2 text-muted",
+            )}
+            role="status"
+            aria-live="polite"
+            title={
+              datasetVersion
+                ? `API online. Dataset ${datasetVersion}`
+                : "Checking the read-only FastAPI backend"
+            }
+          >
+            {apiState === "checking" ? (
+              <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+            ) : apiState === "online" ? (
+              <Wifi className="size-3" aria-hidden="true" />
+            ) : (
+              <WifiOff className="size-3" aria-hidden="true" />
+            )}
+            <span>
+              {apiState === "online"
+                ? "API online"
+                : apiState === "offline"
+                  ? "API offline"
+                  : "Checking"}
+            </span>
+          </div>
+
+          <a
+            href={API_DOCS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="hidden size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-foreground focus-ring lg:inline-flex"
+            aria-label="Open API documentation"
+            title="API documentation"
+          >
+            <BookOpen className="size-4" aria-hidden="true" />
+          </a>
+
+          <ThemeToggle />
         </div>
       </div>
-      <div className="border-t border-navy-800/80 px-4 py-2 md:hidden">
-        <Breadcrumbs />
-      </div>
+
+      {mobileSearchOpen ? (
+        <div className="border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl md:hidden">
+          <form role="search" onSubmit={submit} className="flex items-center gap-2">
+            <label htmlFor="mobile-global-search" className="sr-only">
+              Search investigations
+            </label>
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-2"
+                aria-hidden="true"
+              />
+              <input
+                id="mobile-global-search"
+                autoFocus
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search investigations…"
+                className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-foreground placeholder:text-muted-2 focus:border-accent focus:bg-background focus-ring"
+              />
+            </div>
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-accent-contrast transition-colors hover:bg-accent-hover focus-ring"
+            >
+              Search
+            </button>
+          </form>
+        </div>
+      ) : null}
     </header>
   );
 }

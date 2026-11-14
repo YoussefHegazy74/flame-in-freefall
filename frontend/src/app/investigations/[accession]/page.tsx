@@ -161,7 +161,7 @@ export default function InvestigationDetailPage() {
 
       <section className="surface p-5" aria-labelledby="limitations-heading">
         <div className="flex items-start gap-3">
-          <span className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-2 text-amber-300">
+          <span className="rounded-xl border border-amber-400/25 bg-warning-soft p-2 text-amber-300">
             <ShieldAlert className="size-5" aria-hidden="true" />
           </span>
           <div>
@@ -176,7 +176,7 @@ export default function InvestigationDetailPage() {
               {record.limitations.map((limitation) => (
                 <li
                   key={limitation}
-                  className="rounded-lg border border-amber-400/15 bg-amber-400/5 p-2.5 text-xs leading-relaxed text-ink-300"
+                  className="rounded-lg border border-amber-400/15 bg-warning-soft p-2.5 text-xs leading-relaxed text-ink-300"
                 >
                   {limitation}
                 </li>

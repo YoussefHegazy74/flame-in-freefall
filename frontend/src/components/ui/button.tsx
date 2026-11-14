@@ -1,22 +1,23 @@
 import { cn } from "@/lib/utils";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-type ButtonSize = "sm" | "md";
+type ButtonSize = "sm" | "md" | "icon";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "border-cyan-400/40 bg-cyan-400 text-void hover:bg-cyan-300 disabled:bg-cyan-400/40 disabled:text-void/60",
+    "primary-gradient border-transparent text-accent-contrast shadow-sm hover:shadow-glow disabled:opacity-50",
   secondary:
-    "border-navy-600 bg-navy-800/80 text-ink-100 hover:border-navy-500 hover:bg-navy-700/80 disabled:text-ink-500",
+    "border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-2 disabled:opacity-50",
   ghost:
-    "border-transparent bg-transparent text-ink-300 hover:bg-navy-800/80 hover:text-ink-50 disabled:text-ink-600",
+    "border-transparent bg-transparent text-muted hover:bg-surface-2 hover:text-foreground disabled:opacity-50",
   danger:
-    "border-rose-400/40 bg-rose-400/10 text-rose-300 hover:bg-rose-400/20 disabled:text-rose-300/50",
+    "border-danger/30 bg-danger-soft text-danger hover:bg-danger/15 disabled:opacity-50",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-xs",
+  sm: "h-9 px-3.5 text-[13px]",
   md: "h-10 px-4 text-sm",
+  icon: "size-9 p-0",
 };
 
 export function buttonStyles({
@@ -29,7 +30,7 @@ export function buttonStyles({
   className?: string;
 } = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-lg border font-medium transition-colors focus-ring disabled:cursor-not-allowed",
+    "inline-flex items-center justify-center gap-2 rounded-lg border font-semibold transition-all duration-150 focus-ring disabled:cursor-not-allowed",
     VARIANTS[variant],
     SIZES[size],
     className,

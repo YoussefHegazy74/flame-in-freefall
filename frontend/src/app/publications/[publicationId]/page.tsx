@@ -212,7 +212,7 @@ export default function PublicationDetailPage() {
             </div>
           </dl>
 
-          <div className="mt-4 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3">
+          <div className="mt-4 rounded-lg border border-emerald-400/20 bg-success-soft p-3">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-100">
               <CheckCircle2 className="size-3.5" aria-hidden="true" />
               Verified fields
@@ -221,7 +221,7 @@ export default function PublicationDetailPage() {
               {verified.map((field) => (
                 <li
                   key={field}
-                  className="rounded border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[10px] text-emerald-200"
+                  className="rounded border border-emerald-400/20 bg-success-soft px-1.5 py-0.5 font-mono text-[10px] text-emerald-200"
                 >
                   {field}
                 </li>
@@ -229,7 +229,7 @@ export default function PublicationDetailPage() {
             </ul>
           </div>
 
-          <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3">
+          <div className="mt-3 rounded-lg border border-amber-400/20 bg-warning-soft p-3">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-100">
               <FileQuestion className="size-3.5" aria-hidden="true" />
               Unavailable fields
@@ -241,7 +241,7 @@ export default function PublicationDetailPage() {
                 {unavailable.map((field) => (
                   <li
                     key={field}
-                    className="rounded border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
+                    className="rounded border border-amber-400/20 bg-warning-soft px-1.5 py-0.5 font-mono text-[10px] text-amber-200"
                   >
                     {field}
                   </li>
@@ -255,7 +255,7 @@ export default function PublicationDetailPage() {
           </div>
 
           {conflicts.title_variants.length > 0 || conflicts.authors_raw_variants.length > 0 ? (
-            <div className="mt-3 rounded-lg border border-rose-400/20 bg-rose-400/5 p-3">
+            <div className="mt-3 rounded-lg border border-rose-400/20 bg-danger-soft p-3">
               <p className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-100">
                 <ShieldAlert className="size-3.5" aria-hidden="true" />
                 Conflicting source variants

@@ -29,7 +29,7 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Overview",
+    label: "Explore",
     items: [
       {
         label: "Overview",
@@ -37,11 +37,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: LayoutDashboard,
         description: "Platform status, data counts, and entry points",
       },
-    ],
-  },
-  {
-    label: "Research catalog",
-    items: [
       {
         label: "Investigations",
         href: "/investigations",
@@ -57,7 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Experiment explorers",
+    label: "Data",
     items: [
       {
         label: "Gas Flame",
@@ -77,11 +72,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Droplets,
         description: "PSI-69 FLEX droplet tests",
       },
-    ],
-  },
-  {
-    label: "Time series",
-    items: [
       {
         label: "Telemetry",
         href: "/telemetry",
@@ -97,7 +87,7 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Analysis",
+    label: "Analyze",
     items: [
       {
         label: "Research Assistant",

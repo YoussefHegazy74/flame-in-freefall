@@ -37,7 +37,7 @@ export const EVIDENCE_STATUS_DESCRIPTIONS: Record<
   string
 > = {
   fully_supported:
-    "Every factual or numerical content item is backed by a deterministic tool result and a citation that resolved through the Phase 4 registry.",
+    "Every factual or numerical content item is backed by a deterministic tool result and a citation that resolved through the verified citation registry.",
   partially_supported:
     "Some context is retrieved and labeled, but not every part of the answer is a directly verified measurement. Treat it as orientation, not proof.",
   insufficient_evidence:
